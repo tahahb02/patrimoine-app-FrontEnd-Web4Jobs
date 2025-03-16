@@ -9,11 +9,15 @@ const Equipments = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [equipments, setEquipments] = useState([]);
   const [newEquipment, setNewEquipment] = useState({ name: "", category: "", center: "", dateAdded: "" });
-  const [editingEquipment, setEditingEquipment] = useState(null); // Stocke l'équipement en cours de modification
+  const [editingEquipment, setEditingEquipment] = useState(null);
 
   // États pour la pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10); // Nombre d'équipements par page
+  const [itemsPerPage] = useState(10);
+
+  // États pour gérer l'affichage des modals
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Listes des catégories et centres prédéfinis
   const [categories, setCategories] = useState(["PC Portable", "PC Bureau", "Bureautique", "Imprimante"]);
@@ -45,7 +49,6 @@ const Equipments = () => {
       }
 
       const data = await response.json();
-      console.log("Données reçues:", data); // 👉 Vérifie les données récupérées
       setEquipments(data);
     } catch (error) {
       console.error("Erreur lors du chargement des équipements:", error);
@@ -86,7 +89,7 @@ const Equipments = () => {
       return;
     }
 
-    const currentDate = new Date().toISOString(); // Utiliser ISOString pour la date
+    const currentDate = new Date().toISOString();
     const equipmentWithDate = { ...newEquipment, dateAdded: currentDate };
 
     try {
@@ -99,6 +102,7 @@ const Equipments = () => {
       if (response.ok) {
         fetchEquipments();
         setNewEquipment({ name: "", category: "", center: "", dateAdded: "" });
+        setShowAddModal(false);
         alert("Équipement ajouté avec succès !");
       } else {
         const errorData = await response.json();
@@ -111,12 +115,6 @@ const Equipments = () => {
   };
 
   // Modifier un équipement
-  const handleEditEquipment = (equipment) => {
-    setEditingEquipment(equipment);
-    setNewEquipment(equipment);
-  };
-
-  // Enregistrer la modification
   const handleUpdateEquipment = async () => {
     if (!editingEquipment) return;
 
@@ -136,6 +134,7 @@ const Equipments = () => {
         fetchEquipments();
         setEditingEquipment(null);
         setNewEquipment({ name: "", category: "", center: "", dateAdded: "" });
+        setShowEditModal(false);
         alert("Équipement modifié avec succès !");
       } else {
         const errorData = await response.json();
@@ -196,10 +195,6 @@ const Equipments = () => {
         </ul>
 
         {/* Section en bas du sidebar */}
-        <br></br><br></br><br></br><br></br><br></br>
-        <br></br><br></br><br></br><br></br><br></br>
-        <br></br>
-
         <div className="sidebar-bottom">
           <ul>
             <li><Link to="/account"><FaUser /><span>Compte</span></Link></li>
@@ -212,83 +207,10 @@ const Equipments = () => {
       <main className="content">
         <h2>Gestion des Équipements</h2>
 
-        {/* Formulaire d'ajout/modification */}
-        <div className="equipment-form">
-          <input type="text" name="name" placeholder="Nom de l'équipement" value={newEquipment.name} onChange={handleInputChange} />
-
-          {/* Liste déroulante pour les catégories */}
-          <select
-            name="category"
-            value={newEquipment.category}
-            onChange={(e) => {
-              handleInputChange(e);
-              if (e.target.value === "new") {
-                setShowAddCategory(true);
-              } else {
-                setShowAddCategory(false);
-              }
-            }}
-          >
-            <option value="">Sélectionnez une catégorie</option>
-            {categories.map((category, index) => (
-              <option key={index} value={category}>
-                {category}
-              </option>
-            ))}
-            <option value="new">Ajouter une nouvelle catégorie</option>
-          </select>
-          {showAddCategory && (
-            <div className="add-new-item">
-              <input
-                type="text"
-                placeholder="Entrez le nom de la nouvelle catégorie"
-                value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
-              />
-              <button className="add-button" onClick={handleAddNewCategory}><FaPlus /> Ajouter</button>
-            </div>
-          )}
-
-          {/* Liste déroulante pour les centres */}
-          <select
-            name="center"
-            value={newEquipment.center}
-            onChange={(e) => {
-              handleInputChange(e);
-              if (e.target.value === "new") {
-                setShowAddCenter(true);
-              } else {
-                setShowAddCenter(false);
-              }
-            }}
-          >
-            <option value="">Sélectionnez un centre</option>
-            {centers.map((center, index) => (
-              <option key={index} value={center}>
-                {center}
-              </option>
-            ))}
-            <option value="new">Ajouter un nouveau centre</option>
-          </select>
-          {showAddCenter && (
-            <div className="add-new-item">
-              <input
-                type="text"
-                placeholder="Entrez le nom du nouveau centre"
-                value={newCenter}
-                onChange={(e) => setNewCenter(e.target.value)}
-              />
-              <button className="add-button" onClick={handleAddNewCenter}><FaPlus /> Ajouter</button>
-            </div>
-          )}
-
-          {/* Bouton d'ajout ou de modification */}
-          {editingEquipment ? (
-            <button className="edit-button" onClick={handleUpdateEquipment}><FaEdit /> Modifier</button>
-          ) : (
-            <button className="add-button" onClick={handleAddEquipment}><FaPlus /> Ajouter</button>
-          )}
-        </div>
+        {/* Bouton pour ouvrir le modal d'ajout */}
+        <button className="add-button" onClick={() => setShowAddModal(true)}>
+          <FaPlus /> Ajouter un équipement
+        </button>
 
         {/* Grille des cartes */}
         <div className="equipment-grid">
@@ -302,8 +224,16 @@ const Equipments = () => {
                 <p><strong>Date d'ajout:</strong> {new Date(equipment.dateAdded).toLocaleString()}</p>
               </div>
               <div className="card-actions">
-                <button className="edit-button" onClick={() => handleEditEquipment(equipment)}><FaEdit /></button>
-                <button className="delete-button" onClick={() => handleDeleteEquipment(equipment.id)}><FaTrash /></button>
+                <button className="edit-button" onClick={() => {
+                  setEditingEquipment(equipment);
+                  setNewEquipment(equipment);
+                  setShowEditModal(true);
+                }}>
+                  <FaEdit />
+                </button>
+                <button className="delete-button" onClick={() => handleDeleteEquipment(equipment.id)}>
+                  <FaTrash />
+                </button>
               </div>
             </div>
           ))}
@@ -311,21 +241,206 @@ const Equipments = () => {
 
         {/* Pagination */}
         <div className="pagination">
-          <button
-            onClick={() => paginate(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
+          <button onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1}>
             Précédent
           </button>
           <span>Page {currentPage}</span>
-          <button
-            onClick={() => paginate(currentPage + 1)}
-            disabled={indexOfLastItem >= equipments.length}
-          >
+          <button onClick={() => paginate(currentPage + 1)} disabled={indexOfLastItem >= equipments.length}>
             Suivant
           </button>
         </div>
       </main>
+
+      {/* Arrière-plan flou lorsque le modal est ouvert */}
+      {(showAddModal || showEditModal) && <div className="modal-backdrop"></div>}
+
+      {/* Modal d'ajout */}
+      {showAddModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <button className="modal-close" onClick={() => setShowAddModal(false)}>
+              &times;
+            </button>
+            <h3>Ajouter un équipement</h3>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              handleAddEquipment();
+            }}>
+              <input
+                type="text"
+                name="name"
+                placeholder="Nom de l'équipement"
+                value={newEquipment.name}
+                onChange={handleInputChange}
+                required
+              />
+              <select
+                name="category"
+                value={newEquipment.category}
+                onChange={(e) => {
+                  handleInputChange(e);
+                  if (e.target.value === "new") {
+                    setShowAddCategory(true);
+                  } else {
+                    setShowAddCategory(false);
+                  }
+                }}
+                required
+              >
+                <option value="">Sélectionnez une catégorie</option>
+                {categories.map((category, index) => (
+                  <option key={index} value={category}>
+                    {category}
+                  </option>
+                ))}
+                <option value="new">Ajouter une nouvelle catégorie</option>
+              </select>
+              {showAddCategory && (
+                <div className="add-new-item">
+                  <input
+                    type="text"
+                    placeholder="Entrez le nom de la nouvelle catégorie"
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                  />
+                  <button type="button" onClick={handleAddNewCategory}>
+                    <FaPlus /> Ajouter
+                  </button>
+                </div>
+              )}
+              <select
+                name="center"
+                value={newEquipment.center}
+                onChange={(e) => {
+                  handleInputChange(e);
+                  if (e.target.value === "new") {
+                    setShowAddCenter(true);
+                  } else {
+                    setShowAddCenter(false);
+                  }
+                }}
+                required
+              >
+                <option value="">Sélectionnez un centre</option>
+                {centers.map((center, index) => (
+                  <option key={index} value={center}>
+                    {center}
+                  </option>
+                ))}
+                <option value="new">Ajouter un nouveau centre</option>
+              </select>
+              {showAddCenter && (
+                <div className="add-new-item">
+                  <input
+                    type="text"
+                    placeholder="Entrez le nom du nouveau centre"
+                    value={newCenter}
+                    onChange={(e) => setNewCenter(e.target.value)}
+                  />
+                  <button type="button" onClick={handleAddNewCenter}>
+                    <FaPlus /> Ajouter
+                  </button>
+                </div>
+              )}
+              <button type="submit">Ajouter</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de modification */}
+      {showEditModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <button className="modal-close" onClick={() => setShowEditModal(false)}>
+              &times;
+            </button>
+            <h3>Modifier l'équipement</h3>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              handleUpdateEquipment();
+            }}>
+              <input
+                type="text"
+                name="name"
+                placeholder="Nom de l'équipement"
+                value={newEquipment.name}
+                onChange={handleInputChange}
+                required
+              />
+              <select
+                name="category"
+                value={newEquipment.category}
+                onChange={(e) => {
+                  handleInputChange(e);
+                  if (e.target.value === "new") {
+                    setShowAddCategory(true);
+                  } else {
+                    setShowAddCategory(false);
+                  }
+                }}
+                required
+              >
+                <option value="">Sélectionnez une catégorie</option>
+                {categories.map((category, index) => (
+                  <option key={index} value={category}>
+                    {category}
+                  </option>
+                ))}
+                <option value="new">Ajouter une nouvelle catégorie</option>
+              </select>
+              {showAddCategory && (
+                <div className="add-new-item">
+                  <input
+                    type="text"
+                    placeholder="Entrez le nom de la nouvelle catégorie"
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                  />
+                  <button type="button" onClick={handleAddNewCategory}>
+                    <FaPlus /> Ajouter
+                  </button>
+                </div>
+              )}
+              <select
+                name="center"
+                value={newEquipment.center}
+                onChange={(e) => {
+                  handleInputChange(e);
+                  if (e.target.value === "new") {
+                    setShowAddCenter(true);
+                  } else {
+                    setShowAddCenter(false);
+                  }
+                }}
+                required
+              >
+                <option value="">Sélectionnez un centre</option>
+                {centers.map((center, index) => (
+                  <option key={index} value={center}>
+                    {center}
+                  </option>
+                ))}
+                <option value="new">Ajouter un nouveau centre</option>
+              </select>
+              {showAddCenter && (
+                <div className="add-new-item">
+                  <input
+                    type="text"
+                    placeholder="Entrez le nom du nouveau centre"
+                    value={newCenter}
+                    onChange={(e) => setNewCenter(e.target.value)}
+                  />
+                  <button type="button" onClick={handleAddNewCenter}>
+                    <FaPlus /> Ajouter
+                  </button>
+                </div>
+              )}
+              <button type="submit">Modifier</button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
