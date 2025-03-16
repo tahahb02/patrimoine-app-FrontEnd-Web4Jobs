@@ -1,0 +1,181 @@
+/* Conteneur principal */
+.dashboard-container {
+  display: flex;
+  height: 100vh;
+  background-color: #f5f5f5;
+  transition: margin-left 0.3s ease;
+}
+
+/* Navbar */
+.navbar {
+  width: 100%;
+  height: 60px;
+  background-color: #4a148c;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  color: white;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 250px;
+  height: 100%;
+  background: white;
+  position: fixed;
+  left: -250px;
+  top: 60px;
+  transition: left 0.3s ease-in-out;
+  padding-top: 20px;
+}
+
+.sidebar.open {
+  left: 0;
+}
+
+/* Contenu principal */
+.content {
+  flex: 1;
+  padding: 80px 20px 20px;
+  transition: margin-left 0.3s ease;
+}
+
+.equipment-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.equipment-form input,
+.equipment-form select {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.add-button,
+.edit-button {
+  padding: 10px;
+  background-color: #4a148c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.edit-button {
+  background-color: #ffc107;
+}
+
+.delete-button {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 5px 10px;
+}
+
+/* Grille des cartes */
+.equipment-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 20px;
+  padding: 20px 0;
+}
+
+.equipment-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.2s ease;
+}
+
+.equipment-card:hover {
+  transform: translateY(-5px);
+}
+
+.card-image {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+}
+
+.card-content {
+  padding: 15px;
+}
+
+.card-content h3 {
+  margin: 0 0 10px;
+  font-size: 18px;
+  color: #4a148c;
+}
+
+.card-content p {
+  margin: 5px 0;
+  font-size: 14px;
+  color: #555;
+}
+
+.card-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px;
+  background-color: #f5f5f5;
+}
+
+.card-actions button {
+  margin-left: 10px;
+}
+
+/* Pagination */
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px; /* Espace au-dessus de la pagination */
+  margin-bottom: 2cm; /* Espace de 2 cm en dessous de la pagination */
+  padding: 10px 20px;
+  border-radius: 8px;
+
+}
+
+.pagination button {
+  padding: 8px 16px;
+  background-color: #4a148c; /* Couleur principale (violet) */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.pagination button:hover {
+  background-color: #6a1b9a; /* Violet plus clair au survol */
+  transform: translateY(-2px); /* Effet de légère élévation */
+}
+
+.pagination button:disabled {
+  background-color: #b39ddb; /* Violet désactivé */
+  cursor: not-allowed;
+  opacity: 0.7;
+  transform: none; /* Pas d'effet au survol si désactivé */
+}
+
+.pagination span {
+  font-size: 16px;
+  color: #4a148c; /* Couleur principale pour le texte */
+  font-weight: bold;
+}

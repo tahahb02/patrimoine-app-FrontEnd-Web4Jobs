@@ -1,0 +1,138 @@
+/* Conteneur principal */
+.dashboard-container {
+  display: flex;
+  height: 100vh;
+  background-color: #f5f5f5;
+  transition: margin-left 0.3s ease;
+}
+
+/* Styles de la Navbar */
+.navbar {
+  width: 100%;
+  height: 60px;
+  background-color: #4a148c;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  color: white;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Icône du menu */
+.menu-icon {
+  font-size: 24px;
+  cursor: pointer;
+  margin-right: 20px;
+}
+
+.navbar-logo {
+  height: 40px; /* Ajustez la taille du logo selon votre image */
+  margin-right: 60px; /* Pousse le logo vers la gauche et crée un espace à droite */
+}
+
+/* Styles de la Sidebar */
+.sidebar {
+  width: 250px;
+  height: 100%;
+  background: white;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  position: fixed;
+  left: -250px;
+  top: 60px;
+  transition: left 0.3s ease-in-out;
+  padding-top: 20px;
+}
+
+/* Sidebar Menu - liens stylisés */
+.sidebar-menu li a, .sidebar-bottom ul li a {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px; /* Réduction de la hauteur de chaque élément */
+  width: 100%;
+}
+
+.sidebar-menu li:hover a, .sidebar-bottom ul li:hover a {
+  color: white;
+}
+
+
+.sidebar.open {
+  left: 0;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar ul li {
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 16px;
+  color: #333;
+  transition: 0.3s;
+}
+
+.sidebar ul li:hover {
+  background-color: #4a148c;
+  color: white;
+}
+
+.sidebar ul li span {
+  display: inline-block;
+  opacity: 1;
+  transition: opacity 0.3s ease-in-out;
+}
+
+/* Gestion du contenu en fonction de la sidebar */
+.dashboard-container.sidebar-expanded .content {
+  margin-left: 250px;
+}
+
+/* Contenu principal */
+.content {
+  flex: 1;
+  padding: 80px 20px 20px;
+  transition: margin-left 0.3s ease;
+}
+
+.content h2 {
+  color: #333;
+}
+
+/* Cartes de statistiques */
+.dashboard-cards {
+  display: flex;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.card {
+  background: white;
+  padding: 20px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  text-align: center;
+  width: 200px;
+  transition: 0.3s;
+}
+
+.card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card h3 {
+  margin-bottom: 10px;
+  color: #4a148c;
+}

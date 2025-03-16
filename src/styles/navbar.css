@@ -1,0 +1,97 @@
+.navbar {
+    background: linear-gradient(135deg, #4a148c, #6a1b9a); /* Dégradé violet */
+    color: white;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'Poppins', sans-serif;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Ombre portée */
+    z-index: 1000; /* Assure que la navbar est au-dessus des autres éléments */
+    box-sizing: border-box; /* Inclut le padding dans la largeur */
+    width: 100%; /* Prend toute la largeur de la page */
+}
+
+.navbar-logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center; /* Centrer verticalement le logo */
+    letter-spacing: 1px; /* Espacement des lettres pour un effet luxueux */
+}
+
+.logo-image {
+    height: 40px; /* Ajustez la hauteur du logo */
+    width: auto; /* Conserve les proportions de l'image */
+    max-width: 100%; /* Empêche l'image de dépasser */
+    margin-right: 10px; /* Espace entre le logo et le texte */
+}
+
+.navbar-menu {
+    display: flex;
+    gap: 25px; /* Espacement entre les liens */
+    flex-wrap: wrap; /* Permet aux éléments de passer à la ligne si nécessaire */
+}
+
+.navbar-menu a {
+    color: white;
+    text-decoration: none;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease; /* Transition pour tous les effets */
+    position: relative; /* Pour l'effet de soulignement */
+}
+
+/* Effet de soulignement au survol */
+.navbar-menu a::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    background: white;
+    bottom: -5px;
+    left: 0;
+    transition: width 0.3s ease; /* Animation du soulignement */
+}
+
+.navbar-menu a:hover::after {
+    width: 100%; /* Soulignement complet au survol */
+}
+
+/* Effet de surbrillance au survol */
+.navbar-menu a:hover {
+    opacity: 0.9;
+    transform: translateY(-2px); /* Légère translation vers le haut */
+}
+
+/* Bouton spécial pour "Connexion" ou "Inscription" */
+.navbar-menu a.special {
+    background: white;
+    color: #4a148c;
+    padding: 8px 16px;
+    border-radius: 25px; /* Bouton arrondi */
+    font-weight: 600;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+.navbar-menu a.special:hover {
+    background: #f1f1f1; /* Changement de couleur au survol */
+    color: #6a1b9a;
+    transform: translateY(-2px); /* Légère translation vers le haut */
+}
+
+/* Masquer le défilement horizontal */
+body {
+    overflow-x: hidden;
+}
+
+/* Media queries pour les petits écrans */
+@media (max-width: 768px) {
+    .navbar {
+        padding: 15px 20px; /* Réduire le padding sur les petits écrans */
+    }
+    .navbar-menu {
+        gap: 15px; /* Réduire l'espace entre les liens */
+    }
+}

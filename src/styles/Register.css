@@ -1,0 +1,141 @@
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+  padding: 20px;
+  gap: 40px;
+  background-color: #f5f5f5;
+}
+
+.auth-box {
+  width: 100%;
+  max-width: 400px;
+  padding: 2rem;
+  background: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  text-align: center;
+  margin-left: 150px; /* Décalage du bord gauche */
+  transition: transform 0.2s ease, box-shadow 0.2s ease; /* Transition plus rapide */
+}
+
+/* Effet dynamique au survol du formulaire */
+.auth-box:hover {
+  transform: scale(1.01); /* Légère augmentation de la taille (plus subtile) */
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15); /* Ombre légèrement plus prononcée */
+}
+
+.auth-box h1 {
+  font-size: 24px;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.auth-box h2 {
+  font-size: 20px;
+  margin-bottom: 20px;
+  color: #555;
+}
+
+.form-group {
+  margin-bottom: 15px;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #555;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.2s ease; /* Transition plus rapide */
+}
+
+/* Effet dynamique au survol des inputs */
+.form-group input:hover,
+.form-group select:hover {
+  border-color: #4a148c; /* Changement de couleur de la bordure */
+}
+
+.register-button {
+  width: 100%;
+  padding: 10px;
+  background-color: #4a148c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease; /* Transition plus rapide */
+}
+
+.register-button:hover {
+  background-color: #3b0d79;
+  transform: translateY(-2px); /* Translation plus légère */
+}
+
+.register-button:active {
+  transform: translateY(0);
+}
+
+.login-link {
+  margin-top: 15px;
+  font-size: 14px;
+  color: #555;
+}
+
+.login-link a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.login-link a:hover {
+  text-decoration: underline;
+}
+
+.auth-image {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: transform 0.2s ease; /* Transition pour l'image */
+}
+
+.auth-image img {
+  width: 100%;
+  max-width: 500px;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease; /* Transition pour l'image */
+}
+
+/* Effet dynamique au survol de l'image */
+.auth-image:hover img {
+  transform: scale(1.02); /* Légère augmentation de la taille */
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25); /* Ombre plus prononcée */
+}
+
+@media (max-width: 768px) {
+  .auth-container {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .auth-box {
+    margin-left: 0; /* Réinitialiser la marge sur les petits écrans */
+  }
+
+  .auth-image img {
+    max-width: 300px;
+    margin-top: 20px;
+  }
+}
