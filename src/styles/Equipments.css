@@ -273,3 +273,180 @@
   border-radius: 4px;
   cursor: pointer;
 }
+
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+  z-index: 999;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  width: 400px;
+  max-width: 90%;
+  position: relative;
+  z-index: 1001;
+}
+
+.modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.view-button {
+  padding: 5px 10px;
+  background-color: #4a148c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 10px;
+}
+
+/* Style unifié pour les formulaires d'ajout et de modification */
+.modal-content form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modal-content input,
+.modal-content select,
+.modal-content textarea {
+  padding: 10px;
+  border: 1px solid #ccc; /* Bordure unifiée */
+  border-radius: 4px; /* Bordure arrondie */
+  font-size: 14px; /* Taille de police unifiée */
+  width: 100%; /* Largeur maximale */
+  box-sizing: border-box; /* Inclure le padding dans la largeur */
+  background-color: white; /* Fond blanc */
+  color: #333; /* Couleur de texte unifiée */
+}
+
+/* Style spécifique pour le champ de description */
+.modal-content textarea {
+  height: 100px; /* Hauteur fixe */
+  resize: vertical; /* Permettre le redimensionnement vertical uniquement */
+  font-family: inherit; /* Utiliser la même police que les autres champs */
+}
+
+/* Style pour les boutons dans les formulaires */
+.modal-content button[type="submit"] {
+  padding: 10px;
+  background-color: #4a148c; /* Couleur principale */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+}
+
+.modal-content button[type="submit"]:hover {
+  background-color: #6a1b9a; /* Couleur au survol */
+}
+
+/* Style pour les champs de sélection (select) */
+.modal-content select {
+  appearance: none; /* Supprimer l'apparence par défaut */
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%234a148c%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px;
+}
+
+/* Style pour les champs de fichier (input file) */
+.modal-content input[type="file"] {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: white;
+  cursor: pointer;
+}
+
+/* Style pour l'image de prévisualisation */
+.form-image-preview {
+  width: 100px;
+  height: 100px;
+  margin: 10px auto;
+  display: block;
+  border-radius: 4px;
+  border: 1px solid #ccc; /* Bordure unifiée */
+}
+
+/* Style pour la barre de recherche */
+.search-bar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.search-bar input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  margin-left: 8px;
+}
+
+.search-icon {
+  color: #4a148c;
+}
+
+/* Conteneur des filtres */
+.filters-container {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+/* Style des sélecteurs de filtre */
+.filter-select {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: white;
+  color: #333;
+  cursor: pointer;
+}
+
+/* Alignement de la barre de recherche et des filtres */
+.search-and-filters {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 20px;
+}
