@@ -181,9 +181,8 @@ const EquipmentDisponible = () => {
       {/* Sidebar */}
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <ul className="sidebar-menu">
-          <li><Link to="/dashboard-adherant"><FaTachometerAlt /><span>Tableau de Bord</span></Link></li>
-          <li><Link to="/equipments-disponibles"><FaCogs /><span>Équipements Disponibles</span></Link></li>
-          <li><Link to="/faire-demande"><FaClipboardList /><span>Faire une Demande</span></Link></li>
+          <li><Link to="/AdherantHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link></li>
+          <li><Link to="/EquipmentDisponible"><FaCogs /><span>Équipements Disponibles</span></Link></li>
           <li><Link to="/suivi-demandes"><FaClipboardList /><span>Suivi des Demandes</span></Link></li>
           <li><Link to="/notifications"><FaBell /><span>Notifications</span></Link></li>
         </ul>
@@ -191,7 +190,7 @@ const EquipmentDisponible = () => {
         {/* Section en bas du sidebar */}
                 <br></br><br></br><br></br><br></br><br></br>
                 <br></br><br></br><br></br><br></br><br></br>
-                <br></br>
+                <br></br><br></br><br></br><br></br><br></br>
         <div className="sidebar-bottom">
           <ul>
             <li><Link to="/account"><FaUser /><span>Compte</span></Link></li>

@@ -143,7 +143,7 @@ const GestionDemandes = () => {
             <Link to="/Equipments"><FaCogs /><span>Gestion des Équipements</span></Link>
           </li>
           <li>
-            <Link to="/GestionDemandes"><FaClipboardList /><span>Suivi des Demandes</span></Link>
+            <Link to="/GestionDemandes"><FaClipboardList /><span>Gestion des Demandes</span></Link>
           </li>
           <li>
             <Link to="/Notifications"><FaBell /><span>Notifications</span></Link>

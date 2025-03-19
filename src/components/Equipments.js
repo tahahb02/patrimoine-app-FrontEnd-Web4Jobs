@@ -259,7 +259,7 @@ const Equipments = () => {
           
           <li><Link to="/ResponsableHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link></li>
           <li><Link to="/Equipments"><FaCogs /><span>Gestion des Équipements</span></Link></li>
-          <li><Link to="/GestionDemandes"><FaClipboardList /><span>Suivi des Demandes</span></Link></li>
+          <li><Link to="/GestionDemandes"><FaClipboardList /><span>Gestion des Demandes</span></Link></li>
           <li><Link to="/notifications"><FaBell /><span>Notifications</span></Link></li>
         </ul>
 
