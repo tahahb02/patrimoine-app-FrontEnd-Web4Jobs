@@ -6,6 +6,7 @@ import ResponsableHome from './components/ResponsableHome';
 import Equipments from './components/Equipments';
 import AdherantHome from './components/AdherantHome';
 import EquipmentDisponible from './components/EquipmentDisponible';
+import GestionDemandes from './components/GestionDemandes';
 
 function App() {
     return (
@@ -17,6 +18,7 @@ function App() {
                 <Route path="/AdherantHome" element={<AdherantHome />} />
                 <Route path="/Equipments" element={<Equipments />} />
                 <Route path="/EquipmentDisponible" element={<EquipmentDisponible />} />
+                <Route path="/GestionDemandes" element={<GestionDemandes />} />
             </Routes>
         </Router>
     );

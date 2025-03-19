@@ -22,6 +22,9 @@ const EquipmentDisponible = () => {
     startDate: "",
     endDate: "",
     remarks: "",
+    firstName: "", // Nouveau champ
+    lastName: "",  // Nouveau champ
+    phoneNumber: "", // Nouveau champ
   });
   const [isBlurred, setIsBlurred] = useState(false); // État pour l'effet flou
 
@@ -30,8 +33,8 @@ const EquipmentDisponible = () => {
   const [itemsPerPage] = useState(10);
 
   // Listes des catégories et centres prédéfinis
-  const [categories, setCategories] = useState(["PC Portable", "PC Bureau", "Bureautique", "Imprimante"]);
-  const [centers, setCenters] = useState(["A", "B", "C"]);
+  const [categories] = useState(["PC Portable", "PC Bureau", "Bureautique", "Imprimante"]);
+  const [centers] = useState(["A", "B", "C"]);
 
   // Charger les équipements au démarrage
   useEffect(() => {
@@ -96,6 +99,9 @@ const EquipmentDisponible = () => {
       startDate: "",
       endDate: "",
       remarks: "",
+      firstName: "", // Initialiser les nouveaux champs
+      lastName: "",
+      phoneNumber: "",
     });
     setShowRequestModal(true);
     setIsBlurred(true); // Activer l'effet flou
@@ -124,19 +130,30 @@ const EquipmentDisponible = () => {
   // Soumettre la demande d'équipement
   const handleSubmitRequest = async (e) => {
     e.preventDefault();
-
+  
     if (!requestForm.startDate || !requestForm.endDate) {
       alert("Veuillez spécifier les dates de début et de fin.");
       return;
     }
-
+  
     try {
-      const response = await fetch(`${API_URL}/request`, {
+      const response = await fetch("http://localhost:8080/api/demandes/soumettre", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestForm),
+        body: JSON.stringify({
+          idEquipement: requestForm.equipmentId,
+          nomEquipement: requestForm.equipmentName,
+          categorieEquipement: requestForm.equipmentCategory,
+          centreEquipement: requestForm.equipmentCenter,
+          prenom: requestForm.firstName,
+          nom: requestForm.lastName,
+          numeroTelephone: requestForm.phoneNumber,
+          dateDebut: requestForm.startDate,
+          dateFin: requestForm.endDate,
+          remarques: requestForm.remarks,
+        }),
       });
-
+  
       if (response.ok) {
         alert("Demande d'équipement soumise avec succès !");
         closeModal();
@@ -149,6 +166,7 @@ const EquipmentDisponible = () => {
       alert("Erreur réseau. Veuillez réessayer.");
     }
   };
+  
 
   return (
     <div className={`dashboard-container ${sidebarOpen ? "sidebar-expanded" : ""}`}>
@@ -171,6 +189,9 @@ const EquipmentDisponible = () => {
         </ul>
 
         {/* Section en bas du sidebar */}
+                <br></br><br></br><br></br><br></br><br></br>
+                <br></br><br></br><br></br><br></br><br></br>
+                <br></br>
         <div className="sidebar-bottom">
           <ul>
             <li><Link to="/account"><FaUser /><span>Compte</span></Link></li>
@@ -289,6 +310,36 @@ const EquipmentDisponible = () => {
                   type="text"
                   value={requestForm.equipmentCenter}
                   readOnly
+                />
+              </div>
+              <div className="form-group">
+                <label>Nom</label>
+                <input
+                  type="text"
+                  name="lastName"
+                  value={requestForm.lastName}
+                  onChange={handleRequestFormChange}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Prénom</label>
+                <input
+                  type="text"
+                  name="firstName"
+                  value={requestForm.firstName}
+                  onChange={handleRequestFormChange}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Numéro de téléphone</label>
+                <input
+                  type="tel"
+                  name="phoneNumber"
+                  value={requestForm.phoneNumber}
+                  onChange={handleRequestFormChange}
+                  required
                 />
               </div>
               <div className="form-group">

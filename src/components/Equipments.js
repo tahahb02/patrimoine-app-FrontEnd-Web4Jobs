@@ -256,14 +256,18 @@ const Equipments = () => {
       {/* Sidebar */}
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <ul className="sidebar-menu">
-          <li><Link to="/ResponsableHome"><FaHome /><span>Home</span></Link></li>
-          <li><Link to="/dashboard"><FaTachometerAlt /><span>Tableau de Bord</span></Link></li>
-          <li><Link to="/equipments"><FaCogs /><span>Gestion des Équipements</span></Link></li>
-          <li><Link to="/requests"><FaClipboardList /><span>Suivi des Demandes</span></Link></li>
+          
+          <li><Link to="/ResponsableHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link></li>
+          <li><Link to="/Equipments"><FaCogs /><span>Gestion des Équipements</span></Link></li>
+          <li><Link to="/GestionDemandes"><FaClipboardList /><span>Suivi des Demandes</span></Link></li>
           <li><Link to="/notifications"><FaBell /><span>Notifications</span></Link></li>
         </ul>
 
         {/* Section en bas du sidebar */}
+                <br></br><br></br><br></br><br></br><br></br>
+                <br></br><br></br><br></br><br></br><br></br>
+                <br></br><br></br><br></br><br></br><br></br>
+                
         <div className="sidebar-bottom">
           <ul>
             <li><Link to="/account"><FaUser /><span>Compte</span></Link></li>

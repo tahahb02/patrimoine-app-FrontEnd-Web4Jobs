@@ -30,16 +30,16 @@ const ResponsableHome = () => {
             <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
                 <ul className="sidebar-menu">
                     <li>
-                        <Link to="/dashboard"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
+                        <Link to="/ResponsableHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
                     </li>
                     <li>
                         <Link to="/Equipments"><FaCogs /><span>Gestion des Équipements</span></Link>
                     </li>
                     <li>
-                        <Link to="/requests"><FaClipboardList /><span>Suivi des Demandes</span></Link>
+                        <Link to="/GestionDemandes"><FaClipboardList /><span>Suivi des Demandes</span></Link>
                     </li>
                     <li>
-                        <Link to="/notifications"><FaBell /><span>Notifications</span></Link>
+                        <Link to="/Notifications"><FaBell /><span>Notifications</span></Link>
                     </li>
                 </ul>
 
