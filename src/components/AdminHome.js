@@ -1,20 +1,19 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom"; // Importation de useNavigate
-import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt } from "react-icons/fa";
-import "../styles/AdherantHome.css"; // Utilisation du même fichier CSS
+import { Link, useNavigate } from "react-router-dom";
+import { FaBars,FaTimes,FaTachometerAlt,FaUsers,FaUserCog,FaBell,FaUser,FaSignOutAlt } from "react-icons/fa";
+import "../styles/AdminHome.css"; // Utilisation d'un fichier CSS spécifique pour l'admin
 
-const AdherantHome = () => {
+
+    const AdminHome = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const navigate = useNavigate(); // Déclarer le hook de navigation
+    const navigate = useNavigate();
 
     // Fonction de déconnexion
     const handleLogout = () => {
-        // Supprimer les informations de session (par exemple, localStorage)
         localStorage.removeItem("userSession");
-
-        // Redirection vers la page de connexion
         navigate("/", { replace: true });
     };
+
 
     return (
         <div className={`dashboard-container ${sidebarOpen ? "sidebar-expanded" : ""}`}>
@@ -26,15 +25,16 @@ const AdherantHome = () => {
                 <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
             </nav>
 
+
             {/* Sidebar */}
             <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
                 <ul className="sidebar-menu">
-                    <li><Link to="/AdherantHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link></li>
-                    <li><Link to="/EquipmentDisponible"><FaCogs /><span>Équipements Disponibles</span></Link></li>
-                    <li><Link to="/suivi-demandes"><FaClipboardList /><span>Suivi des Demandes</span></Link></li>
-                    <li><Link to="/notifications"><FaBell /><span>Notifications</span></Link></li>
-                    
+                    <li><Link to="/AdminHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link></li>
+                    <li><Link to="/GererUtilisateurs"><FaUsers /><span>Gérer les Utilisateurs</span></Link></li>
+                    <li><Link to="/GererAdherants"><FaUserCog /><span>Gérer les Adhérents</span></Link></li>
+                    <li><Link to="/Notifications"><FaBell /><span>Notifications</span></Link></li>
                 </ul>
+
 
                 {/* Section en bas du sidebar */}
                 <br></br><br></br><br></br><br></br><br></br>
@@ -54,21 +54,23 @@ const AdherantHome = () => {
                 </div>
             </aside>
 
+
             {/* Contenu principal */}
             <main className="content">
-                <h2>Bienvenue, Adhérent</h2>
+                <h2>Bienvenue, Admin</h2>
                 <div className="dashboard-cards">
                     <div className="card">
-                        <h3>Équipements Disponibles</h3>
-                        <p>50 disponibles</p>
+                        <h3>Utilisateurs</h3>
+                        <p>150 utilisateurs</p>
                     </div>
                     <div className="card">
-                        <h3>Demandes en cours</h3>
-                        <p>3 en attente</p>
+                        <h3>Adhérents</h3>
+                        <p>50 adhérents</p>
                     </div>
+                   
                     <div className="card">
                         <h3>Notifications</h3>
-                        <p>2 nouvelles</p>
+                        <p>5 nouvelles</p>
                     </div>
                 </div>
             </main>
@@ -76,4 +78,4 @@ const AdherantHome = () => {
     );
 };
 
-export default AdherantHome;
+export default AdminHome;

@@ -7,6 +7,8 @@ import Equipments from './components/Equipments';
 import AdherantHome from './components/AdherantHome';
 import EquipmentDisponible from './components/EquipmentDisponible';
 import GestionDemandes from './components/GestionDemandes';
+import AdminHome from './components/AdminHome';
+import GererUtilisateurs from './components/GererUtilisateurs';
 
 function App() {
     return (
@@ -19,6 +21,8 @@ function App() {
                 <Route path="/Equipments" element={<Equipments />} />
                 <Route path="/EquipmentDisponible" element={<EquipmentDisponible />} />
                 <Route path="/GestionDemandes" element={<GestionDemandes />} />
+                <Route path="/AdminHome" element={<AdminHome />} />
+                <Route path="/GererUtilisateurs" element={<GererUtilisateurs />} />
             </Routes>
         </Router>
     );
