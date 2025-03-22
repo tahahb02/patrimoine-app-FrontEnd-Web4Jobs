@@ -16,20 +16,14 @@ export default function LoginPage() {
     e.preventDefault();
     setErrorMessage(""); // Réinitialiser les erreurs
 
-    // Vérification des utilisateurs fixes (Responsable et Directeur)
-    if (email === "responsable@yool.com" && password === "responsable") {
-      localStorage.setItem("userRole", "RESPONSABLE");
-      navigate("/ResponsableHome");
+    // Vérification de l'admin statique
+    if (email === "admin@gmail.com" && password === "admin") {
+      localStorage.setItem("userRole", "ADMIN");
+      navigate("/AdminHome");
       return;
     }
 
-    if (email === "directeur@yool.com" && password === "directeur") {
-      localStorage.setItem("userRole", "DIRECTEUR");
-      navigate("/directeur");
-      return;
-    }
-
-    // Vérification des adhérents via l'API
+    // Vérification des autres utilisateurs via l'API
     try {
       const response = await fetch("http://localhost:8080/api/auth/login", {
         method: "POST",
@@ -50,15 +44,26 @@ export default function LoginPage() {
 
       console.log("Connexion réussie : ", data);
 
-      // Redirection uniquement pour les adhérents
-      if (data.role === "ADHERANT") {
-        navigate("/adherant");
-      } else {
-        setErrorMessage("Accès refusé. Seuls les adhérents peuvent se connecter ici.");
+      // Redirection en fonction du rôle
+      switch (data.role) {
+        case "ADHERANT":
+          navigate("/AdherantHome");
+          break;
+        case "RESPONSABLE":
+          navigate("/ResponsableHome");
+          break;
+        case "DIRECTEUR":
+          navigate("/DirecteurHome");
+          break;
+        case "ADMIN":
+          navigate("/AdminHome");
+          break;
+        default:
+          setErrorMessage("Accès refusé. Rôle non reconnu.");
       }
     } catch (error) {
       console.error("Erreur lors de la connexion :", error);
-      setErrorMessage(error.message);
+      setErrorMessage("Email ou mot de passe incorrect.");
     }
   };
 

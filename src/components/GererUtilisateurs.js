@@ -182,6 +182,9 @@ const GererUtilisateurs = () => {
         </ul>
 
         {/* Section en bas du sidebar */}
+        <br></br><br></br><br></br><br></br><br></br>
+        <br></br><br></br><br></br><br></br><br></br>
+        <br></br><br></br><br></br><br></br><br></br>
         <div className="sidebar-bottom">
           <ul>
             <li><Link to="/account"><FaUser /><span>Compte</span></Link></li>
