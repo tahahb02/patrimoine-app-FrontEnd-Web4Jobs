@@ -10,7 +10,7 @@ import {
   FaSignOutAlt,
   FaEye,
 } from "react-icons/fa";
-
+import "../styles/SuiviDemandeAdherant.css";
 
 const API_URL = "http://localhost:8080/api/demandes"; // URL de l'API Spring Boot
 
