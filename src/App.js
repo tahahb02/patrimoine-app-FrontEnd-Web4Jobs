@@ -9,6 +9,7 @@ import EquipmentDisponible from './components/EquipmentDisponible';
 import GestionDemandes from './components/GestionDemandes';
 import AdminHome from './components/AdminHome';
 import GererUtilisateurs from './components/GererUtilisateurs';
+import SuiviDemandeAdherant from './components/SuiviDemandeAdherant';
 
 function App() {
     return (
@@ -23,6 +24,7 @@ function App() {
                 <Route path="/GestionDemandes" element={<GestionDemandes />} />
                 <Route path="/AdminHome" element={<AdminHome />} />
                 <Route path="/GererUtilisateurs" element={<GererUtilisateurs />} />
+                <Route path="/SuiviDemandeAdherant" element={<SuiviDemandeAdherant />} />
             </Routes>
         </Router>
     );

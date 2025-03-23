@@ -31,7 +31,7 @@ const AdherantHome = () => {
                 <ul className="sidebar-menu">
                     <li><Link to="/AdherantHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link></li>
                     <li><Link to="/EquipmentDisponible"><FaCogs /><span>Équipements Disponibles</span></Link></li>
-                    <li><Link to="/suivi-demandes"><FaClipboardList /><span>Suivi des Demandes</span></Link></li>
+                    <li><Link to="/SuiviDemandeAdherant"><FaClipboardList /><span>Suivi des Demandes</span></Link></li>
                     <li><Link to="/notifications"><FaBell /><span>Notifications</span></Link></li>
                     
                 </ul>
