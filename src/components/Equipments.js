@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt, FaPlus, FaEdit, FaTrash, FaHome, FaSearch } from "react-icons/fa";
-import "../styles/Equipments.css";
+
 
 const API_URL = "http://localhost:8080/api/equipments"; // URL de l'API Spring Boot
 

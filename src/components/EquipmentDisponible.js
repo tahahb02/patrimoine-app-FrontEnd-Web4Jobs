@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt, FaSearch } from "react-icons/fa";
 import "../styles/EquipmentDisponible.css";
-
-const API_URL = "http://localhost:8080/api/equipments"; // URL de l'API Spring Boot
 
 const EquipmentDisponible = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -15,35 +13,50 @@ const EquipmentDisponible = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState(null);
   const [requestForm, setRequestForm] = useState({
-    equipmentId: "",
-    equipmentName: "",
-    equipmentCategory: "",
-    equipmentCenter: "",
     startDate: "",
     endDate: "",
-    remarks: "",
-    firstName: "", // Nouveau champ
-    lastName: "",  // Nouveau champ
-    phoneNumber: "", // Nouveau champ
+    remarks: ""
   });
-  const [isBlurred, setIsBlurred] = useState(false); // État pour l'effet flou
-
-  // États pour la pagination
+  const [isBlurred, setIsBlurred] = useState(false);
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [activeSection, setActiveSection] = useState("request"); // Par défaut, la section demande est ouverte
+  const navigate = useNavigate();
 
-  // Listes des catégories et centres prédéfinis
   const [categories] = useState(["PC Portable", "PC Bureau", "Bureautique", "Imprimante"]);
   const [centers] = useState(["A", "B", "C"]);
 
-  // Charger les équipements au démarrage
   useEffect(() => {
-    fetchEquipments();
-  }, []);
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      navigate("/login");
+      return;
+    }
+
+    // Charger les données utilisateur
+    fetch(`http://localhost:8080/api/utilisateurs/${userId}`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Erreur lors du chargement des données utilisateur");
+        }
+        return response.json();
+      })
+      .then(data => {
+        setUserData(data);
+        fetchEquipments();
+      })
+      .catch(error => {
+        setError(error.message);
+        setLoading(false);
+      });
+  }, [navigate]);
 
   const fetchEquipments = async () => {
     try {
-      const response = await fetch(API_URL, {
+      const response = await fetch("http://localhost:8080/api/equipments", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -57,13 +70,18 @@ const EquipmentDisponible = () => {
 
       const data = await response.json();
       setEquipments(data);
+      setLoading(false);
     } catch (error) {
       console.error("Erreur lors du chargement des équipements:", error);
-      alert(`Erreur lors du chargement des équipements: ${error.message}`);
+      setError(`Erreur lors du chargement des équipements: ${error.message}`);
+      setLoading(false);
     }
   };
 
-  // Filtrer les équipements en fonction du terme de recherche et des filtres
+  const toggleSection = (section) => {
+    setActiveSection(activeSection === section ? null : section);
+  };
+
   const filteredEquipments = equipments.filter((equipment) => {
     const matchesSearch =
       equipment.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -80,54 +98,36 @@ const EquipmentDisponible = () => {
     return matchesSearch && matchesCategory && matchesCenter;
   });
 
-  // Calcul des équipements à afficher pour la page actuelle
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentEquipments = filteredEquipments.slice(indexOfFirstItem, indexOfLastItem);
 
-  // Changer de page
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  // Ouvrir le modal de demande d'équipement
   const handleRequestEquipment = (equipment) => {
     setSelectedEquipment(equipment);
     setRequestForm({
-      equipmentId: equipment.id,
-      equipmentName: equipment.name,
-      equipmentCategory: equipment.category,
-      equipmentCenter: equipment.center,
       startDate: "",
       endDate: "",
-      remarks: "",
-      firstName: "", // Initialiser les nouveaux champs
-      lastName: "",
-      phoneNumber: "",
+      remarks: ""
     });
     setShowRequestModal(true);
-    setIsBlurred(true); // Activer l'effet flou
+    setIsBlurred(true);
+    setActiveSection("request"); // Ouvrir la section demande par défaut
   };
 
-  // Ouvrir le modal des détails de l'équipement
   const handleViewDetails = (equipment) => {
     setSelectedEquipment(equipment);
     setShowDetailsModal(true);
-    setIsBlurred(true); // Activer l'effet flou
+    setIsBlurred(true);
   };
 
-  // Fermer les modals
   const closeModal = () => {
     setShowRequestModal(false);
     setShowDetailsModal(false);
-    setIsBlurred(false); // Désactiver l'effet flou
+    setIsBlurred(false);
   };
 
-  // Gérer les changements dans le formulaire de demande
-  const handleRequestFormChange = (e) => {
-    const { name, value } = e.target;
-    setRequestForm({ ...requestForm, [name]: value });
-  };
-
-  // Soumettre la demande d'équipement
   const handleSubmitRequest = async (e) => {
     e.preventDefault();
   
@@ -135,22 +135,30 @@ const EquipmentDisponible = () => {
       alert("Veuillez spécifier les dates de début et de fin.");
       return;
     }
+
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      navigate("/login");
+      return;
+    }
   
     try {
-      const response = await fetch("http://localhost:8080/api/demandes/soumettre", {
+      setLoading(true);
+      const response = await fetch(`http://localhost:8080/api/demandes/soumettre/${userId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          idEquipement: requestForm.equipmentId,
-          nomEquipement: requestForm.equipmentName,
-          categorieEquipement: requestForm.equipmentCategory,
-          centreEquipement: requestForm.equipmentCenter,
-          prenom: requestForm.firstName,
-          nom: requestForm.lastName,
-          numeroTelephone: requestForm.phoneNumber,
+          idEquipement: selectedEquipment.id,
+          nomEquipement: selectedEquipment.name,
+          categorieEquipement: selectedEquipment.category,
+          centreEquipement: selectedEquipment.center,
           dateDebut: requestForm.startDate,
           dateFin: requestForm.endDate,
           remarques: requestForm.remarks,
+          nom: userData.nom,
+          prenom: userData.prenom,
+          numeroTelephone: userData.phone,
+          email: userData.email
         }),
       });
   
@@ -159,18 +167,49 @@ const EquipmentDisponible = () => {
         closeModal();
       } else {
         const errorData = await response.json();
-        alert(`Erreur lors de la soumission de la demande: ${errorData.message}`);
+        throw new Error(errorData.message || "Erreur lors de la soumission");
       }
     } catch (error) {
-      console.error("Erreur lors de la soumission de la demande:", error);
-      alert("Erreur réseau. Veuillez réessayer.");
+      setError(error.message);
+    } finally {
+      setLoading(false);
     }
   };
-  
+
+  if (loading) {
+    return (
+      <div className="dashboard-container">
+        <nav className="navbar">
+          <div className="menu-icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            {sidebarOpen ? <FaTimes /> : <FaBars />}
+          </div>
+          <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
+        </nav>
+        <div className="content">
+          <div className="loading">Chargement en cours...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="dashboard-container">
+        <nav className="navbar">
+          <div className="menu-icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            {sidebarOpen ? <FaTimes /> : <FaBars />}
+          </div>
+          <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
+        </nav>
+        <div className="content">
+          <div className="error">Erreur: {error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`dashboard-container ${sidebarOpen ? "sidebar-expanded" : ""}`}>
-      {/* Navbar */}
       <nav className="navbar">
         <div className="menu-icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
           {sidebarOpen ? <FaTimes /> : <FaBars />}
@@ -178,7 +217,6 @@ const EquipmentDisponible = () => {
         <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
       </nav>
 
-      {/* Sidebar */}
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <ul className="sidebar-menu">
           <li><Link to="/AdherantHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link></li>
@@ -187,10 +225,6 @@ const EquipmentDisponible = () => {
           <li><Link to="/notifications"><FaBell /><span>Notifications</span></Link></li>
         </ul>
 
-        {/* Section en bas du sidebar */}
-                <br></br><br></br><br></br><br></br><br></br>
-                <br></br><br></br><br></br><br></br><br></br>
-                <br></br><br></br><br></br><br></br><br></br>
         <div className="sidebar-bottom">
           <ul>
             <li><Link to="/account"><FaUser /><span>Compte</span></Link></li>
@@ -199,13 +233,10 @@ const EquipmentDisponible = () => {
         </div>
       </aside>
 
-      {/* Contenu principal */}
       <main className={`content ${isBlurred ? "blur-background" : ""}`}>
         <h2>Équipements Disponibles</h2>
 
-        {/* Barre de recherche et filtres */}
         <div className="search-and-filters">
-          {/* Barre de recherche */}
           <div className="search-bar">
             <FaSearch className="search-icon" />
             <input
@@ -216,7 +247,6 @@ const EquipmentDisponible = () => {
             />
           </div>
 
-          {/* Filtres */}
           <div className="filters-container">
             <select
               className="filter-select"
@@ -244,7 +274,6 @@ const EquipmentDisponible = () => {
           </div>
         </div>
 
-        {/* Grille des cartes */}
         <div className="equipment-grid">
           {currentEquipments.map((equipment) => (
             <div key={equipment.id} className="equipment-card">
@@ -266,13 +295,18 @@ const EquipmentDisponible = () => {
           ))}
         </div>
 
-        {/* Pagination */}
         <div className="pagination">
-          <button onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1}>
+          <button 
+            onClick={() => paginate(currentPage - 1)} 
+            disabled={currentPage === 1}
+          >
             Précédent
           </button>
           <span>Page {currentPage}</span>
-          <button onClick={() => paginate(currentPage + 1)} disabled={indexOfLastItem >= filteredEquipments.length}>
+          <button 
+            onClick={() => paginate(currentPage + 1)} 
+            disabled={indexOfLastItem >= filteredEquipments.length}
+          >
             Suivant
           </button>
         </div>
@@ -286,90 +320,134 @@ const EquipmentDisponible = () => {
               &times;
             </button>
             <h3>Demander un équipement</h3>
+            
             <form onSubmit={handleSubmitRequest}>
-              <div className="form-group">
-                <label>Nom de l'équipement</label>
-                <input
-                  type="text"
-                  value={requestForm.equipmentName}
-                  readOnly
-                />
+              <div className="accordion-container">
+                {/* Section Équipement */}
+                <div className="accordion-section">
+                  <div 
+                    className={`accordion-header ${activeSection === 'equipment' ? 'active' : ''}`}
+                    onClick={() => toggleSection('equipment')}
+                  >
+                    <span>📋 Informations sur l'équipement</span>
+                  </div>
+                  <div className={`accordion-content ${activeSection === 'equipment' ? 'show' : ''}`}>
+                    <div className="form-group">
+                      <label>Nom de l'équipement</label>
+                      <input
+                        type="text"
+                        value={selectedEquipment?.name || ""}
+                        readOnly
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Catégorie</label>
+                      <input
+                        type="text"
+                        value={selectedEquipment?.category || ""}
+                        readOnly
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Centre</label>
+                      <input
+                        type="text"
+                        value={selectedEquipment?.center || ""}
+                        readOnly
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Section Utilisateur */}
+                <div className="accordion-section">
+                  <div 
+                    className={`accordion-header ${activeSection === 'user' ? 'active' : ''}`}
+                    onClick={() => toggleSection('user')}
+                  >
+                    <span>👤 Informations personnelles</span>
+                  </div>
+                  <div className={`accordion-content ${activeSection === 'user' ? 'show' : ''}`}>
+                    <div className="form-group">
+                      <label>Nom</label>
+                      <input
+                        type="text"
+                        value={userData?.nom || ""}
+                        readOnly
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Prénom</label>
+                      <input
+                        type="text"
+                        value={userData?.prenom || ""}
+                        readOnly
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Email</label>
+                      <input
+                        type="email"
+                        value={userData?.email || ""}
+                        readOnly
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Téléphone</label>
+                      <input
+                        type="text"
+                        value={userData?.phone || ""}
+                        readOnly
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Section Demande */}
+                <div className="accordion-section">
+                  <div 
+                    className={`accordion-header ${activeSection === 'request' ? 'active' : ''}`}
+                    onClick={() => toggleSection('request')}
+                  >
+                    <span>📅 Détails de la demande</span>
+                  </div>
+                  <div className={`accordion-content ${activeSection === 'request' ? 'show' : ''}`}>
+                    <div className="form-group">
+                      <label>Date et heure de début *</label>
+                      <input
+                        type="datetime-local"
+                        name="startDate"
+                        value={requestForm.startDate}
+                        onChange={(e) => setRequestForm({...requestForm, startDate: e.target.value})}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Date et heure de fin *</label>
+                      <input
+                        type="datetime-local"
+                        name="endDate"
+                        value={requestForm.endDate}
+                        onChange={(e) => setRequestForm({...requestForm, endDate: e.target.value})}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Remarques</label>
+                      <textarea
+                        name="remarks"
+                        value={requestForm.remarks}
+                        onChange={(e) => setRequestForm({...requestForm, remarks: e.target.value})}
+                        placeholder="Facultatif"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="form-group">
-                <label>Catégorie</label>
-                <input
-                  type="text"
-                  value={requestForm.equipmentCategory}
-                  readOnly
-                />
-              </div>
-              <div className="form-group">
-                <label>Centre</label>
-                <input
-                  type="text"
-                  value={requestForm.equipmentCenter}
-                  readOnly
-                />
-              </div>
-              <div className="form-group">
-                <label>Nom</label>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={requestForm.lastName}
-                  onChange={handleRequestFormChange}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Prénom</label>
-                <input
-                  type="text"
-                  name="firstName"
-                  value={requestForm.firstName}
-                  onChange={handleRequestFormChange}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Numéro de téléphone</label>
-                <input
-                  type="tel"
-                  name="phoneNumber"
-                  value={requestForm.phoneNumber}
-                  onChange={handleRequestFormChange}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Date et heure de début</label>
-                <input
-                  type="datetime-local"
-                  name="startDate"
-                  value={requestForm.startDate}
-                  onChange={handleRequestFormChange}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Date et heure de fin</label>
-                <input
-                  type="datetime-local"
-                  name="endDate"
-                  value={requestForm.endDate}
-                  onChange={handleRequestFormChange}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Remarques</label>
-                <textarea
-                  name="remarks"
-                  value={requestForm.remarks}
-                  onChange={handleRequestFormChange}
-                />
-              </div>
-              <button type="submit">Soumettre la demande</button>
+              
+              <button type="submit" disabled={loading} className="submit-button">
+                {loading ? "Envoi en cours..." : "Soumettre la demande"}
+              </button>
             </form>
           </div>
         </div>
@@ -384,12 +462,26 @@ const EquipmentDisponible = () => {
             </button>
             <h3>Détails de l'équipement</h3>
             {selectedEquipment && (
-              <div>
-                <img src={selectedEquipment.imageUrl || "/images/pc.jpg"} alt="Équipement" style={{ width: "200px", height: "200px" }} />
+              <div className="details-content">
+                <img 
+                  src={selectedEquipment.imageUrl || "/images/pc.jpg"} 
+                  alt="Équipement" 
+                  style={{ width: "100%", maxHeight: "200px", objectFit: "contain", marginBottom: "15px" }}
+                />
                 <p><strong>Nom:</strong> {selectedEquipment.name}</p>
                 <p><strong>Catégorie:</strong> {selectedEquipment.category}</p>
                 <p><strong>Centre:</strong> {selectedEquipment.center}</p>
                 <p><strong>Description:</strong> {selectedEquipment.description}</p>
+                {selectedEquipment.specifications && (
+                  <div>
+                    <h4 style={{ margin: "15px 0 10px", color: "#4a148c" }}>Spécifications techniques:</h4>
+                    <ul style={{ paddingLeft: "20px" }}>
+                      {Object.entries(selectedEquipment.specifications).map(([key, value]) => (
+                        <li key={key} style={{ marginBottom: "5px" }}><strong>{key}:</strong> {value}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
           </div>
