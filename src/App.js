@@ -10,6 +10,7 @@ import GestionDemandes from './components/GestionDemandes';
 import AdminHome from './components/AdminHome';
 import GererUtilisateurs from './components/GererUtilisateurs';
 import SuiviDemandeAdherant from './components/SuiviDemandeAdherant';
+import Account from './components/Account';
 
 function App() {
     return (
@@ -25,6 +26,7 @@ function App() {
                 <Route path="/AdminHome" element={<AdminHome />} />
                 <Route path="/GererUtilisateurs" element={<GererUtilisateurs />} />
                 <Route path="/SuiviDemandeAdherant" element={<SuiviDemandeAdherant />} />
+                <Route path="/Account" element={<Account />} />
             </Routes>
         </Router>
     );

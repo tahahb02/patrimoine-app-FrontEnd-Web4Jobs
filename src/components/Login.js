@@ -9,21 +9,15 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-  const [errorMessage, setErrorMessage] = useState(""); // Gestion des erreurs
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrorMessage(""); // Réinitialiser les erreurs
+    setErrorMessage("");
+    setIsLoading(true);
 
-    // Vérification de l'admin statique
-    if (email === "admin@gmail.com" && password === "admin") {
-      localStorage.setItem("userRole", "ADMIN");
-      navigate("/AdminHome");
-      return;
-    }
-
-    // Vérification des autres utilisateurs via l'API
     try {
       const response = await fetch("http://localhost:8080/api/auth/login", {
         method: "POST",
@@ -37,14 +31,16 @@ export default function LoginPage() {
         throw new Error(data.message || "Email ou mot de passe incorrect.");
       }
 
-      // Stocker les infos utilisateur
+      // Stocker toutes les informations utilisateur
       localStorage.setItem("userRole", data.role);
       localStorage.setItem("userId", data.id);
       localStorage.setItem("userEmail", data.email);
+      localStorage.setItem("userNom", data.nom);
+      localStorage.setItem("userPrenom", data.prenom);
+      localStorage.setItem("userPhone", data.phone || "");
+      localStorage.setItem("userCity", data.city || "");
 
-      console.log("Connexion réussie : ", data);
-
-      // Redirection en fonction du rôle
+      // Redirection basée sur le rôle
       switch (data.role) {
         case "ADHERANT":
           navigate("/AdherantHome");
@@ -62,8 +58,10 @@ export default function LoginPage() {
           setErrorMessage("Accès refusé. Rôle non reconnu.");
       }
     } catch (error) {
-      console.error("Erreur lors de la connexion :", error);
-      setErrorMessage("Email ou mot de passe incorrect.");
+      console.error("Erreur de connexion:", error);
+      setErrorMessage(error.message || "Une erreur est survenue lors de la connexion.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -112,8 +110,12 @@ export default function LoginPage() {
 
             {errorMessage && <p className="error-message">{errorMessage}</p>}
 
-            <button type="submit" className="auth-button">
-              Se connecter
+            <button 
+              type="submit" 
+              className="auth-button"
+              disabled={isLoading}
+            >
+              {isLoading ? "Connexion en cours..." : "Se connecter"}
             </button>
           </form>
 
