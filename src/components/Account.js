@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaUser, FaEdit, FaSave, FaTimes, FaArrowLeft, FaCamera } from "react-icons/fa";
-
+import "../styles/Account.css";
 
 const Account = () => {
   const [userData, setUserData] = useState(null);
