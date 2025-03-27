@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { Pagination } from 'antd';
 import {
   FaBars,
   FaTimes,
@@ -12,10 +13,11 @@ import {
   FaSearch,
   FaEdit,
   FaTrash,
+  FaEye
 } from "react-icons/fa";
 import "../styles/GererUtilisateurs.css";
 
-const API_URL = "http://localhost:8080/api/utilisateurs"; // URL de l'API pour les utilisateurs
+const API_URL = "http://localhost:8080/api/utilisateurs";
 
 const GererUtilisateurs = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -24,6 +26,9 @@ const GererUtilisateurs = () => {
   const [selectedRole, setSelectedRole] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [selectedUtilisateur, setSelectedUtilisateur] = useState(null);
+  const [showDetails, setShowDetails] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(8);
   const [formData, setFormData] = useState({
     nom: "",
     prenom: "",
@@ -34,18 +39,14 @@ const GererUtilisateurs = () => {
     role: "ADHERANT",
   });
 
-  // Charger les utilisateurs au démarrage
   useEffect(() => {
     fetchUtilisateurs();
   }, []);
 
-  // Charger tous les utilisateurs
   const fetchUtilisateurs = async () => {
     try {
       const response = await fetch(API_URL);
-      if (!response.ok) {
-        throw new Error("Erreur lors de la récupération des utilisateurs");
-      }
+      if (!response.ok) throw new Error("Erreur lors de la récupération des utilisateurs");
       const data = await response.json();
       setUtilisateurs(data);
     } catch (error) {
@@ -54,12 +55,11 @@ const GererUtilisateurs = () => {
     }
   };
 
-  // Gérer la recherche
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
+    setCurrentPage(1); // Reset à la première page lors d'une nouvelle recherche
   };
 
-  // Filtrer les utilisateurs
   const filteredUtilisateurs = utilisateurs.filter((utilisateur) => {
     const matchesSearch =
       `${utilisateur.nom} ${utilisateur.prenom} ${utilisateur.email}`
@@ -73,7 +73,22 @@ const GererUtilisateurs = () => {
     return matchesSearch && matchesRole;
   });
 
-  // Ouvrir le modal pour ajouter ou modifier un utilisateur
+  // Pagination
+  const totalUsers = filteredUtilisateurs.length;
+  const paginatedUsers = filteredUtilisateurs.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
+  const handlePageChange = (page, pageSize) => {
+    setCurrentPage(page);
+    setPageSize(pageSize);
+  };
+
+  const toggleDetails = (id) => {
+    setShowDetails(showDetails === id ? null : id);
+  };
+
   const handleOpenModal = (utilisateur = null) => {
     setSelectedUtilisateur(utilisateur);
     if (utilisateur) {
@@ -92,19 +107,16 @@ const GererUtilisateurs = () => {
     setShowModal(true);
   };
 
-  // Fermer le modal
   const closeModal = () => {
     setShowModal(false);
     setSelectedUtilisateur(null);
   };
 
-  // Gérer les changements dans le formulaire
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  // Soumettre le formulaire (ajouter ou modifier un utilisateur)
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -135,7 +147,6 @@ const GererUtilisateurs = () => {
     }
   };
 
-  // Supprimer un utilisateur
   const handleDelete = async (id) => {
     if (window.confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur ?")) {
       try {
@@ -229,6 +240,7 @@ const GererUtilisateurs = () => {
           <table className="utilisateurs-table">
             <thead>
               <tr>
+                <th>Photo</th>
                 <th>Nom</th>
                 <th>Prénom</th>
                 <th>Email</th>
@@ -239,32 +251,100 @@ const GererUtilisateurs = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredUtilisateurs.map((utilisateur) => (
-                <tr key={utilisateur.id}>
-                  <td>{utilisateur.nom}</td>
-                  <td>{utilisateur.prenom}</td>
-                  <td>{utilisateur.email}</td>
-                  <td>{utilisateur.phone}</td>
-                  <td>{utilisateur.city}</td>
-                  <td>{utilisateur.role}</td>
-                  <td>
-                    <button
-                      className="edit-button"
-                      onClick={() => handleOpenModal(utilisateur)}
-                    >
-                      <FaEdit />
-                    </button>
-                    <button
-                      className="delete-button"
-                      onClick={() => handleDelete(utilisateur.id)}
-                    >
-                      <FaTrash />
-                    </button>
-                  </td>
-                </tr>
+              {paginatedUsers.map((utilisateur) => (
+                <React.Fragment key={utilisateur.id}>
+                  <tr>
+                    <td>
+                      {utilisateur.profileImage ? (
+                        <img 
+                          src={`data:image/jpeg;base64,${utilisateur.profileImage}`} 
+                          alt="Profile" 
+                          className="profile-image"
+                        />
+                      ) : (
+                        <div className="profile-placeholder">
+                          <FaUser />
+                        </div>
+                      )}
+                    </td>
+                    <td>{utilisateur.nom}</td>
+                    <td>{utilisateur.prenom}</td>
+                    <td>{utilisateur.email}</td>
+                    <td>{utilisateur.phone}</td>
+                    <td>{utilisateur.city}</td>
+                    <td>{utilisateur.role}</td>
+                    <td>
+                      <div className="action-buttons">
+                        <button
+                          className="details-button"
+                          onClick={() => toggleDetails(utilisateur.id)}
+                        >
+                          <FaEye />
+                        </button>
+                        <button
+                          className="edit-button"
+                          onClick={() => handleOpenModal(utilisateur)}
+                        >
+                          <FaEdit />
+                        </button>
+                        <button
+                          className="delete-button"
+                          onClick={() => handleDelete(utilisateur.id)}
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {showDetails === utilisateur.id && (
+                    <tr className="details-row">
+                      <td colSpan="8">
+                        <div className="user-details-card">
+                          <div className="details-header">
+                            <h3>Détails de l'utilisateur</h3>
+                          </div>
+                          <div className="details-body">
+                            <div className="details-image">
+                              {utilisateur.profileImage ? (
+                                <img 
+                                  src={`data:image/jpeg;base64,${utilisateur.profileImage}`} 
+                                  alt="Profile" 
+                                  className="profile-image-large"
+                                />
+                              ) : (
+                                <div className="profile-placeholder-large">
+                                  <FaUser />
+                                </div>
+                              )}
+                            </div>
+                            <div className="details-info">
+                              <p><strong>Nom complet:</strong> {utilisateur.prenom} {utilisateur.nom}</p>
+                              <p><strong>Email:</strong> {utilisateur.email}</p>
+                              <p><strong>Téléphone:</strong> {utilisateur.phone}</p>
+                              <p><strong>Ville:</strong> {utilisateur.city}</p>
+                              <p><strong>Rôle:</strong> {utilisateur.role}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination */}
+        <div className="pagination-container">
+          <Pagination
+            current={currentPage}
+            pageSize={pageSize}
+            total={totalUsers}
+            onChange={handlePageChange}
+            showSizeChanger={false}
+            showQuickJumper
+          />
         </div>
 
         {/* Modal pour ajouter/modifier un utilisateur */}
@@ -367,4 +447,4 @@ const GererUtilisateurs = () => {
   );
 };
 
-export default GererUtilisateurs;
+export default GererUtilisateurs; 
