@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom"; // Importation de useNavigate
-import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt } from "react-icons/fa";
+import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt,FaHistory } from "react-icons/fa";
 import "../styles/ResponsableHome.css";
 
 const ResponsableHome = () => {
@@ -38,6 +38,9 @@ const ResponsableHome = () => {
                     <li>
                         <Link to="/GestionDemandes"><FaClipboardList /><span>Gestion des Demandes</span></Link>
                     </li>
+                     <li>
+                        <Link to="/HistoriqueDemandes"><FaHistory /><span>Historique des Demandes</span></Link>
+                    </li>
                     <li>
                         <Link to="/Notifications"><FaBell /><span>Notifications</span></Link>
                     </li>
@@ -46,7 +49,7 @@ const ResponsableHome = () => {
                 {/* Section en bas du sidebar */}
                 <br></br><br></br><br></br><br></br><br></br>
                 <br></br><br></br><br></br><br></br><br></br>
-                <br></br><br></br><br></br><br></br><br></br>
+                <br></br>
                 <div className="sidebar-bottom">
                     <ul>
                         <li>

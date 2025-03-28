@@ -135,7 +135,7 @@ const EquipmentDisponible = () => {
       alert("Veuillez spécifier les dates de début et de fin.");
       return;
     }
-
+  
     const userId = localStorage.getItem("userId");
     if (!userId) {
       navigate("/login");
@@ -154,11 +154,8 @@ const EquipmentDisponible = () => {
           centreEquipement: selectedEquipment.center,
           dateDebut: requestForm.startDate,
           dateFin: requestForm.endDate,
-          remarques: requestForm.remarks,
-          nom: userData.nom,
-          prenom: userData.prenom,
-          numeroTelephone: userData.phone,
-          email: userData.email
+          remarques: requestForm.remarks
+          // Les infos utilisateur sont automatiquement remplies par le backend
         }),
       });
   
@@ -175,6 +172,7 @@ const EquipmentDisponible = () => {
       setLoading(false);
     }
   };
+  
 
   if (loading) {
     return (

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt, FaPlus, FaEdit, FaTrash, FaHome, FaSearch } from "react-icons/fa";
+import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt, FaPlus, FaEdit, FaTrash, FaHome, FaSearch ,FaHistory} from "react-icons/fa";
 import "../styles/Equipments.css";
 
 const API_URL = "http://localhost:8080/api/equipments"; // URL de l'API Spring Boot
@@ -260,13 +260,14 @@ const Equipments = () => {
           <li><Link to="/ResponsableHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link></li>
           <li><Link to="/Equipments"><FaCogs /><span>Gestion des Équipements</span></Link></li>
           <li><Link to="/GestionDemandes"><FaClipboardList /><span>Gestion des Demandes</span></Link></li>
+            <li><Link to="/HistoriqueDemandes"><FaHistory /><span>Historique des Demandes</span></Link></li>
           <li><Link to="/notifications"><FaBell /><span>Notifications</span></Link></li>
         </ul>
 
         {/* Section en bas du sidebar */}
                 <br></br><br></br><br></br><br></br><br></br>
                 <br></br><br></br><br></br><br></br><br></br>
-                <br></br><br></br><br></br><br></br><br></br>
+                <br></br>
                 
         <div className="sidebar-bottom">
           <ul>
