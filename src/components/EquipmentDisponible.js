@@ -155,7 +155,7 @@ const EquipmentDisponible = () => {
           dateDebut: requestForm.startDate,
           dateFin: requestForm.endDate,
           remarques: requestForm.remarks
-          // Les infos utilisateur sont automatiquement remplies par le backend
+          // On ne passe plus les infos utilisateur ici
         }),
       });
   
