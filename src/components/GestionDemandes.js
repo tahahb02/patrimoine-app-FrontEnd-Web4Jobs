@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import {
-  FaBars,
-  FaTimes,
-  FaTachometerAlt,
-  FaCogs,
-  FaClipboardList,
-  FaBell,
-  FaUser,
-  FaSignOutAlt,
-  FaSearch,
-  FaEye,
-  FaHistory,
+import { 
+  FaBars, 
+  FaTimes, 
+  FaTachometerAlt, 
+  FaCogs, 
+  FaClipboardList, 
+  FaBell, 
+  FaUser, 
+  FaSignOutAlt, 
+  FaSearch, 
+  FaEye, 
+  FaHistory 
 } from "react-icons/fa";
+import { Pagination } from 'antd';
 import "../styles/GestionDemandes.css";
 
 const API_URL = "http://localhost:8080/api/demandes";
@@ -30,6 +31,8 @@ const GestionDemandes = () => {
   const [actionChoisie, setActionChoisie] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedDetails, setSelectedDetails] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20); // 20 demandes par page
 
   useEffect(() => {
     fetchDemandes();
@@ -64,6 +67,17 @@ const GestionDemandes = () => {
       demande.centreEquipement.toLowerCase().includes(searchTerm.toLowerCase())
     );
   });
+
+  // Calcul des demandes à afficher pour la page actuelle
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentDemandes = filteredDemandes.slice(indexOfFirstItem, indexOfLastItem);
+
+  const showTotal = (total) => `Total ${total} demandes`;
+
+  const onChange = (page) => {
+    setCurrentPage(page);
+  };
 
   const handleAction = (demande, action) => {
     setSelectedDemande(demande);
@@ -141,9 +155,9 @@ const GestionDemandes = () => {
             <Link to="/Notifications"><FaBell /><span>Notifications</span></Link>
           </li>
         </ul>
-
-        <br /><br /><br /><br /><br /><br /><br /><br />
-        <br /><br /><br />
+        <br></br><br></br><br></br><br></br><br></br>
+        <br></br><br></br><br></br><br></br><br></br>
+        <br></br>
         <div className="sidebar-bottom">
           <ul>
             <li><Link to="/account"><FaUser /><span>Compte</span></Link></li>
@@ -165,8 +179,6 @@ const GestionDemandes = () => {
               onChange={handleSearch}
             />
           </div>
-
-        
         </div>
 
         <div className="table-container">
@@ -183,7 +195,7 @@ const GestionDemandes = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredDemandes.map((demande) => (
+              {currentDemandes.map((demande) => (
                 <tr key={demande.id}>
                   <td>{demande.nom}</td>
                   <td>{demande.prenom}</td>
@@ -216,6 +228,18 @@ const GestionDemandes = () => {
               ))}
             </tbody>
           </table>
+        </div>
+
+        <div className="pagination-container">
+          <Pagination
+            current={currentPage}
+            total={filteredDemandes.length}
+            pageSize={itemsPerPage}
+            onChange={onChange}
+            showTotal={showTotal}
+            showSizeChanger={false}
+            showQuickJumper
+          />
         </div>
 
         {showModal && (
@@ -260,8 +284,8 @@ const GestionDemandes = () => {
                   <p><strong>Centre :</strong> {selectedDetails.centreEquipement}</p>
                   <p><strong>Équipement :</strong> {selectedDetails.nomEquipement}</p>
                   <p><strong>Catégorie :</strong> {selectedDetails.categorieEquipement}</p>
-                  <p><strong>Date de début :</strong> {new Date(selectedDetails.dateDebut).toLocaleString('fr-FR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}</p>
-                  <p><strong>Date de fin :</strong> {new Date(selectedDetails.dateFin).toLocaleString('fr-FR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}</p>
+                  <p><strong>Date de début :</strong> {new Date(selectedDetails.dateDebut).toLocaleString('fr-FR')}</p>
+                  <p><strong>Date de fin :</strong> {new Date(selectedDetails.dateFin).toLocaleString('fr-FR')}</p>
                   <p><strong>Remarques :</strong> {selectedDetails.remarques}</p>
                   <p><strong>Statut :</strong> {selectedDetails.statut}</p>
                   <p><strong>Commentaire du responsable :</strong> {selectedDetails.commentaireResponsable}</p>

@@ -28,7 +28,7 @@ const GererUtilisateurs = () => {
   const [selectedUtilisateur, setSelectedUtilisateur] = useState(null);
   const [showDetails, setShowDetails] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(8);
+  const [pageSize] = useState(20); // 20 utilisateurs par page
   const [formData, setFormData] = useState({
     nom: "",
     prenom: "",
@@ -57,7 +57,7 @@ const GererUtilisateurs = () => {
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
-    setCurrentPage(1); // Reset à la première page lors d'une nouvelle recherche
+    setCurrentPage(1);
   };
 
   const filteredUtilisateurs = utilisateurs.filter((utilisateur) => {
@@ -73,16 +73,16 @@ const GererUtilisateurs = () => {
     return matchesSearch && matchesRole;
   });
 
-  // Pagination
-  const totalUsers = filteredUtilisateurs.length;
-  const paginatedUsers = filteredUtilisateurs.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
+  // Calcul des utilisateurs à afficher
+  const indexOfLastItem = currentPage * pageSize;
+  const indexOfFirstItem = indexOfLastItem - pageSize;
+  const currentUsers = filteredUtilisateurs.slice(indexOfFirstItem, indexOfLastItem);
 
-  const handlePageChange = (page, pageSize) => {
+  // Fonction pour afficher le total
+  const showTotal = (total) => `Total ${total} utilisateurs`;
+
+  const onChange = (page) => {
     setCurrentPage(page);
-    setPageSize(pageSize);
   };
 
   const toggleDetails = (id) => {
@@ -192,10 +192,6 @@ const GererUtilisateurs = () => {
           </li>
         </ul>
 
-        {/* Section en bas du sidebar */}
-        <br></br><br></br><br></br><br></br><br></br>
-        <br></br><br></br><br></br><br></br><br></br>
-        <br></br><br></br><br></br><br></br><br></br>
         <div className="sidebar-bottom">
           <ul>
             <li><Link to="/account"><FaUser /><span>Compte</span></Link></li>
@@ -251,7 +247,7 @@ const GererUtilisateurs = () => {
               </tr>
             </thead>
             <tbody>
-              {paginatedUsers.map((utilisateur) => (
+              {currentUsers.map((utilisateur) => (
                 <React.Fragment key={utilisateur.id}>
                   <tr>
                     <td>
@@ -335,13 +331,14 @@ const GererUtilisateurs = () => {
           </table>
         </div>
 
-        {/* Pagination */}
+        {/* Pagination avec affichage du total */}
         <div className="pagination-container">
           <Pagination
             current={currentPage}
+            total={filteredUtilisateurs.length}
             pageSize={pageSize}
-            total={totalUsers}
-            onChange={handlePageChange}
+            onChange={onChange}
+            showTotal={showTotal}
             showSizeChanger={false}
             showQuickJumper
           />
@@ -447,4 +444,4 @@ const GererUtilisateurs = () => {
   );
 };
 
-export default GererUtilisateurs; 
+export default GererUtilisateurs;

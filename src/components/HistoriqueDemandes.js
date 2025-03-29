@@ -13,6 +13,7 @@ import {
   FaEye,
   FaHistory,
 } from "react-icons/fa";
+import { Pagination } from 'antd';
 import "../styles/HistoriqueDemandes.css";
 
 const API_URL = "http://localhost:8080/api/demandes";
@@ -22,10 +23,12 @@ const HistoriqueDemandes = () => {
   const [demandes, setDemandes] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filtres, setFiltres] = useState({
-    statut: "TOUS", // Nouveau state pour le filtre par statut
+    statut: "TOUS",
   });
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedDetails, setSelectedDetails] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20); // 20 demandes par page
 
   useEffect(() => {
     fetchHistoriqueDemandes();
@@ -45,24 +48,32 @@ const HistoriqueDemandes = () => {
     setSearchTerm(e.target.value);
   };
 
-  // Gérer les changements dans les filtres
   const handleFiltreChange = (e) => {
     const { name, value } = e.target;
     setFiltres({ ...filtres, [name]: value });
   };
 
   const filteredDemandes = demandes.filter((demande) => {
-    // Filtre par statut
     if (filtres.statut !== "TOUS" && demande.statut !== filtres.statut) {
       return false;
     }
-    // Filtre par recherche globale
     return (
       demande.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
       demande.prenom.toLowerCase().includes(searchTerm.toLowerCase()) ||
       demande.centreEquipement.toLowerCase().includes(searchTerm.toLowerCase())
     );
   });
+
+  // Calcul des demandes à afficher pour la page actuelle
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentDemandes = filteredDemandes.slice(indexOfFirstItem, indexOfLastItem);
+
+  const showTotal = (total) => `Total ${total} demandes`;
+
+  const onChange = (page) => {
+    setCurrentPage(page);
+  };
 
   const handleDetails = (demande) => {
     setSelectedDetails(demande);
@@ -76,7 +87,6 @@ const HistoriqueDemandes = () => {
 
   return (
     <div className={`dashboard-container ${sidebarOpen ? "sidebar-expanded" : ""}`}>
-      {/* Navbar */}
       <nav className="navbar">
         <div className="menu-icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
           {sidebarOpen ? <FaTimes /> : <FaBars />}
@@ -84,7 +94,6 @@ const HistoriqueDemandes = () => {
         <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
       </nav>
 
-      {/* Sidebar */}
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <ul className="sidebar-menu">
           <li>
@@ -103,10 +112,9 @@ const HistoriqueDemandes = () => {
             <Link to="/Notifications"><FaBell /><span>Notifications</span></Link>
           </li>
         </ul>
-
-                <br></br><br></br><br></br><br></br><br></br>
-                <br></br><br></br><br></br><br></br><br></br>
-                <br></br>
+        <br></br><br></br><br></br><br></br><br></br>
+        <br></br><br></br><br></br><br></br><br></br>
+        <br></br>
         <div className="sidebar-bottom">
           <ul>
             <li><Link to="/account"><FaUser /><span>Compte</span></Link></li>
@@ -115,13 +123,10 @@ const HistoriqueDemandes = () => {
         </div>
       </aside>
 
-      {/* Contenu principal */}
       <main className="content">
         <h2>Historique des Demandes</h2>
 
-        {/* Barre de recherche et filtre */}
         <div className="search-and-filter-container">
-          {/* Barre de recherche globale */}
           <div className="search-bar">
             <FaSearch className="search-icon" />
             <input
@@ -132,7 +137,6 @@ const HistoriqueDemandes = () => {
             />
           </div>
 
-          {/* Nouveau filtre de statut */}
           <div className="filtre-group">
             <select
               name="statut"
@@ -146,7 +150,6 @@ const HistoriqueDemandes = () => {
           </div>
         </div>
 
-        {/* Tableau des demandes */}
         <div className="table-container">
           <table className="demandes-table">
             <thead>
@@ -160,7 +163,7 @@ const HistoriqueDemandes = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredDemandes.map((demande) => (
+              {currentDemandes.map((demande) => (
                 <tr key={demande.id}>
                   <td>{demande.nom}</td>
                   <td>{demande.prenom}</td>
@@ -181,7 +184,18 @@ const HistoriqueDemandes = () => {
           </table>
         </div>
 
-        {/* Modal pour afficher les détails de la demande */}
+        <div className="pagination-container">
+          <Pagination
+            current={currentPage}
+            total={filteredDemandes.length}
+            pageSize={itemsPerPage}
+            onChange={onChange}
+            showTotal={showTotal}
+            showSizeChanger={false}
+            showQuickJumper
+          />
+        </div>
+
         {showDetailsModal && (
           <div className="modal-overlay">
             <div className="modal-content">

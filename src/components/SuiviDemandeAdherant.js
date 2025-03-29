@@ -9,6 +9,7 @@ import {
   FaUser,
   FaSignOutAlt,
   FaEye,
+  FaCogs,
 } from "react-icons/fa";
 import "../styles/SuiviDemandeAdherant.css";
 
@@ -73,6 +74,10 @@ const SuiviDemandeAdherant = () => {
           <li>
             <Link to="/AdherantHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
           </li>
+
+          <li>
+            <Link to="/EquipmentDisponible"><FaCogs /><span>Équipements Disponibles</span></Link>
+          </li>
           <li>
             <Link to="/SuiviDemandeAdherant"><FaClipboardList /><span>Suivi des Demandes</span></Link>
           </li>
@@ -81,6 +86,10 @@ const SuiviDemandeAdherant = () => {
           </li>
         </ul>
 
+
+        <br></br><br></br><br></br><br></br><br></br>
+        <br></br><br></br><br></br><br></br><br></br>
+        <br></br><br></br><br></br><br></br><br></br>
         {/* Section en bas du sidebar */}
         <div className="sidebar-bottom">
           <ul>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt, FaSearch } from "react-icons/fa";
+import { Pagination } from 'antd';
 import "../styles/EquipmentDisponible.css";
 
 const EquipmentDisponible = () => {
@@ -22,8 +23,8 @@ const EquipmentDisponible = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
-  const [activeSection, setActiveSection] = useState("request"); // Par défaut, la section demande est ouverte
+  const [itemsPerPage] = useState(12); // Changé à 12 équipements par page
+  const [activeSection, setActiveSection] = useState("request");
   const navigate = useNavigate();
 
   const [categories] = useState(["PC Portable", "PC Bureau", "Bureautique", "Imprimante"]);
@@ -36,7 +37,6 @@ const EquipmentDisponible = () => {
       return;
     }
 
-    // Charger les données utilisateur
     fetch(`http://localhost:8080/api/utilisateurs/${userId}`)
       .then(response => {
         if (!response.ok) {
@@ -98,11 +98,16 @@ const EquipmentDisponible = () => {
     return matchesSearch && matchesCategory && matchesCenter;
   });
 
+  // Calcul des équipements à afficher pour la page actuelle
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentEquipments = filteredEquipments.slice(indexOfFirstItem, indexOfLastItem);
 
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  const showTotal = (total) => `Total ${total} équipements`;
+
+  const onChange = (page) => {
+    setCurrentPage(page);
+  };
 
   const handleRequestEquipment = (equipment) => {
     setSelectedEquipment(equipment);
@@ -113,7 +118,7 @@ const EquipmentDisponible = () => {
     });
     setShowRequestModal(true);
     setIsBlurred(true);
-    setActiveSection("request"); // Ouvrir la section demande par défaut
+    setActiveSection("request");
   };
 
   const handleViewDetails = (equipment) => {
@@ -155,7 +160,6 @@ const EquipmentDisponible = () => {
           dateDebut: requestForm.startDate,
           dateFin: requestForm.endDate,
           remarques: requestForm.remarks
-          // On ne passe plus les infos utilisateur ici
         }),
       });
   
@@ -173,7 +177,6 @@ const EquipmentDisponible = () => {
     }
   };
   
-
   if (loading) {
     return (
       <div className="dashboard-container">
@@ -223,6 +226,9 @@ const EquipmentDisponible = () => {
           <li><Link to="/notifications"><FaBell /><span>Notifications</span></Link></li>
         </ul>
 
+        <br></br><br></br><br></br><br></br><br></br>
+        <br></br><br></br><br></br><br></br><br></br>
+        <br></br><br></br><br></br><br></br><br></br>
         <div className="sidebar-bottom">
           <ul>
             <li><Link to="/account"><FaUser /><span>Compte</span></Link></li>
@@ -293,21 +299,20 @@ const EquipmentDisponible = () => {
           ))}
         </div>
 
-        <div className="pagination">
-          <button 
-            onClick={() => paginate(currentPage - 1)} 
-            disabled={currentPage === 1}
-          >
-            Précédent
-          </button>
-          <span>Page {currentPage}</span>
-          <button 
-            onClick={() => paginate(currentPage + 1)} 
-            disabled={indexOfLastItem >= filteredEquipments.length}
-          >
-            Suivant
-          </button>
+        {/* Pagination Ant Design */}
+        <div className="pagination-container">
+          <Pagination
+            current={currentPage}
+            total={filteredEquipments.length}
+            pageSize={itemsPerPage}
+            onChange={onChange}
+            showTotal={showTotal}
+            showSizeChanger={false}
+            showQuickJumper
+          />
         </div>
+
+        {/* ... (le reste du code avec les modals reste inchangé) */}
       </main>
 
       {/* Modal de demande d'équipement */}
