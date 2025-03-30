@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt, FaSearch } from "react-icons/fa";
+import { 
+  FaBars, 
+  FaTimes, 
+  FaTachometerAlt, 
+  FaCogs, 
+  FaClipboardList, 
+  FaBell, 
+  FaUser, 
+  FaSignOutAlt, 
+  FaSearch, 
+  FaClock 
+} from "react-icons/fa";
 import { Pagination } from 'antd';
 import "../styles/EquipmentDisponible.css";
 
@@ -23,8 +34,9 @@ const EquipmentDisponible = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(12); // Changé à 12 équipements par page
+  const [itemsPerPage] = useState(12);
   const [activeSection, setActiveSection] = useState("request");
+  const [requestSuccess, setRequestSuccess] = useState(false);
   const navigate = useNavigate();
 
   const [categories] = useState(["PC Portable", "PC Bureau", "Bureautique", "Imprimante"]);
@@ -37,22 +49,23 @@ const EquipmentDisponible = () => {
       return;
     }
 
-    fetch(`http://localhost:8080/api/utilisateurs/${userId}`)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error("Erreur lors du chargement des données utilisateur");
-        }
-        return response.json();
-      })
-      .then(data => {
-        setUserData(data);
-        fetchEquipments();
-      })
-      .catch(error => {
-        setError(error.message);
-        setLoading(false);
-      });
+    fetchUserData(userId);
   }, [navigate]);
+
+  const fetchUserData = async (userId) => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/utilisateurs/${userId}`);
+      if (!response.ok) {
+        throw new Error("Erreur lors du chargement des données utilisateur");
+      }
+      const data = await response.json();
+      setUserData(data);
+      fetchEquipments();
+    } catch (error) {
+      setError(error.message);
+      setLoading(false);
+    }
+  };
 
   const fetchEquipments = async () => {
     try {
@@ -60,20 +73,25 @@ const EquipmentDisponible = () => {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-        },
-        credentials: "include",
+          "Authorization": `Bearer ${localStorage.getItem("token") || ''}`
+        }
       });
 
       if (!response.ok) {
-        throw new Error(`Erreur HTTP: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);
       }
 
       const data = await response.json();
-      setEquipments(data);
+      const availableEquipments = Array.isArray(data) 
+        ? data.filter(equip => equip.status === "Disponible" || !equip.status)
+        : [];
+      
+      setEquipments(availableEquipments);
       setLoading(false);
     } catch (error) {
       console.error("Erreur lors du chargement des équipements:", error);
-      setError(`Erreur lors du chargement des équipements: ${error.message}`);
+      setError(error.message);
       setLoading(false);
     }
   };
@@ -82,10 +100,22 @@ const EquipmentDisponible = () => {
     setActiveSection(activeSection === section ? null : section);
   };
 
+  const formatDateTime = (dateTime) => {
+    if (!dateTime) return "Non spécifié";
+    const date = new Date(dateTime);
+    return date.toLocaleString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   const filteredEquipments = equipments.filter((equipment) => {
     const matchesSearch =
-      equipment.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      equipment.description.toLowerCase().includes(searchTerm.toLowerCase());
+      equipment.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      equipment.description?.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesCategory = selectedCategory
       ? equipment.category === selectedCategory
@@ -98,7 +128,6 @@ const EquipmentDisponible = () => {
     return matchesSearch && matchesCategory && matchesCenter;
   });
 
-  // Calcul des équipements à afficher pour la page actuelle
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentEquipments = filteredEquipments.slice(indexOfFirstItem, indexOfLastItem);
@@ -119,6 +148,7 @@ const EquipmentDisponible = () => {
     setShowRequestModal(true);
     setIsBlurred(true);
     setActiveSection("request");
+    setRequestSuccess(false);
   };
 
   const handleViewDetails = (equipment) => {
@@ -141,6 +171,14 @@ const EquipmentDisponible = () => {
       return;
     }
   
+    const startDate = new Date(requestForm.startDate);
+    const endDate = new Date(requestForm.endDate);
+    
+    if (startDate >= endDate) {
+      alert("La date de fin doit être postérieure à la date de début.");
+      return;
+    }
+  
     const userId = localStorage.getItem("userId");
     if (!userId) {
       navigate("/login");
@@ -151,7 +189,10 @@ const EquipmentDisponible = () => {
       setLoading(true);
       const response = await fetch(`http://localhost:8080/api/demandes/soumettre/${userId}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token") || ''}`
+        },
         body: JSON.stringify({
           idEquipement: selectedEquipment.id,
           nomEquipement: selectedEquipment.name,
@@ -163,21 +204,25 @@ const EquipmentDisponible = () => {
         }),
       });
   
-      if (response.ok) {
-        alert("Demande d'équipement soumise avec succès !");
-        closeModal();
-      } else {
+      if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Erreur lors de la soumission");
       }
+
+      const data = await response.json();
+      setRequestSuccess(true);
+      alert(`Demande d'équipement soumise avec succès le ${formatDateTime(data.dateDemande)} !`);
+      fetchEquipments();
     } catch (error) {
+      console.error("Erreur:", error);
       setError(error.message);
+      alert(`Erreur: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
-  
-  if (loading) {
+
+  if (loading && !showRequestModal && !showDetailsModal) {
     return (
       <div className="dashboard-container">
         <nav className="navbar">
@@ -193,7 +238,7 @@ const EquipmentDisponible = () => {
     );
   }
 
-  if (error) {
+  if (error && !showRequestModal && !showDetailsModal) {
     return (
       <div className="dashboard-container">
         <nav className="navbar">
@@ -204,6 +249,9 @@ const EquipmentDisponible = () => {
         </nav>
         <div className="content">
           <div className="error">Erreur: {error}</div>
+          <button onClick={() => window.location.reload()} className="retry-button">
+            Réessayer
+          </button>
         </div>
       </div>
     );
@@ -226,9 +274,6 @@ const EquipmentDisponible = () => {
           <li><Link to="/notifications"><FaBell /><span>Notifications</span></Link></li>
         </ul>
 
-        <br></br><br></br><br></br><br></br><br></br>
-        <br></br><br></br><br></br><br></br><br></br>
-        <br></br><br></br><br></br><br></br><br></br>
         <div className="sidebar-bottom">
           <ul>
             <li><Link to="/account"><FaUser /><span>Compte</span></Link></li>
@@ -255,6 +300,7 @@ const EquipmentDisponible = () => {
             <select
               className="filter-select"
               onChange={(e) => setSelectedCategory(e.target.value)}
+              value={selectedCategory}
             >
               <option value="">Toutes les catégories</option>
               {categories.map((category, index) => (
@@ -267,6 +313,7 @@ const EquipmentDisponible = () => {
             <select
               className="filter-select"
               onChange={(e) => setSelectedCenter(e.target.value)}
+              value={selectedCenter}
             >
               <option value="">Tous les centres</option>
               {centers.map((center, index) => (
@@ -286,12 +333,19 @@ const EquipmentDisponible = () => {
                 <h3>{equipment.name}</h3>
                 <p><strong>Catégorie:</strong> {equipment.category}</p>
                 <p><strong>Centre:</strong> {equipment.center}</p>
+                <p><strong>Disponibilité:</strong> {equipment.status || "Disponible"}</p>
               </div>
               <div className="card-actions">
-                <button className="view-button" onClick={() => handleViewDetails(equipment)}>
-                  View All
+                <button 
+                  className="view-button" 
+                  onClick={() => handleViewDetails(equipment)}
+                >
+                  Détails
                 </button>
-                <button className="add-button" onClick={() => handleRequestEquipment(equipment)}>
+                <button 
+                  className="request-button" 
+                  onClick={() => handleRequestEquipment(equipment)}
+                >
                   Demander
                 </button>
               </div>
@@ -299,7 +353,6 @@ const EquipmentDisponible = () => {
           ))}
         </div>
 
-        {/* Pagination Ant Design */}
         <div className="pagination-container">
           <Pagination
             current={currentPage}
@@ -311,11 +364,8 @@ const EquipmentDisponible = () => {
             showQuickJumper
           />
         </div>
-
-        {/* ... (le reste du code avec les modals reste inchangé) */}
       </main>
 
-      {/* Modal de demande d'équipement */}
       {showRequestModal && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -324,139 +374,118 @@ const EquipmentDisponible = () => {
             </button>
             <h3>Demander un équipement</h3>
             
-            <form onSubmit={handleSubmitRequest}>
-              <div className="accordion-container">
-                {/* Section Équipement */}
-                <div className="accordion-section">
-                  <div 
-                    className={`accordion-header ${activeSection === 'equipment' ? 'active' : ''}`}
-                    onClick={() => toggleSection('equipment')}
-                  >
-                    <span>📋 Informations sur l'équipement</span>
-                  </div>
-                  <div className={`accordion-content ${activeSection === 'equipment' ? 'show' : ''}`}>
-                    <div className="form-group">
-                      <label>Nom de l'équipement</label>
-                      <input
-                        type="text"
-                        value={selectedEquipment?.name || ""}
-                        readOnly
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Catégorie</label>
-                      <input
-                        type="text"
-                        value={selectedEquipment?.category || ""}
-                        readOnly
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Centre</label>
-                      <input
-                        type="text"
-                        value={selectedEquipment?.center || ""}
-                        readOnly
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Section Utilisateur */}
-                <div className="accordion-section">
-                  <div 
-                    className={`accordion-header ${activeSection === 'user' ? 'active' : ''}`}
-                    onClick={() => toggleSection('user')}
-                  >
-                    <span>👤 Informations personnelles</span>
-                  </div>
-                  <div className={`accordion-content ${activeSection === 'user' ? 'show' : ''}`}>
-                    <div className="form-group">
-                      <label>Nom</label>
-                      <input
-                        type="text"
-                        value={userData?.nom || ""}
-                        readOnly
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Prénom</label>
-                      <input
-                        type="text"
-                        value={userData?.prenom || ""}
-                        readOnly
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Email</label>
-                      <input
-                        type="email"
-                        value={userData?.email || ""}
-                        readOnly
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Téléphone</label>
-                      <input
-                        type="text"
-                        value={userData?.phone || ""}
-                        readOnly
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Section Demande */}
-                <div className="accordion-section">
-                  <div 
-                    className={`accordion-header ${activeSection === 'request' ? 'active' : ''}`}
-                    onClick={() => toggleSection('request')}
-                  >
-                    <span>📅 Détails de la demande</span>
-                  </div>
-                  <div className={`accordion-content ${activeSection === 'request' ? 'show' : ''}`}>
-                    <div className="form-group">
-                      <label>Date et heure de début *</label>
-                      <input
-                        type="datetime-local"
-                        name="startDate"
-                        value={requestForm.startDate}
-                        onChange={(e) => setRequestForm({...requestForm, startDate: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Date et heure de fin *</label>
-                      <input
-                        type="datetime-local"
-                        name="endDate"
-                        value={requestForm.endDate}
-                        onChange={(e) => setRequestForm({...requestForm, endDate: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Remarques</label>
-                      <textarea
-                        name="remarks"
-                        value={requestForm.remarks}
-                        onChange={(e) => setRequestForm({...requestForm, remarks: e.target.value})}
-                        placeholder="Facultatif"
-                      />
-                    </div>
-                  </div>
-                </div>
+            {requestSuccess ? (
+              <div className="success-message">
+                <p>Votre demande a été soumise avec succès !</p>
+                <button 
+                  className="close-button"
+                  onClick={closeModal}
+                >
+                  Fermer
+                </button>
               </div>
-              
-              <button type="submit" disabled={loading} className="submit-button">
-                {loading ? "Envoi en cours..." : "Soumettre la demande"}
-              </button>
-            </form>
+            ) : (
+              <form onSubmit={handleSubmitRequest}>
+                <div className="accordion-container">
+                  <div className="accordion-section">
+                    <div 
+                      className={`accordion-header ${activeSection === 'equipment' ? 'active' : ''}`}
+                      onClick={() => toggleSection('equipment')}
+                    >
+                      <span>📋 Informations sur l'équipement</span>
+                    </div>
+                    <div className={`accordion-content ${activeSection === 'equipment' ? 'show' : ''}`}>
+                      <div className="form-group">
+                        <label>Nom de l'équipement</label>
+                        <input
+                          type="text"
+                          value={selectedEquipment?.name || ""}
+                          readOnly
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Catégorie</label>
+                        <input
+                          type="text"
+                          value={selectedEquipment?.category || ""}
+                          readOnly
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Centre</label>
+                        <input
+                          type="text"
+                          value={selectedEquipment?.center || ""}
+                          readOnly
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="accordion-section">
+                    <div 
+                      className={`accordion-header ${activeSection === 'request' ? 'active' : ''}`}
+                      onClick={() => toggleSection('request')}
+                    >
+                      <span>📅 Détails de la demande</span>
+                    </div>
+                    <div className={`accordion-content ${activeSection === 'request' ? 'show' : ''}`}>
+                      <div className="form-group">
+                        <label>Date et heure de début *</label>
+                        <input
+                          type="datetime-local"
+                          name="startDate"
+                          value={requestForm.startDate}
+                          onChange={(e) => setRequestForm({...requestForm, startDate: e.target.value})}
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Date et heure de fin *</label>
+                        <input
+                          type="datetime-local"
+                          name="endDate"
+                          value={requestForm.endDate}
+                          onChange={(e) => setRequestForm({...requestForm, endDate: e.target.value})}
+                          required
+                          min={requestForm.startDate}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Remarques</label>
+                        <textarea
+                          name="remarks"
+                          value={requestForm.remarks}
+                          onChange={(e) => setRequestForm({...requestForm, remarks: e.target.value})}
+                          placeholder="Facultatif"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="form-actions">
+                  <button 
+                    type="button" 
+                    className="cancel-button"
+                    onClick={closeModal}
+                  >
+                    Annuler
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={loading} 
+                    className="submit-button"
+                  >
+                    {loading ? "Envoi en cours..." : "Soumettre la demande"}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}
 
-      {/* Modal des détails de l'équipement */}
       {showDetailsModal && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -469,22 +498,46 @@ const EquipmentDisponible = () => {
                 <img 
                   src={selectedEquipment.imageUrl || "/images/pc.jpg"} 
                   alt="Équipement" 
-                  style={{ width: "100%", maxHeight: "200px", objectFit: "contain", marginBottom: "15px" }}
+                  className="detail-image"
                 />
-                <p><strong>Nom:</strong> {selectedEquipment.name}</p>
-                <p><strong>Catégorie:</strong> {selectedEquipment.category}</p>
-                <p><strong>Centre:</strong> {selectedEquipment.center}</p>
-                <p><strong>Description:</strong> {selectedEquipment.description}</p>
+                <div className="detail-group">
+                  <span className="detail-label">Nom:</span>
+                  <span className="detail-value">{selectedEquipment.name}</span>
+                </div>
+                <div className="detail-group">
+                  <span className="detail-label">Catégorie:</span>
+                  <span className="detail-value">{selectedEquipment.category}</span>
+                </div>
+                <div className="detail-group">
+                  <span className="detail-label">Centre:</span>
+                  <span className="detail-value">{selectedEquipment.center}</span>
+                </div>
+                <div className="detail-group">
+                  <span className="detail-label">Description:</span>
+                  <span className="detail-value">{selectedEquipment.description || "Non spécifiée"}</span>
+                </div>
                 {selectedEquipment.specifications && (
-                  <div>
-                    <h4 style={{ margin: "15px 0 10px", color: "#4a148c" }}>Spécifications techniques:</h4>
-                    <ul style={{ paddingLeft: "20px" }}>
+                  <>
+                    <h4 className="specifications-title">Spécifications techniques:</h4>
+                    <div className="specifications-grid">
                       {Object.entries(selectedEquipment.specifications).map(([key, value]) => (
-                        <li key={key} style={{ marginBottom: "5px" }}><strong>{key}:</strong> {value}</li>
+                        <div key={key} className="specification-item">
+                          <span className="spec-label">{key}:</span>
+                          <span className="spec-value">{value}</span>
+                        </div>
                       ))}
-                    </ul>
-                  </div>
+                    </div>
+                  </>
                 )}
+                <button 
+                  className="request-button"
+                  onClick={() => {
+                    closeModal();
+                    handleRequestEquipment(selectedEquipment);
+                  }}
+                >
+                  Demander cet équipement
+                </button>
               </div>
             )}
           </div>

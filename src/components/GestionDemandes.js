@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { 
-  FaBars, 
-  FaTimes, 
-  FaTachometerAlt, 
-  FaCogs, 
-  FaClipboardList, 
-  FaBell, 
-  FaUser, 
-  FaSignOutAlt, 
-  FaSearch, 
-  FaEye, 
-  FaHistory 
+import {
+  FaBars,
+  FaTimes,
+  FaTachometerAlt,
+  FaCogs,
+  FaClipboardList,
+  FaBell,
+  FaUser,
+  FaSignOutAlt,
+  FaSearch,
+  FaEye,
+  FaHistory,
+  FaClock,
 } from "react-icons/fa";
 import { Pagination } from 'antd';
 import "../styles/GestionDemandes.css";
@@ -32,7 +33,7 @@ const GestionDemandes = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedDetails, setSelectedDetails] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(20); // 20 demandes par page
+  const [itemsPerPage] = useState(20);
 
   useEffect(() => {
     fetchDemandes();
@@ -41,11 +42,40 @@ const GestionDemandes = () => {
   const fetchDemandes = async () => {
     try {
       const response = await fetch(`${API_URL}/en-attente`);
+      if (!response.ok) {
+        throw new Error('Erreur réseau');
+      }
       const data = await response.json();
-      setDemandes(data);
+      setDemandes(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Erreur lors du chargement des demandes:", error);
+      setDemandes([]);
     }
+  };
+
+  const formatDateTime = (dateTime) => {
+    if (!dateTime) return "Non disponible";
+    const date = new Date(dateTime);
+    return date.toLocaleString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const calculateResponseTime = (demande) => {
+    if (!demande.dateReponse) return "En attente";
+    const start = new Date(demande.dateDemande);
+    const end = new Date(demande.dateReponse);
+    const diff = end - start;
+    
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    
+    return `${days}j ${hours}h ${minutes}m`;
   };
 
   const handleFiltreChange = (e) => {
@@ -57,18 +87,17 @@ const GestionDemandes = () => {
     setSearchTerm(e.target.value);
   };
 
-  const filteredDemandes = demandes.filter((demande) => {
+  const filteredDemandes = (Array.isArray(demandes) ? demandes : []).filter((demande) => {
     if (filtres.statut !== "TOUS" && demande.statut !== filtres.statut) {
       return false;
     }
     return (
-      demande.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      demande.prenom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      demande.centreEquipement.toLowerCase().includes(searchTerm.toLowerCase())
+      (demande.nom?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (demande.prenom?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (demande.centreEquipement?.toLowerCase() || '').includes(searchTerm.toLowerCase())
     );
   });
 
-  // Calcul des demandes à afficher pour la page actuelle
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentDemandes = filteredDemandes.slice(indexOfFirstItem, indexOfLastItem);
@@ -100,7 +129,8 @@ const GestionDemandes = () => {
         },
         body: JSON.stringify({
           statut: actionChoisie,
-          commentaire: commentaire
+          commentaire: commentaire,
+          dateReponse: new Date().toISOString()
         })
       });
       
@@ -139,25 +169,12 @@ const GestionDemandes = () => {
 
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <ul className="sidebar-menu">
-          <li>
-            <Link to="/ResponsableHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
-          </li>
-          <li>
-            <Link to="/Equipments"><FaCogs /><span>Gestion des Équipements</span></Link>
-          </li>
-          <li>
-            <Link to="/GestionDemandes"><FaClipboardList /><span>Gestion des Demandes</span></Link>
-          </li>
-          <li>
-            <Link to="/HistoriqueDemandes"><FaHistory /><span>Historique des Demandes</span></Link>
-          </li>
-          <li>
-            <Link to="/Notifications"><FaBell /><span>Notifications</span></Link>
-          </li>
+          <li><Link to="/ResponsableHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link></li>
+          <li><Link to="/Equipments"><FaCogs /><span>Gestion des Équipements</span></Link></li>
+          <li><Link to="/GestionDemandes"><FaClipboardList /><span>Gestion des Demandes</span></Link></li>
+          <li><Link to="/HistoriqueDemandes"><FaHistory /><span>Historique des Demandes</span></Link></li>
+          <li><Link to="/Notifications"><FaBell /><span>Notifications</span></Link></li>
         </ul>
-        <br></br><br></br><br></br><br></br><br></br>
-        <br></br><br></br><br></br><br></br><br></br>
-        <br></br>
         <div className="sidebar-bottom">
           <ul>
             <li><Link to="/account"><FaUser /><span>Compte</span></Link></li>
@@ -190,6 +207,8 @@ const GestionDemandes = () => {
                 <th>Centre</th>
                 <th>Équipement</th>
                 <th>Statut</th>
+                <th>Date Demande</th>
+                <th>Temps Réponse</th>
                 <th>Actions</th>
                 <th>Détails</th>
               </tr>
@@ -202,6 +221,12 @@ const GestionDemandes = () => {
                   <td>{demande.centreEquipement}</td>
                   <td>{demande.nomEquipement}</td>
                   <td>{demande.statut}</td>
+                  <td className="date-cell">{formatDateTime(demande.dateDemande)}</td>
+                  <td>
+                    <div className={`response-time ${!demande.dateReponse ? 'waiting' : ''}`}>
+                      <FaClock /> {calculateResponseTime(demande)}
+                    </div>
+                  </td>
                   <td>
                     <button
                       className="accepter"
@@ -253,16 +278,17 @@ const GestionDemandes = () => {
                 value={commentaire}
                 onChange={(e) => setCommentaire(e.target.value)}
                 placeholder="Ajouter un commentaire..."
+                required
               />
               <div className="modal-actions">
                 {actionChoisie === "ACCEPTEE" && (
                   <button className="accepter" onClick={mettreAJourStatut}>
-                    Accepter
+                    Confirmer l'acceptation
                   </button>
                 )}
                 {actionChoisie === "REFUSEE" && (
                   <button className="refuser" onClick={mettreAJourStatut}>
-                    Refuser
+                    Confirmer le refus
                   </button>
                 )}
               </div>
@@ -279,16 +305,64 @@ const GestionDemandes = () => {
               <h3>Détails de la demande</h3>
               {selectedDetails && (
                 <div className="details-content">
-                  <p><strong>Nom :</strong> {selectedDetails.nom}</p>
-                  <p><strong>Prénom :</strong> {selectedDetails.prenom}</p>
-                  <p><strong>Centre :</strong> {selectedDetails.centreEquipement}</p>
-                  <p><strong>Équipement :</strong> {selectedDetails.nomEquipement}</p>
-                  <p><strong>Catégorie :</strong> {selectedDetails.categorieEquipement}</p>
-                  <p><strong>Date de début :</strong> {new Date(selectedDetails.dateDebut).toLocaleString('fr-FR')}</p>
-                  <p><strong>Date de fin :</strong> {new Date(selectedDetails.dateFin).toLocaleString('fr-FR')}</p>
-                  <p><strong>Remarques :</strong> {selectedDetails.remarques}</p>
-                  <p><strong>Statut :</strong> {selectedDetails.statut}</p>
-                  <p><strong>Commentaire du responsable :</strong> {selectedDetails.commentaireResponsable}</p>
+                  <div className="detail-row">
+                    <span className="detail-label">Nom :</span>
+                    <span className="detail-value">{selectedDetails.nom}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Prénom :</span>
+                    <span className="detail-value">{selectedDetails.prenom}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Centre :</span>
+                    <span className="detail-value">{selectedDetails.centreEquipement}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Équipement :</span>
+                    <span className="detail-value">{selectedDetails.nomEquipement}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Catégorie :</span>
+                    <span className="detail-value">{selectedDetails.categorieEquipement}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Date de début :</span>
+                    <span className="detail-value">{formatDateTime(selectedDetails.dateDebut)}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Date de fin :</span>
+                    <span className="detail-value">{formatDateTime(selectedDetails.dateFin)}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Date de demande :</span>
+                    <span className="detail-value">{formatDateTime(selectedDetails.dateDemande)}</span>
+                  </div>
+                  {selectedDetails.dateReponse && (
+                    <div className="detail-row">
+                      <span className="detail-label">Date de réponse :</span>
+                      <span className="detail-value">{formatDateTime(selectedDetails.dateReponse)}</span>
+                    </div>
+                  )}
+                  <div className="detail-row">
+                    <span className="detail-label">Temps de réponse :</span>
+                    <span className="detail-value">
+                      <FaClock /> {calculateResponseTime(selectedDetails)}
+                    </span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Remarques :</span>
+                    <span className="detail-value">{selectedDetails.remarques || "Aucune remarque"}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Statut :</span>
+                    <span className={`detail-value status-${selectedDetails.statut.toLowerCase()}`}>
+                      {selectedDetails.statut}
+                    </span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Commentaire responsable :</span>
+                    <span className="detail-value">{selectedDetails.commentaireResponsable || "Aucun commentaire"}</span>
+                  </div>
                 </div>
               )}
             </div>
