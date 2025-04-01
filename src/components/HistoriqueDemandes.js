@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   FaBars,
   FaTimes,
@@ -12,7 +12,10 @@ import {
   FaSearch,
   FaEye,
   FaHistory,
-  FaClock
+  FaClock,
+  FaSort,
+  FaSortUp,
+  FaSortDown
 } from 'react-icons/fa';
 import { Pagination } from 'antd';
 import '../styles/HistoriqueDemandes.css';
@@ -23,14 +26,14 @@ const HistoriqueDemandes = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [demandes, setDemandes] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filtres, setFiltres] = useState({
-    statut: 'TOUS'
-  });
+  const [filtres, setFiltres] = useState({ statut: 'TOUS' });
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedDetails, setSelectedDetails] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [sortConfig, setSortConfig] = useState({ key: 'dateDemande', direction: 'desc' });
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     fetchHistoriqueDemandes();
@@ -84,7 +87,36 @@ const HistoriqueDemandes = () => {
     setFiltres({ ...filtres, [name]: value });
   };
 
-  const filteredDemandes = demandes.filter((demande) => {
+  const requestSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key) => {
+    if (sortConfig.key !== key) return <FaSort />;
+    return sortConfig.direction === 'asc' ? <FaSortUp /> : <FaSortDown />;
+  };
+
+  const sortedDemandes = useMemo(() => {
+    let sortableDemandes = [...demandes];
+    if (sortConfig !== null) {
+      sortableDemandes.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableDemandes;
+  }, [demandes, sortConfig]);
+
+  const filteredDemandes = sortedDemandes.filter((demande) => {
     if (filtres.statut !== 'TOUS' && demande.statut !== filtres.statut) {
       return false;
     }
@@ -115,9 +147,9 @@ const HistoriqueDemandes = () => {
     setSelectedDetails(null);
   };
 
-  // Fonction pour naviguer
-  const navigateTo = (path) => {
-    navigate(path);
+  const handleLogout = () => {
+    localStorage.removeItem("userSession");
+    navigate("/", { replace: true });
   };
 
   return (
@@ -130,37 +162,35 @@ const HistoriqueDemandes = () => {
       </nav>
 
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
-        <div className="sidebar-menu">
-          <div className="menu-item" onClick={() => navigateTo('/ResponsableHome')}>
-            <FaTachometerAlt />
-            <span>Tableau de Bord</span>
-          </div>
-          <div className="menu-item" onClick={() => navigateTo('/Equipments')}>
-            <FaCogs />
-            <span>Gestion des Équipements</span>
-          </div>
-          <div className="menu-item" onClick={() => navigateTo('/GestionDemandes')}>
-            <FaClipboardList />
-            <span>Gestion des Demandes</span>
-          </div>
-          <div className="menu-item active" onClick={() => navigateTo('/HistoriqueDemandes')}>
-            <FaHistory />
-            <span>Historique des Demandes</span>
-          </div>
-          <div className="menu-item" onClick={() => navigateTo('/Notifications')}>
-            <FaBell />
-            <span>Notifications</span>
-          </div>
-        </div>
+        <ul className="sidebar-menu">
+          <li className={location.pathname === '/ResponsableHome' ? 'active' : ''}>
+            <Link to="/ResponsableHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
+          </li>
+          <li className={location.pathname === '/Equipments' ? 'active' : ''}>
+            <Link to="/Equipments"><FaCogs /><span>Gestion des Équipements</span></Link>
+          </li>
+          <li className={location.pathname === '/GestionDemandes' ? 'active' : ''}>
+            <Link to="/GestionDemandes"><FaClipboardList /><span>Gestion des Demandes</span></Link>
+          </li>
+          <li className={location.pathname === '/HistoriqueDemandes' ? 'active' : ''}>
+            <Link to="/HistoriqueDemandes"><FaHistory /><span>Historique des Demandes</span></Link>
+          </li>
+          <li className={location.pathname === '/Notifications' ? 'active' : ''}>
+            <Link to="/Notifications"><FaBell /><span>Notifications</span></Link>
+          </li>
+        </ul>
+
         <div className="sidebar-bottom">
-          <div className="menu-item" onClick={() => navigateTo('/account')}>
-            <FaUser />
-            <span>Compte</span>
-          </div>
-          <div className="menu-item logout" onClick={() => navigateTo('/logout')}>
-            <FaSignOutAlt />
-            <span>Déconnexion</span>
-          </div>
+          <ul>
+            <li className={location.pathname === '/account' ? 'active' : ''}>
+              <Link to="/account"><FaUser /><span>Compte</span></Link>
+            </li>
+            <li className="logout">
+              <button onClick={handleLogout} style={{ background: 'none', border: 'none', padding: '10px', width: '100%', textAlign: 'left' }}>
+                <FaSignOutAlt /><span>Déconnexion</span>
+              </button>
+            </li>
+          </ul>
         </div>
       </aside>
 
@@ -200,8 +230,22 @@ const HistoriqueDemandes = () => {
                 <th>Centre</th>
                 <th>Équipement</th>
                 <th>Statut</th>
-                <th>Date Demande</th>
-                <th>Date Réponse</th>
+                <th onClick={() => requestSort('dateDemande')}>
+                  <div className="sortable-header">
+                    Date Demande
+                    <span className="sort-icon">
+                      {getSortIcon('dateDemande')}
+                    </span>
+                  </div>
+                </th>
+                <th onClick={() => requestSort('dateReponse')}>
+                  <div className="sortable-header">
+                    Date Réponse
+                    <span className="sort-icon">
+                      {getSortIcon('dateReponse')}
+                    </span>
+                  </div>
+                </th>
                 <th>Temps Réponse</th>
                 <th>Détails</th>
               </tr>
@@ -213,8 +257,10 @@ const HistoriqueDemandes = () => {
                   <td>{demande.prenom}</td>
                   <td>{demande.centreEquipement}</td>
                   <td>{demande.nomEquipement}</td>
-                  <td className={`status-${demande.statut.toLowerCase()}`}>
-                    {demande.statut}
+                  <td>
+                    <span className={`status-badge ${demande.statut.toLowerCase()}`}>
+                      {demande.statut}
+                    </span>
                   </td>
                   <td className="date-cell">{formatDateTime(demande.dateDemande)}</td>
                   <td className="date-cell">{formatDateTime(demande.dateReponse)}</td>
@@ -305,7 +351,7 @@ const HistoriqueDemandes = () => {
                 </div>
                 <div className="detail-row">
                   <span className="detail-label">Statut :</span>
-                  <span className={`detail-value status-${selectedDetails.statut.toLowerCase()}`}>
+                  <span className={`detail-value status-badge ${selectedDetails.statut.toLowerCase()}`}>
                     {selectedDetails.statut}
                   </span>
                 </div>

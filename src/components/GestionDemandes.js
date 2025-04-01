@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   FaBars,
   FaTimes,
@@ -13,6 +13,9 @@ import {
   FaEye,
   FaHistory,
   FaClock,
+  FaSort,
+  FaSortUp,
+  FaSortDown
 } from "react-icons/fa";
 import { Pagination } from 'antd';
 import "../styles/GestionDemandes.css";
@@ -22,9 +25,7 @@ const API_URL = "http://localhost:8080/api/demandes";
 const GestionDemandes = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [demandes, setDemandes] = useState([]);
-  const [filtres, setFiltres] = useState({
-    statut: "TOUS",
-  });
+  const [filtres, setFiltres] = useState({ statut: "TOUS" });
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [selectedDemande, setSelectedDemande] = useState(null);
@@ -34,6 +35,8 @@ const GestionDemandes = () => {
   const [selectedDetails, setSelectedDetails] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(20);
+  const [sortConfig, setSortConfig] = useState({ key: 'dateDemande', direction: 'desc' });
+  const location = useLocation();
 
   useEffect(() => {
     fetchDemandes();
@@ -65,19 +68,6 @@ const GestionDemandes = () => {
     });
   };
 
-  const calculateResponseTime = (demande) => {
-    if (!demande.dateReponse) return "En attente";
-    const start = new Date(demande.dateDemande);
-    const end = new Date(demande.dateReponse);
-    const diff = end - start;
-    
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    
-    return `${days}j ${hours}h ${minutes}m`;
-  };
-
   const handleFiltreChange = (e) => {
     const { name, value } = e.target;
     setFiltres({ ...filtres, [name]: value });
@@ -87,7 +77,36 @@ const GestionDemandes = () => {
     setSearchTerm(e.target.value);
   };
 
-  const filteredDemandes = (Array.isArray(demandes) ? demandes : []).filter((demande) => {
+  const requestSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key) => {
+    if (sortConfig.key !== key) return <FaSort />;
+    return sortConfig.direction === 'asc' ? <FaSortUp /> : <FaSortDown />;
+  };
+
+  const sortedDemandes = React.useMemo(() => {
+    let sortableDemandes = [...demandes];
+    if (sortConfig !== null) {
+      sortableDemandes.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableDemandes;
+  }, [demandes, sortConfig]);
+
+  const filteredDemandes = (Array.isArray(sortedDemandes) ? sortedDemandes : []).filter((demande) => {
     if (filtres.statut !== "TOUS" && demande.statut !== filtres.statut) {
       return false;
     }
@@ -169,16 +188,36 @@ const GestionDemandes = () => {
 
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <ul className="sidebar-menu">
-          <li><Link to="/ResponsableHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link></li>
-          <li><Link to="/Equipments"><FaCogs /><span>Gestion des Équipements</span></Link></li>
-          <li><Link to="/GestionDemandes"><FaClipboardList /><span>Gestion des Demandes</span></Link></li>
-          <li><Link to="/HistoriqueDemandes"><FaHistory /><span>Historique des Demandes</span></Link></li>
-          <li><Link to="/Notifications"><FaBell /><span>Notifications</span></Link></li>
+          <li className={location.pathname === '/ResponsableHome' ? 'active' : ''}>
+            <Link to="/ResponsableHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
+          </li>
+          <li className={location.pathname === '/Equipments' ? 'active' : ''}>
+            <Link to="/Equipments"><FaCogs /><span>Gestion des Équipements</span></Link>
+          </li>
+          <li className={location.pathname === '/GestionDemandes' ? 'active' : ''}>
+            <Link to="/GestionDemandes"><FaClipboardList /><span>Gestion des Demandes</span></Link>
+          </li>
+          <li className={location.pathname === '/HistoriqueDemandes' ? 'active' : ''}>
+            <Link to="/HistoriqueDemandes"><FaHistory /><span>Historique des Demandes</span></Link>
+          </li>
+          <li className={location.pathname === '/Notifications' ? 'active' : ''}>
+            <Link to="/Notifications"><FaBell /><span>Notifications</span></Link>
+          </li>
         </ul>
+
         <div className="sidebar-bottom">
           <ul>
-            <li><Link to="/account"><FaUser /><span>Compte</span></Link></li>
-            <li className="logout"><Link to="/logout"><FaSignOutAlt /><span>Déconnexion</span></Link></li>
+            <li className={location.pathname === '/account' ? 'active' : ''}>
+              <Link to="/account"><FaUser /><span>Compte</span></Link>
+            </li>
+            <li className="logout">
+              <button onClick={() => {
+                localStorage.removeItem("userSession");
+                window.location.href = "/";
+              }} style={{ background: 'none', border: 'none', padding: '10px', width: '100%', textAlign: 'left' }}>
+                <FaSignOutAlt /><span>Déconnexion</span>
+              </button>
+            </li>
           </ul>
         </div>
       </aside>
@@ -207,8 +246,14 @@ const GestionDemandes = () => {
                 <th>Centre</th>
                 <th>Équipement</th>
                 <th>Statut</th>
-                <th>Date Demande</th>
-                <th>Temps Réponse</th>
+                <th onClick={() => requestSort('dateDemande')}>
+                  <div className="sortable-header">
+                    Date Demande
+                    <span className="sort-icon">
+                      {getSortIcon('dateDemande')}
+                    </span>
+                  </div>
+                </th>
                 <th>Actions</th>
                 <th>Détails</th>
               </tr>
@@ -220,13 +265,12 @@ const GestionDemandes = () => {
                   <td>{demande.prenom}</td>
                   <td>{demande.centreEquipement}</td>
                   <td>{demande.nomEquipement}</td>
-                  <td>{demande.statut}</td>
-                  <td className="date-cell">{formatDateTime(demande.dateDemande)}</td>
                   <td>
-                    <div className={`response-time ${!demande.dateReponse ? 'waiting' : ''}`}>
-                      <FaClock /> {calculateResponseTime(demande)}
-                    </div>
+                    <span className={`status-badge ${demande.statut.toLowerCase()}`}>
+                      {demande.statut}
+                    </span>
                   </td>
+                  <td className="date-cell">{formatDateTime(demande.dateDemande)}</td>
                   <td>
                     <button
                       className="accepter"
@@ -337,25 +381,9 @@ const GestionDemandes = () => {
                     <span className="detail-label">Date de demande :</span>
                     <span className="detail-value">{formatDateTime(selectedDetails.dateDemande)}</span>
                   </div>
-                  {selectedDetails.dateReponse && (
-                    <div className="detail-row">
-                      <span className="detail-label">Date de réponse :</span>
-                      <span className="detail-value">{formatDateTime(selectedDetails.dateReponse)}</span>
-                    </div>
-                  )}
-                  <div className="detail-row">
-                    <span className="detail-label">Temps de réponse :</span>
-                    <span className="detail-value">
-                      <FaClock /> {calculateResponseTime(selectedDetails)}
-                    </span>
-                  </div>
-                  <div className="detail-row">
-                    <span className="detail-label">Remarques :</span>
-                    <span className="detail-value">{selectedDetails.remarques || "Aucune remarque"}</span>
-                  </div>
                   <div className="detail-row">
                     <span className="detail-label">Statut :</span>
-                    <span className={`detail-value status-${selectedDetails.statut.toLowerCase()}`}>
+                    <span className={`detail-value status-badge ${selectedDetails.statut.toLowerCase()}`}>
                       {selectedDetails.statut}
                     </span>
                   </div>

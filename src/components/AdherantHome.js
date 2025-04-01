@@ -1,24 +1,20 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom"; // Importation de useNavigate
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt } from "react-icons/fa";
-import "../styles/AdherantHome.css"; // Utilisation du même fichier CSS
+import "../styles/AdherantHome.css";
 
 const AdherantHome = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const navigate = useNavigate(); // Déclarer le hook de navigation
+    const navigate = useNavigate();
+    const location = useLocation();
 
-    // Fonction de déconnexion
     const handleLogout = () => {
-        // Supprimer les informations de session (par exemple, localStorage)
         localStorage.removeItem("userSession");
-
-        // Redirection vers la page de connexion
         navigate("/", { replace: true });
     };
 
     return (
         <div className={`dashboard-container ${sidebarOpen ? "sidebar-expanded" : ""}`}>
-            {/* Navbar */}
             <nav className="navbar">
                 <div className="menu-icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
                     {sidebarOpen ? <FaTimes /> : <FaBars />}
@@ -26,23 +22,25 @@ const AdherantHome = () => {
                 <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
             </nav>
 
-            {/* Sidebar */}
             <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
                 <ul className="sidebar-menu">
-                    <li><Link to="/AdherantHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link></li>
-                    <li><Link to="/EquipmentDisponible"><FaCogs /><span>Équipements Disponibles</span></Link></li>
-                    <li><Link to="/SuiviDemandeAdherant"><FaClipboardList /><span>Suivi des Demandes</span></Link></li>
-                    <li><Link to="/notifications"><FaBell /><span>Notifications</span></Link></li>
-                    
+                    <li className={location.pathname === '/AdherantHome' ? 'active' : ''}>
+                        <Link to="/AdherantHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
+                    </li>
+                    <li className={location.pathname === '/EquipmentDisponible' ? 'active' : ''}>
+                        <Link to="/EquipmentDisponible"><FaCogs /><span>Équipements Disponibles</span></Link>
+                    </li>
+                    <li className={location.pathname === '/SuiviDemandeAdherant' ? 'active' : ''}>
+                        <Link to="/SuiviDemandeAdherant"><FaClipboardList /><span>Suivi des Demandes</span></Link>
+                    </li>
+                    <li className={location.pathname === '/Notifications' ? 'active' : ''}>
+                        <Link to="/Notifications"><FaBell /><span>Notifications</span></Link>
+                    </li>
                 </ul>
 
-                {/* Section en bas du sidebar */}
-                <br></br><br></br><br></br><br></br><br></br>
-                <br></br><br></br><br></br><br></br><br></br>
-                <br></br><br></br><br></br><br></br><br></br>
                 <div className="sidebar-bottom">
                     <ul>
-                        <li>
+                        <li className={location.pathname === '/account' ? 'active' : ''}>
                             <Link to="/account"><FaUser /><span>Compte</span></Link>
                         </li>
                         <li className="logout">
@@ -54,7 +52,6 @@ const AdherantHome = () => {
                 </div>
             </aside>
 
-            {/* Contenu principal */}
             <main className="content">
                 <h2>Bienvenue, Adhérent</h2>
                 <div className="dashboard-cards">

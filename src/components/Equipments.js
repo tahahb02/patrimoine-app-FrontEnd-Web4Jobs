@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt, FaPlus, FaEdit, FaTrash, FaHome, FaSearch, FaHistory } from "react-icons/fa";
+import { Link, useLocation } from "react-router-dom";
+import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt, FaPlus, FaEdit, FaTrash, FaSearch, FaHistory } from "react-icons/fa";
 import { Pagination } from 'antd';
 import "../styles/Equipments.css";
 
@@ -15,7 +15,7 @@ const Equipments = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(12); // 12 équipements par page
+  const [itemsPerPage] = useState(12);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [categories, setCategories] = useState(["PC Portable", "PC Bureau", "Bureautique", "Imprimante"]);
@@ -27,6 +27,7 @@ const Equipments = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedCenter, setSelectedCenter] = useState("");
+  const location = useLocation();
 
   useEffect(() => {
     fetchEquipments();
@@ -233,20 +234,36 @@ const Equipments = () => {
 
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <ul className="sidebar-menu">
-          <li><Link to="/ResponsableHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link></li>
-          <li><Link to="/Equipments"><FaCogs /><span>Gestion des Équipements</span></Link></li>
-          <li><Link to="/GestionDemandes"><FaClipboardList /><span>Gestion des Demandes</span></Link></li>
-          <li><Link to="/HistoriqueDemandes"><FaHistory /><span>Historique des Demandes</span></Link></li>
-          <li><Link to="/notifications"><FaBell /><span>Notifications</span></Link></li>
+          <li className={location.pathname === '/ResponsableHome' ? 'active' : ''}>
+            <Link to="/ResponsableHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
+          </li>
+          <li className={location.pathname === '/Equipments' ? 'active' : ''}>
+            <Link to="/Equipments"><FaCogs /><span>Gestion des Équipements</span></Link>
+          </li>
+          <li className={location.pathname === '/GestionDemandes' ? 'active' : ''}>
+            <Link to="/GestionDemandes"><FaClipboardList /><span>Gestion des Demandes</span></Link>
+          </li>
+          <li className={location.pathname === '/HistoriqueDemandes' ? 'active' : ''}>
+            <Link to="/HistoriqueDemandes"><FaHistory /><span>Historique des Demandes</span></Link>
+          </li>
+          <li className={location.pathname === '/Notifications' ? 'active' : ''}>
+            <Link to="/Notifications"><FaBell /><span>Notifications</span></Link>
+          </li>
         </ul>
 
-        <br></br><br></br><br></br><br></br><br></br>
-        <br></br><br></br><br></br><br></br><br></br>
-        <br></br>
         <div className="sidebar-bottom">
           <ul>
-            <li><Link to="/account"><FaUser /><span>Compte</span></Link></li>
-            <li className="logout"><Link to="/logout"><FaSignOutAlt /><span>Déconnexion</span></Link></li>
+            <li className={location.pathname === '/account' ? 'active' : ''}>
+              <Link to="/account"><FaUser /><span>Compte</span></Link>
+            </li>
+            <li className="logout">
+              <button onClick={() => {
+                localStorage.removeItem("userSession");
+                window.location.href = "/";
+              }} style={{ background: 'none', border: 'none', padding: '10px', width: '100%', textAlign: 'left' }}>
+                <FaSignOutAlt /><span>Déconnexion</span>
+              </button>
+            </li>
           </ul>
         </div>
       </aside>
@@ -330,9 +347,9 @@ const Equipments = () => {
             size="small"
             current={currentPage}
             total={filteredEquipments.length}
-            pageSize={itemsPerPage} // 12 équipements par page
+            pageSize={itemsPerPage}
             onChange={onChange}
-            showSizeChanger={false} // Désactivé car fixé à 12
+            showSizeChanger={false}
             showQuickJumper
             showTotal={showTotal}
           />

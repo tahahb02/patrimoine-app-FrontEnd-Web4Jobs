@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Pagination } from 'antd';
 import {
   FaBars,
@@ -38,6 +38,7 @@ const GererUtilisateurs = () => {
     city: "",
     role: "ADHERANT",
   });
+  const location = useLocation();
 
   useEffect(() => {
     fetchUtilisateurs();
@@ -178,23 +179,25 @@ const GererUtilisateurs = () => {
       {/* Sidebar */}
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <ul className="sidebar-menu">
-          <li>
+          <li className={location.pathname === '/AdminHome' ? 'active' : ''}>
             <Link to="/AdminHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
           </li>
-          <li>
+          <li className={location.pathname === '/GererUtilisateurs' ? 'active' : ''}>
             <Link to="/GererUtilisateurs"><FaUsers /><span>Gérer les Utilisateurs</span></Link>
           </li>
-          <li>
+          <li className={location.pathname === '/GererAdherants' ? 'active' : ''}>
             <Link to="/GererAdherants"><FaUserCog /><span>Gérer les Adhérents</span></Link>
           </li>
-          <li>
+          <li className={location.pathname === '/Notifications' ? 'active' : ''}>
             <Link to="/Notifications"><FaBell /><span>Notifications</span></Link>
           </li>
         </ul>
 
         <div className="sidebar-bottom">
           <ul>
-            <li><Link to="/account"><FaUser /><span>Compte</span></Link></li>
+            <li className={location.pathname === '/account' ? 'active' : ''}>
+              <Link to="/account"><FaUser /><span>Compte</span></Link>
+            </li>
             <li className="logout"><Link to="/logout"><FaSignOutAlt /><span>Déconnexion</span></Link></li>
           </ul>
         </div>

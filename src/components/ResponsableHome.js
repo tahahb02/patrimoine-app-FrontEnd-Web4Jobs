@@ -1,24 +1,20 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom"; // Importation de useNavigate
-import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt,FaHistory } from "react-icons/fa";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt, FaHistory } from "react-icons/fa";
 import "../styles/ResponsableHome.css";
 
 const ResponsableHome = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const navigate = useNavigate(); // Déclarer le hook de navigation
+    const navigate = useNavigate();
+    const location = useLocation();
 
-    // Fonction de déconnexion
     const handleLogout = () => {
-        // Supprimer les informations de session (par exemple, localStorage)
         localStorage.removeItem("userSession");
-
-        // Redirection vers la page de connexion
         navigate("/", { replace: true });
     };
 
     return (
         <div className={`dashboard-container ${sidebarOpen ? "sidebar-expanded" : ""}`}>
-            {/* Navbar */}
             <nav className="navbar">
                 <div className="menu-icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
                     {sidebarOpen ? <FaTimes /> : <FaBars />}
@@ -26,33 +22,28 @@ const ResponsableHome = () => {
                 <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
             </nav>
 
-            {/* Sidebar */}
             <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
                 <ul className="sidebar-menu">
-                    <li>
+                    <li className={location.pathname === '/ResponsableHome' ? 'active' : ''}>
                         <Link to="/ResponsableHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
                     </li>
-                    <li>
+                    <li className={location.pathname === '/Equipments' ? 'active' : ''}>
                         <Link to="/Equipments"><FaCogs /><span>Gestion des Équipements</span></Link>
                     </li>
-                    <li>
+                    <li className={location.pathname === '/GestionDemandes' ? 'active' : ''}>
                         <Link to="/GestionDemandes"><FaClipboardList /><span>Gestion des Demandes</span></Link>
                     </li>
-                     <li>
+                    <li className={location.pathname === '/HistoriqueDemandes' ? 'active' : ''}>
                         <Link to="/HistoriqueDemandes"><FaHistory /><span>Historique des Demandes</span></Link>
                     </li>
-                    <li>
+                    <li className={location.pathname === '/Notifications' ? 'active' : ''}>
                         <Link to="/Notifications"><FaBell /><span>Notifications</span></Link>
                     </li>
                 </ul>
 
-                {/* Section en bas du sidebar */}
-                <br></br><br></br><br></br><br></br><br></br>
-                <br></br><br></br><br></br><br></br><br></br>
-                <br></br>
                 <div className="sidebar-bottom">
                     <ul>
-                        <li>
+                        <li className={location.pathname === '/account' ? 'active' : ''}>
                             <Link to="/account"><FaUser /><span>Compte</span></Link>
                         </li>
                         <li className="logout">
@@ -64,7 +55,6 @@ const ResponsableHome = () => {
                 </div>
             </aside>
 
-            {/* Contenu principal */}
             <main className="content">
                 <h2>Bienvenue, Responsable du Centre</h2>
                 <div className="dashboard-cards">
