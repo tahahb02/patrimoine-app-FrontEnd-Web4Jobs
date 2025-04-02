@@ -21,7 +21,10 @@ export default function LoginPage() {
     try {
       const response = await fetch("http://localhost:8080/api/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
         body: JSON.stringify({ email, password }),
       });
 
@@ -31,7 +34,8 @@ export default function LoginPage() {
         throw new Error(data.message || "Email ou mot de passe incorrect.");
       }
 
-      // Stocker toutes les informations utilisateur
+      // Stocker le token et les informations utilisateur
+      localStorage.setItem("token", data.token);
       localStorage.setItem("userRole", data.role);
       localStorage.setItem("userId", data.id);
       localStorage.setItem("userEmail", data.email);
@@ -39,6 +43,12 @@ export default function LoginPage() {
       localStorage.setItem("userPrenom", data.prenom);
       localStorage.setItem("userPhone", data.phone || "");
       localStorage.setItem("userCity", data.city || "");
+
+      if (rememberMe) {
+        localStorage.setItem("rememberMe", "true");
+      } else {
+        localStorage.removeItem("rememberMe");
+      }
 
       // Redirection basée sur le rôle
       switch (data.role) {

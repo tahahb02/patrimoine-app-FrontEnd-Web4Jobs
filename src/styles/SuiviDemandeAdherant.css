@@ -298,3 +298,45 @@
   }
 
 
+  .status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    display: inline-block;
+    min-width: 80px;
+    text-align: center;
+  }
+  
+  .status-badge.en_attente {
+    background-color: #fff8e1;
+    color: #ff8f00;
+    border: 1px solid #ff8f00;
+  }
+  
+  .status-badge.acceptee {
+    background-color: #e6f7e6;
+    color: #2e7d32;
+    border: 1px solid #2e7d32;
+  }
+  
+  .status-badge.refusee {
+    background-color: #ffebee;
+    color: #c62828;
+    border: 1px solid #c62828;
+  }
+  
+  /* Styles pour le tri */
+  .sortable-header {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+  }
+  
+  .sort-icon {
+    margin-left: 8px;
+    display: flex;
+    align-items: center;
+  }
