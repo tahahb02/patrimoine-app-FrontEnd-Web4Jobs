@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
   FaBars, 
   FaTimes, 
@@ -38,6 +38,7 @@ const EquipmentDisponible = () => {
   const [activeSection, setActiveSection] = useState("request");
   const [requestSuccess, setRequestSuccess] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [categories] = useState(["PC Portable", "PC Bureau", "Bureautique", "Imprimante"]);
   const [centers] = useState(["A", "B", "C"]);
@@ -268,16 +269,28 @@ const EquipmentDisponible = () => {
 
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <ul className="sidebar-menu">
-          <li><Link to="/AdherantHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link></li>
-          <li><Link to="/EquipmentDisponible"><FaCogs /><span>Équipements Disponibles</span></Link></li>
-          <li><Link to="/SuiviDemandeAdherant"><FaClipboardList /><span>Suivi des Demandes</span></Link></li>
-          <li><Link to="/notifications"><FaBell /><span>Notifications</span></Link></li>
+          <li className={location.pathname === '/AdherantHome' ? 'active' : ''}>
+            <Link to="/AdherantHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
+          </li>
+          <li className={location.pathname === '/EquipmentDisponible' ? 'active' : ''}>
+            <Link to="/EquipmentDisponible"><FaCogs /><span>Équipements Disponibles</span></Link>
+          </li>
+          <li className={location.pathname === '/SuiviDemandeAdherant' ? 'active' : ''}>
+            <Link to="/SuiviDemandeAdherant"><FaClipboardList /><span>Suivi des Demandes</span></Link>
+          </li>
+          <li className={location.pathname === '/notifications' ? 'active' : ''}>
+            <Link to="/notifications"><FaBell /><span>Notifications</span></Link>
+          </li>
         </ul>
 
         <div className="sidebar-bottom">
           <ul>
-            <li><Link to="/account"><FaUser /><span>Compte</span></Link></li>
-            <li className="logout"><Link to="/logout"><FaSignOutAlt /><span>Déconnexion</span></Link></li>
+            <li className={location.pathname === '/account' ? 'active' : ''}>
+              <Link to="/account"><FaUser /><span>Compte</span></Link>
+            </li>
+            <li className="logout">
+              <Link to="/logout"><FaSignOutAlt /><span>Déconnexion</span></Link>
+            </li>
           </ul>
         </div>
       </aside>
