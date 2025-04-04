@@ -13,7 +13,8 @@ import {
   FaSort,
   FaSortUp,
   FaSortDown,
-  FaExclamationTriangle
+  FaExclamationTriangle,
+  FaFilter
 } from "react-icons/fa";
 import { Pagination, Spin, Alert } from "antd";
 import "../styles/SuiviDemandeAdherant.css";
@@ -30,12 +31,40 @@ const SuiviDemandeAdherant = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [sortConfig, setSortConfig] = useState({ key: 'dateDemande', direction: 'desc' });
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedUrgency, setSelectedUrgency] = useState("");
+  const [urgentCount, setUrgentCount] = useState(0);
+  const [mediumCount, setMediumCount] = useState(0);
+  const [normalCount, setNormalCount] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
+
+  const urgencyOptions = [
+    { value: "", label: "Tous les niveaux" },
+    { value: "ELEVEE", label: "Urgent" },
+    { value: "MOYENNE", label: "Moyen" },
+    { value: "NORMALE", label: "Normal" }
+  ];
+
+  const statusOptions = [
+    { value: "", label: "Tous les statuts" },
+    { value: "EN_ATTENTE", label: "En attente" },
+    { value: "APPROUVEE", label: "Approuvée" },
+    { value: "REJETEE", label: "Rejetée" },
+    { value: "EN_COURS", label: "En cours" },
+    { value: "TERMINEE", label: "Terminée" },
+    { value: "ANNULEE", label: "Annulée" }
+  ];
 
   useEffect(() => {
     fetchDemandes();
   }, []);
+
+  useEffect(() => {
+    if (demandes.length > 0) {
+      countUrgencyLevels();
+    }
+  }, [demandes]);
 
   const fetchDemandes = async () => {
     setLoading(true);
@@ -81,6 +110,16 @@ const SuiviDemandeAdherant = () => {
     }
   };
 
+  const countUrgencyLevels = () => {
+    const urgent = demandes.filter(d => d.urgence === "ELEVEE").length;
+    const medium = demandes.filter(d => d.urgence === "MOYENNE").length;
+    const normal = demandes.filter(d => d.urgence === "NORMALE").length;
+    
+    setUrgentCount(urgent);
+    setMediumCount(medium);
+    setNormalCount(normal);
+  };
+
   const formatDateTime = (dateTime) => {
     if (!dateTime) return 'Non disponible';
     try {
@@ -110,8 +149,16 @@ const SuiviDemandeAdherant = () => {
     return sortConfig.direction === 'asc' ? <FaSortUp /> : <FaSortDown />;
   };
 
+  const filteredDemandes = useMemo(() => {
+    return demandes.filter(demande => {
+      const matchesStatus = !selectedStatus || demande.statut === selectedStatus;
+      const matchesUrgency = !selectedUrgency || demande.urgence === selectedUrgency;
+      return matchesStatus && matchesUrgency;
+    });
+  }, [demandes, selectedStatus, selectedUrgency]);
+
   const sortedDemandes = useMemo(() => {
-    const sortableDemandes = [...demandes];
+    const sortableDemandes = [...filteredDemandes];
     if (sortConfig.key) {
       sortableDemandes.sort((a, b) => {
         const aValue = a[sortConfig.key];
@@ -127,7 +174,7 @@ const SuiviDemandeAdherant = () => {
       });
     }
     return sortableDemandes;
-  }, [demandes, sortConfig]);
+  }, [filteredDemandes, sortConfig]);
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -156,10 +203,58 @@ const SuiviDemandeAdherant = () => {
   const getStatusBadgeClass = (statut) => {
     if (!statut) return 'status-badge';
     const statutLower = statut.toLowerCase();
-    if (statutLower.includes('accept')) return 'status-badge acceptee';
-    if (statutLower.includes('refus')) return 'status-badge refusee';
-    return 'status-badge en_attente';
+    if (statutLower.includes('accept') || statutLower.includes('approuv')) 
+      return 'status-badge acceptee';
+    if (statutLower.includes('refus') || statutLower.includes('rejet')) 
+      return 'status-badge refusee';
+    if (statutLower.includes('termine')) 
+      return 'status-badge terminee';
+    if (statutLower.includes('annul')) 
+      return 'status-badge annulee';
+    if (statutLower.includes('cours')) 
+      return 'status-badge en-cours';
+    return 'status-badge en-attente';
   };
+
+  const getUrgencyBadgeClass = (urgence) => {
+    if (!urgence) return 'urgency-badge';
+    switch(urgence) {
+      case 'ELEVEE':
+        return 'urgency-badge urgent';
+      case 'MOYENNE':
+        return 'urgency-badge medium';
+      case 'NORMALE':
+        return 'urgency-badge normal';
+      default:
+        return 'urgency-badge';
+    }
+  };
+
+  const UrgencyStatsPanel = () => (
+    <div className="urgency-stats-panel">
+      <div className="urgency-stat urgent">
+        <FaExclamationTriangle className="stat-icon" />
+        <div className="stat-content">
+          <span className="stat-count">{urgentCount}</span>
+          <span className="stat-label">Urgentes</span>
+        </div>
+      </div>
+      <div className="urgency-stat medium">
+        <FaExclamationTriangle className="stat-icon" />
+        <div className="stat-content">
+          <span className="stat-count">{mediumCount}</span>
+          <span className="stat-label">Moyennes</span>
+        </div>
+      </div>
+      <div className="urgency-stat normal">
+        <FaExclamationTriangle className="stat-icon" />
+        <div className="stat-content">
+          <span className="stat-count">{normalCount}</span>
+          <span className="stat-label">Normales</span>
+        </div>
+      </div>
+    </div>
+  );
 
   if (loading) {
     return (
@@ -228,7 +323,41 @@ const SuiviDemandeAdherant = () => {
       <main className="content">
         <h2>Suivi des Demandes</h2>
 
-        {demandes.length === 0 ? (
+        <UrgencyStatsPanel />
+
+        <div className="search-and-filters">
+          <div className="filter-group">
+            <FaFilter className="filter-icon" />
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="filter-select"
+            >
+              {statusOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <FaFilter className="filter-icon" />
+            <select
+              value={selectedUrgency}
+              onChange={(e) => setSelectedUrgency(e.target.value)}
+              className="filter-select"
+            >
+              {urgencyOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {filteredDemandes.length === 0 ? (
           <div className="no-data-message">
             <p>Aucune demande trouvée.</p>
             <Link to="/EquipmentDisponible" className="new-request-link">
@@ -244,7 +373,7 @@ const SuiviDemandeAdherant = () => {
                     <th>Équipement</th>
                     <th>Centre</th>
                     <th>Statut</th>
-                    <th>Commentaire</th>
+                    <th>Urgence</th>
                     <th onClick={() => requestSort('dateDemande')}>
                       <div className="sortable-header">
                         Date Demande
@@ -266,7 +395,11 @@ const SuiviDemandeAdherant = () => {
                           {demande.statut || 'EN_ATTENTE'}
                         </span>
                       </td>
-                      <td>{demande.commentaireResponsable || 'Aucun commentaire'}</td>
+                      <td>
+                        <span className={getUrgencyBadgeClass(demande.urgence)}>
+                          {demande.urgence || 'NORMALE'}
+                        </span>
+                      </td>
                       <td className="date-cell">{formatDateTime(demande.dateDemande)}</td>
                       <td>
                         <button
@@ -320,6 +453,12 @@ const SuiviDemandeAdherant = () => {
                   <span className="detail-label">Statut :</span>
                   <span className={`detail-value ${getStatusBadgeClass(selectedDetails.statut)}`}>
                     {selectedDetails.statut || 'EN_ATTENTE'}
+                  </span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Urgence :</span>
+                  <span className={`detail-value ${getUrgencyBadgeClass(selectedDetails.urgence)}`}>
+                    {selectedDetails.urgence || 'NORMALE'}
                   </span>
                 </div>
                 <div className="detail-row">
