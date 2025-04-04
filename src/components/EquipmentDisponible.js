@@ -10,7 +10,9 @@ import {
   FaUser, 
   FaSignOutAlt, 
   FaSearch, 
-  FaClock 
+  FaClock,
+  FaExclamationTriangle,
+  FaInfoCircle
 } from "react-icons/fa";
 import { Pagination } from 'antd';
 import "../styles/EquipmentDisponible.css";
@@ -27,7 +29,8 @@ const EquipmentDisponible = () => {
   const [requestForm, setRequestForm] = useState({
     startDate: "",
     endDate: "",
-    remarks: ""
+    remarks: "",
+    urgency: "NORMALE"
   });
   const [isBlurred, setIsBlurred] = useState(false);
   const [userData, setUserData] = useState(null);
@@ -35,8 +38,10 @@ const EquipmentDisponible = () => {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(12);
-  const [activeSection, setActiveSection] = useState("request");
+  const [activeSection, setActiveSection] = useState("personal");
   const [requestSuccess, setRequestSuccess] = useState(false);
+  const [urgentRequests, setUrgentRequests] = useState([]);
+  const [lateRequests, setLateRequests] = useState([]);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -51,6 +56,8 @@ const EquipmentDisponible = () => {
     }
 
     fetchUserData(userId);
+    fetchUrgentRequests();
+    fetchLateRequests();
   }, [navigate]);
 
   const fetchUserData = async (userId) => {
@@ -94,6 +101,34 @@ const EquipmentDisponible = () => {
       console.error("Erreur lors du chargement des équipements:", error);
       setError(error.message);
       setLoading(false);
+    }
+  };
+
+  const fetchUrgentRequests = async () => {
+    try {
+      const response = await fetch('http://localhost:8080/api/demandes/urgentes', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+        }
+      });
+      const data = await response.json();
+      setUrgentRequests(data);
+    } catch (error) {
+      console.error('Error fetching urgent requests:', error);
+    }
+  };
+
+  const fetchLateRequests = async () => {
+    try {
+      const response = await fetch('http://localhost:8080/api/demandes/en-retard', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+        }
+      });
+      const data = await response.json();
+      setLateRequests(data);
+    } catch (error) {
+      console.error('Error fetching late requests:', error);
     }
   };
 
@@ -144,11 +179,12 @@ const EquipmentDisponible = () => {
     setRequestForm({
       startDate: "",
       endDate: "",
-      remarks: ""
+      remarks: "",
+      urgency: "NORMALE"
     });
     setShowRequestModal(true);
     setIsBlurred(true);
-    setActiveSection("request");
+    setActiveSection("personal");
     setRequestSuccess(false);
   };
 
@@ -201,7 +237,8 @@ const EquipmentDisponible = () => {
           centreEquipement: selectedEquipment.center,
           dateDebut: requestForm.startDate,
           dateFin: requestForm.endDate,
-          remarques: requestForm.remarks
+          remarques: requestForm.remarks,
+          urgence: requestForm.urgency
         }),
       });
   
@@ -214,12 +251,44 @@ const EquipmentDisponible = () => {
       setRequestSuccess(true);
       alert(`Demande d'équipement soumise avec succès le ${formatDateTime(data.dateDemande)} !`);
       fetchEquipments();
+      fetchUrgentRequests();
+      fetchLateRequests();
     } catch (error) {
       console.error("Erreur:", error);
       setError(error.message);
       alert(`Erreur: ${error.message}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const AlertPanel = () => (
+    <div className="alert-panel">
+      {urgentRequests.length > 0 && (
+        <div className="alert urgent-alert">
+          <FaExclamationTriangle />
+          <span>{urgentRequests.length} demande(s) urgente(s)</span>
+        </div>
+      )}
+      {lateRequests.length > 0 && (
+        <div className="alert late-alert">
+          <FaClock />
+          <span>{lateRequests.length} demande(s) en retard</span>
+        </div>
+      )}
+    </div>
+  );
+
+  const getUrgencyBadge = (urgency) => {
+    switch(urgency) {
+      case "NORMALE":
+        return <span className="urgency-badge urgency-normal">Normale</span>;
+      case "MOYENNE":
+        return <span className="urgency-badge urgency-medium">Moyenne</span>;
+      case "ELEVEE":
+        return <span className="urgency-badge urgency-high">Élevée</span>;
+      default:
+        return <span className="urgency-badge">Inconnu</span>;
     }
   };
 
@@ -297,6 +366,8 @@ const EquipmentDisponible = () => {
 
       <main className={`content ${isBlurred ? "blur-background" : ""}`}>
         <h2>Équipements Disponibles</h2>
+
+        <AlertPanel />
 
         <div className="search-and-filters">
           <div className="search-bar">
@@ -402,10 +473,45 @@ const EquipmentDisponible = () => {
                 <div className="accordion-container">
                   <div className="accordion-section">
                     <div 
+                      className={`accordion-header ${activeSection === 'personal' ? 'active' : ''}`}
+                      onClick={() => toggleSection('personal')}
+                    >
+                      <span><FaUser /> Informations personnelles</span>
+                    </div>
+                    <div className={`accordion-content ${activeSection === 'personal' ? 'show' : ''}`}>
+                      <div className="form-group">
+                        <label>Nom complet</label>
+                        <input
+                          type="text"
+                          value={`${userData?.prenom || ''} ${userData?.nom || ''}`}
+                          readOnly
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Téléphone</label>
+                        <input
+                          type="text"
+                          value={userData?.phone || ''}
+                          readOnly
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Email</label>
+                        <input
+                          type="text"
+                          value={userData?.email || ''}
+                          readOnly
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="accordion-section">
+                    <div 
                       className={`accordion-header ${activeSection === 'equipment' ? 'active' : ''}`}
                       onClick={() => toggleSection('equipment')}
                     >
-                      <span>📋 Informations sur l'équipement</span>
+                      <span><FaInfoCircle /> Équipement demandé</span>
                     </div>
                     <div className={`accordion-content ${activeSection === 'equipment' ? 'show' : ''}`}>
                       <div className="form-group">
@@ -440,7 +546,7 @@ const EquipmentDisponible = () => {
                       className={`accordion-header ${activeSection === 'request' ? 'active' : ''}`}
                       onClick={() => toggleSection('request')}
                     >
-                      <span>📅 Détails de la demande</span>
+                      <span><FaClock /> Période de demande</span>
                     </div>
                     <div className={`accordion-content ${activeSection === 'request' ? 'show' : ''}`}>
                       <div className="form-group">
@@ -472,6 +578,63 @@ const EquipmentDisponible = () => {
                           onChange={(e) => setRequestForm({...requestForm, remarks: e.target.value})}
                           placeholder="Facultatif"
                         />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="accordion-section">
+                    <div 
+                      className={`accordion-header ${activeSection === 'urgency' ? 'active' : ''}`}
+                      onClick={() => toggleSection('urgency')}
+                    >
+                      <span><FaExclamationTriangle /> Niveau d'urgence</span>
+                    </div>
+                    <div className={`accordion-content ${activeSection === 'urgency' ? 'show' : ''}`}>
+                      <div className="urgency-notice">
+                        Sélectionnez le niveau d'urgence approprié pour votre demande
+                      </div>
+                      <div className="urgency-levels">
+                        <div 
+                          className={`urgency-level ${requestForm.urgency === 'NORMALE' ? 'selected' : ''}`}
+                          onClick={() => setRequestForm({...requestForm, urgency: 'NORMALE'})}
+                        >
+                          <div className="urgency-indicator normal"></div>
+                          <div className="urgency-content">
+                            <h4>Normale</h4>
+                            <p>Traitement standard sous 5-7 jours ouvrés</p>
+                            <div className="urgency-details">
+                              <span>Pour les demandes non critiques</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div 
+                          className={`urgency-level ${requestForm.urgency === 'MOYENNE' ? 'selected' : ''}`}
+                          onClick={() => setRequestForm({...requestForm, urgency: 'MOYENNE'})}
+                        >
+                          <div className="urgency-indicator medium"></div>
+                          <div className="urgency-content">
+                            <h4>Moyenne</h4>
+                            <p>Traitement accéléré sous 2-3 jours ouvrés</p>
+                            <div className="urgency-details">
+                              <span>Pour les besoins importants</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div 
+                          className={`urgency-level ${requestForm.urgency === 'ELEVEE' ? 'selected' : ''}`}
+                          onClick={() => setRequestForm({...requestForm, urgency: 'ELEVEE'})}
+                        >
+                          <div className="urgency-indicator high"></div>
+                          <div className="urgency-content">
+                            <h4>Élevée</h4>
+                            <p>Traitement immédiat (24h maximum)</p>
+                            <div className="urgency-details">
+                              <span>Pour les situations critiques</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>

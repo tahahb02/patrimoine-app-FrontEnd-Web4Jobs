@@ -15,7 +15,8 @@ import {
   FaClock,
   FaSort,
   FaSortUp,
-  FaSortDown
+  FaSortDown,
+  FaExclamationTriangle
 } from "react-icons/fa";
 import { Pagination } from 'antd';
 import "../styles/GestionDemandes.css";
@@ -25,7 +26,10 @@ const API_URL = "http://localhost:8080/api/demandes";
 const GestionDemandes = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [demandes, setDemandes] = useState([]);
-  const [filtres, setFiltres] = useState({ statut: "TOUS" });
+  const [filtres, setFiltres] = useState({ 
+    statut: "TOUS",
+    urgence: "TOUS" 
+  });
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [selectedDemande, setSelectedDemande] = useState(null);
@@ -110,6 +114,9 @@ const GestionDemandes = () => {
     if (filtres.statut !== "TOUS" && demande.statut !== filtres.statut) {
       return false;
     }
+    if (filtres.urgence !== "TOUS" && demande.urgence !== filtres.urgence) {
+      return false;
+    }
     return (
       (demande.nom?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
       (demande.prenom?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
@@ -177,6 +184,23 @@ const GestionDemandes = () => {
     setSelectedDetails(null);
   };
 
+  const getUrgenceColor = (urgence) => {
+    switch(urgence) {
+      case 'ELEVEE': return 'high';
+      case 'MOYENNE': return 'medium';
+      case 'NORMALE': return 'normal';
+      default: return 'normal';
+    }
+  };
+
+  const getUrgenceIcon = (urgence) => {
+    switch(urgence) {
+      case 'ELEVEE': return <FaExclamationTriangle className="urgence-icon high" />;
+      case 'MOYENNE': return <FaExclamationTriangle className="urgence-icon medium" />;
+      default: return <FaExclamationTriangle className="urgence-icon normal" />;
+    }
+  };
+
   return (
     <div className={`dashboard-container ${sidebarOpen ? "sidebar-expanded" : ""}`}>
       <nav className="navbar">
@@ -235,6 +259,36 @@ const GestionDemandes = () => {
               onChange={handleSearch}
             />
           </div>
+          
+          <div className="filters-row">
+            <div className="filter-group">
+              <label>Statut :</label>
+              <select
+                name="statut"
+                value={filtres.statut}
+                onChange={handleFiltreChange}
+              >
+                <option value="TOUS">Tous les statuts</option>
+                <option value="EN_ATTENTE">En attente</option>
+                <option value="ACCEPTEE">Acceptée</option>
+                <option value="REFUSEE">Refusée</option>
+              </select>
+            </div>
+            
+            <div className="filter-group">
+              <label>Urgence :</label>
+              <select
+                name="urgence"
+                value={filtres.urgence}
+                onChange={handleFiltreChange}
+              >
+                <option value="TOUS">Tous les niveaux</option>
+                <option value="NORMALE">Normale</option>
+                <option value="MOYENNE">Moyenne</option>
+                <option value="ELEVEE">Élevée</option>
+              </select>
+            </div>
+          </div>
         </div>
 
         <div className="table-container">
@@ -254,6 +308,7 @@ const GestionDemandes = () => {
                     </span>
                   </div>
                 </th>
+                <th>Urgence</th>
                 <th>Actions</th>
                 <th>Détails</th>
               </tr>
@@ -271,6 +326,12 @@ const GestionDemandes = () => {
                     </span>
                   </td>
                   <td className="date-cell">{formatDateTime(demande.dateDemande)}</td>
+                  <td>
+                    <div className={`urgence-badge ${getUrgenceColor(demande.urgence)}`}>
+                      {getUrgenceIcon(demande.urgence)}
+                      {demande.urgence}
+                    </div>
+                  </td>
                   <td>
                     <button
                       className="accepter"
@@ -385,6 +446,12 @@ const GestionDemandes = () => {
                     <span className="detail-label">Statut :</span>
                     <span className={`detail-value status-badge ${selectedDetails.statut.toLowerCase()}`}>
                       {selectedDetails.statut}
+                    </span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Degré d'urgence :</span>
+                    <span className={`detail-value urgence-badge ${getUrgenceColor(selectedDetails.urgence)}`}>
+                      {selectedDetails.urgence}
                     </span>
                   </div>
                   <div className="detail-row">

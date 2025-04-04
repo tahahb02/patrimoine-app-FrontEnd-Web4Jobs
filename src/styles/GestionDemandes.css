@@ -325,3 +325,97 @@
   color: #c62828;
   border: 1px solid #c62828;
 }
+
+/* Styles pour les filtres */
+.filters-row {
+  display: flex;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-group label {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.filter-group select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+}
+
+/* Styles pour l'affichage de l'urgence */
+.urgence-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.urgence-badge.normal {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #2e7d32;
+}
+
+.urgence-badge.medium {
+  background-color: #fff8e1;
+  color: #ff8f00;
+  border: 1px solid #ff8f00;
+}
+
+.urgence-badge.high {
+  background-color: #ffebee;
+  color: #c62828;
+  border: 1px solid #c62828;
+  animation: pulse 1.5s infinite;
+}
+
+.urgence-icon {
+  font-size: 14px;
+}
+
+.urgence-icon.normal {
+  color: #2e7d32;
+}
+
+.urgence-icon.medium {
+  color: #ff8f00;
+}
+
+.urgence-icon.high {
+  color: #c62828;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .filters-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .filter-group {
+    width: 100%;
+  }
+  
+  .filter-group select {
+    width: 100%;
+  }
+}
