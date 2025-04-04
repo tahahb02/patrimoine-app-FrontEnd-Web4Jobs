@@ -15,7 +15,8 @@ import {
   FaClock,
   FaSort,
   FaSortUp,
-  FaSortDown
+  FaSortDown,
+  FaFilter
 } from 'react-icons/fa';
 import { Pagination } from 'antd';
 import '../styles/HistoriqueDemandes.css';
@@ -26,7 +27,7 @@ const HistoriqueDemandes = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [demandes, setDemandes] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filtres, setFiltres] = useState({ statut: 'TOUS' });
+  const [selectedStatus, setSelectedStatus] = useState('');
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedDetails, setSelectedDetails] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -35,21 +36,39 @@ const HistoriqueDemandes = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const statusOptions = [
+    { value: "", label: "Tous les statuts" },
+    { value: "ACCEPTEE", label: "Acceptées" },
+    { value: "REFUSEE", label: "Refusées" }
+  ];
+
   useEffect(() => {
     fetchHistoriqueDemandes();
   }, []);
 
   const fetchHistoriqueDemandes = async () => {
     try {
-      const response = await fetch(`${API_URL}/historique`);
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${API_URL}/historique`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
       if (!response.ok) {
-        throw new Error('Erreur réseau');
+        if (response.status === 401) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("userId");
+          navigate("/login");
+          return;
+        }
+        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
       }
+
       const data = await response.json();
       setDemandes(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Erreur lors du chargement de l'historique:", error);
-      setDemandes([]);
     }
   };
 
@@ -78,15 +97,6 @@ const HistoriqueDemandes = () => {
     return `${days}j ${hours}h ${minutes}m`;
   };
 
-  const handleSearch = (e) => {
-    setSearchTerm(e.target.value);
-  };
-
-  const handleFiltreChange = (e) => {
-    const { name, value } = e.target;
-    setFiltres({ ...filtres, [name]: value });
-  };
-
   const requestSort = (key) => {
     let direction = 'asc';
     if (sortConfig.key === key && sortConfig.direction === 'asc') {
@@ -100,42 +110,40 @@ const HistoriqueDemandes = () => {
     return sortConfig.direction === 'asc' ? <FaSortUp /> : <FaSortDown />;
   };
 
+  const filteredDemandes = useMemo(() => {
+    return demandes.filter(demande => {
+      const matchesStatus = !selectedStatus || demande.statut === selectedStatus;
+      const matchesSearch = 
+        (demande.nom?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (demande.prenom?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (demande.centreEquipement?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+      
+      return matchesStatus && matchesSearch;
+    });
+  }, [demandes, selectedStatus, searchTerm]);
+
   const sortedDemandes = useMemo(() => {
-    let sortableDemandes = [...demandes];
-    if (sortConfig !== null) {
+    const sortableDemandes = [...filteredDemandes];
+    if (sortConfig.key) {
       sortableDemandes.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) {
+        const aValue = a[sortConfig.key];
+        const bValue = b[sortConfig.key];
+        
+        if (aValue < bValue) {
           return sortConfig.direction === 'asc' ? -1 : 1;
         }
-        if (a[sortConfig.key] > b[sortConfig.key]) {
+        if (aValue > bValue) {
           return sortConfig.direction === 'asc' ? 1 : -1;
         }
         return 0;
       });
     }
     return sortableDemandes;
-  }, [demandes, sortConfig]);
-
-  const filteredDemandes = sortedDemandes.filter((demande) => {
-    if (filtres.statut !== 'TOUS' && demande.statut !== filtres.statut) {
-      return false;
-    }
-    return (
-      (demande.nom?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-      (demande.prenom?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-      (demande.centreEquipement?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-    );
-  });
+  }, [filteredDemandes, sortConfig]);
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentDemandes = filteredDemandes.slice(indexOfFirstItem, indexOfLastItem);
-
-  const showTotal = (total) => `Total ${total} demandes`;
-
-  const onChange = (page) => {
-    setCurrentPage(page);
-  };
+  const currentDemandes = sortedDemandes.slice(indexOfFirstItem, indexOfLastItem);
 
   const handleDetails = (demande) => {
     setSelectedDetails(demande);
@@ -148,8 +156,33 @@ const HistoriqueDemandes = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("userSession");
-    navigate("/", { replace: true });
+    localStorage.removeItem("token");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("userEmail");
+    localStorage.removeItem("userNom");
+    localStorage.removeItem("userPrenom");
+    navigate("/login");
+  };
+
+  const getStatusBadgeClass = (statut) => {
+    if (!statut) return 'status-badge';
+    const statutLower = statut.toLowerCase();
+    if (statutLower.includes('accept')) 
+      return 'status-badge acceptee';
+    if (statutLower.includes('refus')) 
+      return 'status-badge refusee';
+    return 'status-badge';
+  };
+
+  const getResponseTimeClass = (statut) => {
+    if (!statut) return '';
+    const statutLower = statut.toLowerCase();
+    if (statutLower.includes('accept')) 
+      return 'fast';
+    if (statutLower.includes('refus')) 
+      return 'slow';
+    return '';
   };
 
   return (
@@ -197,26 +230,29 @@ const HistoriqueDemandes = () => {
       <main className="content">
         <h2>Historique des Demandes</h2>
 
-        <div className="search-and-filter-container">
+        <div className="search-and-filters">
           <div className="search-bar">
             <FaSearch className="search-icon" />
             <input
               type="text"
               placeholder="Rechercher par nom, prénom ou centre..."
               value={searchTerm}
-              onChange={handleSearch}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
 
-          <div className="filtre-group">
+          <div className="filter-group">
+            <FaFilter className="filter-icon" />
             <select
-              name="statut"
-              value={filtres.statut}
-              onChange={handleFiltreChange}
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="filter-select"
             >
-              <option value="TOUS">Tous les statuts</option>
-              <option value="ACCEPTEE">Acceptées</option>
-              <option value="REFUSEE">Refusées</option>
+              {statusOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -258,14 +294,14 @@ const HistoriqueDemandes = () => {
                   <td>{demande.centreEquipement}</td>
                   <td>{demande.nomEquipement}</td>
                   <td>
-                    <span className={`status-badge ${demande.statut.toLowerCase()}`}>
+                    <span className={getStatusBadgeClass(demande.statut)}>
                       {demande.statut}
                     </span>
                   </td>
                   <td className="date-cell">{formatDateTime(demande.dateDemande)}</td>
                   <td className="date-cell">{formatDateTime(demande.dateReponse)}</td>
                   <td>
-                    <div className={`response-time ${demande.statut === 'ACCEPTEE' ? 'fast' : demande.statut === 'REFUSEE' ? 'slow' : ''}`}>
+                    <div className={`response-time ${getResponseTimeClass(demande.statut)}`}>
                       <FaClock /> {calculateResponseTime(demande)}
                     </div>
                   </td>
@@ -286,10 +322,9 @@ const HistoriqueDemandes = () => {
         <div className="pagination-container">
           <Pagination
             current={currentPage}
-            total={filteredDemandes.length}
+            total={sortedDemandes.length}
             pageSize={itemsPerPage}
-            onChange={onChange}
-            showTotal={showTotal}
+            onChange={(page) => setCurrentPage(page)}
             showSizeChanger={false}
             showQuickJumper
           />
@@ -351,7 +386,7 @@ const HistoriqueDemandes = () => {
                 </div>
                 <div className="detail-row">
                   <span className="detail-label">Statut :</span>
-                  <span className={`detail-value status-badge ${selectedDetails.statut.toLowerCase()}`}>
+                  <span className={`detail-value ${getStatusBadgeClass(selectedDetails.statut)}`}>
                     {selectedDetails.statut}
                   </span>
                 </div>

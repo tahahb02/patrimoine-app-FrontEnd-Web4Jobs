@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt, FaPlus, FaEdit, FaTrash, FaSearch, FaHistory } from "react-icons/fa";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt, FaPlus, FaEdit, FaTrash, FaSearch, FaHistory, FaFilter } from "react-icons/fa";
 import { Pagination } from 'antd';
 import "../styles/Equipments.css";
 
@@ -28,6 +28,7 @@ const Equipments = () => {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedCenter, setSelectedCenter] = useState("");
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchEquipments();
@@ -35,15 +36,22 @@ const Equipments = () => {
 
   const fetchEquipments = async () => {
     try {
+      const token = localStorage.getItem("token");
       const response = await fetch(API_URL, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-        },
-        credentials: "include",
+          'Authorization': `Bearer ${token}`
+        }
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("userId");
+          navigate("/login");
+          return;
+        }
         throw new Error(`Erreur HTTP: ${response.status}`);
       }
 
@@ -51,7 +59,6 @@ const Equipments = () => {
       setEquipments(data);
     } catch (error) {
       console.error("Erreur lors du chargement des équipements:", error);
-      alert(`Erreur lors du chargement des équipements: ${error.message}`);
     }
   };
 
@@ -65,13 +72,13 @@ const Equipments = () => {
     if (file) {
       const formData = new FormData();
       formData.append("image", file);
-  
+
       try {
         const response = await fetch("http://localhost:8080/upload", {
           method: "POST",
           body: formData,
         });
-  
+
         if (response.ok) {
           const data = await response.json();
           const imageUrl = data.imageUrl;
@@ -110,30 +117,31 @@ const Equipments = () => {
       alert("Tous les champs sont obligatoires !");
       return;
     }
-  
+
     const currentDate = new Date().toISOString();
     const equipmentWithDate = { ...newEquipment, dateAdded: currentDate };
-  
+
     try {
       const response = await fetch(`${API_URL}/add`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          'Authorization': `Bearer ${localStorage.getItem("token")}`
+        },
         body: JSON.stringify(equipmentWithDate),
       });
-  
+
       if (response.ok) {
         fetchEquipments();
         setNewEquipment({ name: "", category: "", center: "", dateAdded: "", description: "", imageUrl: "" });
         setSelectedImage(null);
         setShowAddModal(false);
-        alert("Équipement ajouté avec succès !");
       } else {
         const errorData = await response.json();
         alert(`Erreur lors de l'ajout de l'équipement: ${errorData.message}`);
       }
     } catch (error) {
       console.error("Erreur lors de l'ajout d'un équipement:", error);
-      alert("Erreur réseau. Veuillez réessayer.");
     }
   };
 
@@ -148,7 +156,10 @@ const Equipments = () => {
     try {
       const response = await fetch(`${API_URL}/update/${editingEquipment.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          'Authorization': `Bearer ${localStorage.getItem("token")}`
+        },
         body: JSON.stringify(newEquipment),
       });
 
@@ -157,14 +168,12 @@ const Equipments = () => {
         setEditingEquipment(null);
         setNewEquipment({ name: "", category: "", center: "", dateAdded: "", description: "", imageUrl: "" });
         setShowEditModal(false);
-        alert("Équipement modifié avec succès !");
       } else {
         const errorData = await response.json();
         alert(`Erreur lors de la modification de l'équipement: ${errorData.message}`);
       }
     } catch (error) {
       console.error("Erreur lors de la mise à jour de l'équipement:", error);
-      alert("Erreur réseau. Veuillez réessayer.");
     }
   };
 
@@ -172,18 +181,21 @@ const Equipments = () => {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer cet équipement ?")) return;
 
     try {
-      const response = await fetch(`${API_URL}/delete/${id}`, { method: "DELETE" });
+      const response = await fetch(`${API_URL}/delete/${id}`, { 
+        method: "DELETE",
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem("token")}`
+        }
+      });
 
       if (response.ok) {
         fetchEquipments();
-        alert("Équipement supprimé avec succès !");
       } else {
         const errorData = await response.json();
         alert(`Erreur lors de la suppression de l'équipement: ${errorData.message}`);
       }
     } catch (error) {
       console.error("Erreur lors de la suppression de l'équipement:", error);
-      alert("Erreur réseau. Veuillez réessayer.");
     }
   };
 
@@ -195,6 +207,16 @@ const Equipments = () => {
   const handleCloseDetailsModal = () => {
     setShowDetailsModal(false);
     setSelectedEquipment(null);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("userEmail");
+    localStorage.removeItem("userNom");
+    localStorage.removeItem("userPrenom");
+    navigate("/login");
   };
 
   const filteredEquipments = equipments.filter((equipment) => {
@@ -257,10 +279,7 @@ const Equipments = () => {
               <Link to="/account"><FaUser /><span>Compte</span></Link>
             </li>
             <li className="logout">
-              <button onClick={() => {
-                localStorage.removeItem("userSession");
-                window.location.href = "/";
-              }} style={{ background: 'none', border: 'none', padding: '10px', width: '100%', textAlign: 'left' }}>
+              <button onClick={handleLogout} style={{ background: 'none', border: 'none', padding: '10px', width: '100%', textAlign: 'left' }}>
                 <FaSignOutAlt /><span>Déconnexion</span>
               </button>
             </li>
@@ -283,29 +302,37 @@ const Equipments = () => {
           </div>
 
           <div className="filters-container">
-            <select
-              className="filter-select"
-              onChange={(e) => setSelectedCategory(e.target.value)}
-            >
-              <option value="">Toutes les catégories</option>
-              {categories.map((category, index) => (
-                <option key={index} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
+            <div className="filter-group">
+              <FaFilter className="filter-icon" />
+              <select
+                className="filter-select"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+              >
+                <option value="">Toutes les catégories</option>
+                {categories.map((category, index) => (
+                  <option key={index} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-            <select
-              className="filter-select"
-              onChange={(e) => setSelectedCenter(e.target.value)}
-            >
-              <option value="">Tous les centres</option>
-              {centers.map((center, index) => (
-                <option key={index} value={center}>
-                  {center}
-                </option>
-              ))}
-            </select>
+            <div className="filter-group">
+              <FaFilter className="filter-icon" />
+              <select
+                className="filter-select"
+                value={selectedCenter}
+                onChange={(e) => setSelectedCenter(e.target.value)}
+              >
+                <option value="">Tous les centres</option>
+                {centers.map((center, index) => (
+                  <option key={index} value={center}>
+                    {center}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
