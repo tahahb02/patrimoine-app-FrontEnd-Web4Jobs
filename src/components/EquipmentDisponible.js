@@ -15,7 +15,7 @@ import {
   FaInfoCircle
 } from "react-icons/fa";
 import { Pagination } from 'antd';
-import "../styles/EquipmentDisponible.css";
+import "../styles/adherant.css";
 
 const EquipmentDisponible = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -279,18 +279,6 @@ const EquipmentDisponible = () => {
     </div>
   );
 
-  const getUrgencyBadge = (urgency) => {
-    switch(urgency) {
-      case "NORMALE":
-        return <span className="urgency-badge urgency-normal">Normale</span>;
-      case "MOYENNE":
-        return <span className="urgency-badge urgency-medium">Moyenne</span>;
-      case "ELEVEE":
-        return <span className="urgency-badge urgency-high">Élevée</span>;
-      default:
-        return <span className="urgency-badge">Inconnu</span>;
-    }
-  };
 
   if (loading && !showRequestModal && !showDetailsModal) {
     return (
@@ -367,7 +355,7 @@ const EquipmentDisponible = () => {
       <main className={`content ${isBlurred ? "blur-background" : ""}`}>
         <h2>Équipements Disponibles</h2>
 
-        <AlertPanel />
+
 
         <div className="search-and-filters">
           <div className="search-bar">

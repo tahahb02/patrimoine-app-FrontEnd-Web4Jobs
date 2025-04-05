@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt, FaHistory } from "react-icons/fa";
-import "../styles/ResponsableHome.css";
+import "../styles/responsable.css";
 
 const ResponsableHome = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);

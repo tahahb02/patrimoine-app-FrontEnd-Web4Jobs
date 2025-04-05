@@ -13,9 +13,9 @@ import {
   FaSearch,
   FaEdit,
   FaTrash,
-  FaEye
+  FaEye,
+  FaFilter
 } from "react-icons/fa";
-import "../styles/GererUtilisateurs.css";
 
 const API_URL = "http://localhost:8080/api/utilisateurs";
 
@@ -28,7 +28,7 @@ const GererUtilisateurs = () => {
   const [selectedUtilisateur, setSelectedUtilisateur] = useState(null);
   const [showDetails, setShowDetails] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(20); // 20 utilisateurs par page
+  const [pageSize] = useState(20);
   const [formData, setFormData] = useState({
     nom: "",
     prenom: "",
@@ -74,12 +74,10 @@ const GererUtilisateurs = () => {
     return matchesSearch && matchesRole;
   });
 
-  // Calcul des utilisateurs à afficher
   const indexOfLastItem = currentPage * pageSize;
   const indexOfFirstItem = indexOfLastItem - pageSize;
   const currentUsers = filteredUtilisateurs.slice(indexOfFirstItem, indexOfLastItem);
 
-  // Fonction pour afficher le total
   const showTotal = (total) => `Total ${total} utilisateurs`;
 
   const onChange = (page) => {
@@ -208,7 +206,7 @@ const GererUtilisateurs = () => {
         <h2>Gérer les Utilisateurs</h2>
 
         {/* Barre de recherche et filtre de rôle */}
-        <div className="search-and-filter-container">
+        <div className="search-and-filters">
           <div className="search-bar">
             <FaSearch className="search-icon" />
             <input
@@ -218,19 +216,24 @@ const GererUtilisateurs = () => {
               onChange={handleSearch}
             />
           </div>
-          <select
-            className="role-filter"
-            value={selectedRole}
-            onChange={(e) => setSelectedRole(e.target.value)}
-          >
-            <option value="">Tous les rôles</option>
-            <option value="ADHERANT">Adhérent</option>
-            <option value="RESPONSABLE">Responsable</option>
-            <option value="DIRECTEUR">Directeur</option>
-            <option value="ADMIN">Admin</option>
-          </select>
+          
+          <div className="filter-group">
+            <FaFilter className="filter-icon" />
+            <select
+              className="filter-select"
+              value={selectedRole}
+              onChange={(e) => setSelectedRole(e.target.value)}
+            >
+              <option value="">Tous les rôles</option>
+              <option value="ADHERANT">Adhérent</option>
+              <option value="RESPONSABLE">Responsable</option>
+              <option value="DIRECTEUR">Directeur</option>
+              <option value="ADMIN">Admin</option>
+            </select>
+          </div>
+          
           <button className="add-button" onClick={() => handleOpenModal()}>
-            Ajouter un Utilisateur
+            <span>+</span> Ajouter un Utilisateur
           </button>
         </div>
 
@@ -334,7 +337,7 @@ const GererUtilisateurs = () => {
           </table>
         </div>
 
-        {/* Pagination avec affichage du total */}
+        {/* Pagination */}
         <div className="pagination-container">
           <Pagination
             current={currentPage}

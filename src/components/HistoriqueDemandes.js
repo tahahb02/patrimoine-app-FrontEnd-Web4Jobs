@@ -19,7 +19,7 @@ import {
   FaFilter
 } from 'react-icons/fa';
 import { Pagination } from 'antd';
-import '../styles/HistoriqueDemandes.css';
+import '../styles/responsable.css';
 
 const API_URL = 'http://localhost:8080/api/demandes';
 

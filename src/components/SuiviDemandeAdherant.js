@@ -17,7 +17,7 @@ import {
   FaFilter
 } from "react-icons/fa";
 import { Pagination, Spin, Alert } from "antd";
-import "../styles/SuiviDemandeAdherant.css";
+import "../styles/adherant.css";
 
 const API_URL = "http://localhost:8080/api/demandes";
 

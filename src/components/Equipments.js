@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt, FaPlus, FaEdit, FaTrash, FaSearch, FaHistory, FaFilter } from "react-icons/fa";
 import { Pagination } from 'antd';
-import "../styles/Equipments.css";
+import "../styles/responsable.css";
 
 const API_URL = "http://localhost:8080/api/equipments";
 

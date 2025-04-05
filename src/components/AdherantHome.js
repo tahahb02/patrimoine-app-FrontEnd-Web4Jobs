@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt } from "react-icons/fa";
-import "../styles/AdherantHome.css";
+import "../styles/adherant.css";
 
 const AdherantHome = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
