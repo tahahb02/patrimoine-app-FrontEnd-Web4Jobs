@@ -170,12 +170,26 @@ const GestionDemandes = () => {
     setSelectedDemande(demande);
     setActionChoisie(action);
     setShowModal(true);
+    document.body.style.overflow = 'hidden';
   };
 
   const closeModal = () => {
     setShowModal(false);
     setCommentaire("");
     setActionChoisie(null);
+    document.body.style.overflow = 'auto';
+  };
+
+  const handleDetails = (demande) => {
+    setSelectedDetails(demande);
+    setShowDetailsModal(true);
+    document.body.style.overflow = 'hidden';
+  };
+
+  const closeDetailsModal = () => {
+    setShowDetailsModal(false);
+    setSelectedDetails(null);
+    document.body.style.overflow = 'auto';
   };
 
   const mettreAJourStatut = async () => {
@@ -206,16 +220,6 @@ const GestionDemandes = () => {
       console.error("Erreur lors de la mise à jour du statut:", error);
       alert("Erreur réseau. Veuillez réessayer.");
     }
-  };
-
-  const handleDetails = (demande) => {
-    setSelectedDetails(demande);
-    setShowDetailsModal(true);
-  };
-
-  const closeDetailsModal = () => {
-    setShowDetailsModal(false);
-    setSelectedDetails(null);
   };
 
   const handleLogout = () => {
@@ -475,63 +479,65 @@ const GestionDemandes = () => {
           </div>
         )}
 
-        {showDetailsModal && selectedDetails && (
+        {showDetailsModal && (
           <div className="modal-overlay">
-            <div className="modal-content">
-              <button className="modal-close" onClick={closeDetailsModal}>
-                &times;
-              </button>
-              <h3>Détails de la demande</h3>
+          <div className="modal-content">
+            <button className="modal-close" onClick={closeDetailsModal}>
+              &times;
+            </button>
+            <h3>Détails de la demande</h3>
+            {selectedDetails && (
               <div className="details-content">
-                <div className="detail-row">
-                  <span className="detail-label">Nom :</span>
-                  <span className="detail-value">{selectedDetails.nom}</span>
+                  <div className="detail-row">
+                    <span className="detail-label">Nom:</span>
+                    <span className="detail-value">{selectedDetails.nom}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Prénom:</span>
+                    <span className="detail-value">{selectedDetails.prenom}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Centre:</span>
+                    <span className="detail-value">{selectedDetails.centreEquipement}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Équipement:</span>
+                    <span className="detail-value">{selectedDetails.nomEquipement}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Catégorie:</span>
+                    <span className="detail-value">{selectedDetails.categorieEquipement}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Date de début:</span>
+                    <span className="detail-value">{formatDateTime(selectedDetails.dateDebut)}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Date de fin:</span>
+                    <span className="detail-value">{formatDateTime(selectedDetails.dateFin)}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Date de demande:</span>
+                    <span className="detail-value">{formatDateTime(selectedDetails.dateDemande)}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Statut:</span>
+                    <span className={`detail-value ${getStatusBadgeClass(selectedDetails.statut)}`}>
+                      {selectedDetails.statut}
+                    </span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Degré d'urgence:</span>
+                    <span className={`detail-value ${getUrgencyBadgeClass(selectedDetails.urgence)}`}>
+                      {selectedDetails.urgence}
+                    </span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Commentaire responsable:</span>
+                    <span className="detail-value">{selectedDetails.commentaireResponsable || "Aucun commentaire"}</span>
+                  </div>
                 </div>
-                <div className="detail-row">
-                  <span className="detail-label">Prénom :</span>
-                  <span className="detail-value">{selectedDetails.prenom}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Centre :</span>
-                  <span className="detail-value">{selectedDetails.centreEquipement}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Équipement :</span>
-                  <span className="detail-value">{selectedDetails.nomEquipement}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Catégorie :</span>
-                  <span className="detail-value">{selectedDetails.categorieEquipement}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Date de début :</span>
-                  <span className="detail-value">{formatDateTime(selectedDetails.dateDebut)}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Date de fin :</span>
-                  <span className="detail-value">{formatDateTime(selectedDetails.dateFin)}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Date de demande :</span>
-                  <span className="detail-value">{formatDateTime(selectedDetails.dateDemande)}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Statut :</span>
-                  <span className={`detail-value ${getStatusBadgeClass(selectedDetails.statut)}`}>
-                    {selectedDetails.statut}
-                  </span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Degré d'urgence :</span>
-                  <span className={`detail-value ${getUrgencyBadgeClass(selectedDetails.urgence)}`}>
-                    {selectedDetails.urgence}
-                  </span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Commentaire responsable :</span>
-                  <span className="detail-value">{selectedDetails.commentaireResponsable || "Aucun commentaire"}</span>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         )}

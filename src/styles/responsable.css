@@ -802,3 +802,65 @@
       grid-template-columns: 1fr;
     }
   }
+
+  /* ================ STATUS STATS PANEL ================ */
+.status-stats-panel {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.status-stat {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  border-radius: 8px;
+  color: white;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.status-stat.accepted {
+  background-color: #4CAF50;
+}
+
+.status-stat.rejected {
+  background-color: #F44336;
+}
+
+.stat-icon {
+  font-size: 24px;
+  margin-right: 15px;
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-count {
+  font-size: 24px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .status-stats-panel {
+    flex-direction: column;
+  }
+  
+  .status-stat {
+    width: 100%;
+  }
+}
+
+
+
+
+

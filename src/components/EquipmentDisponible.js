@@ -12,7 +12,8 @@ import {
   FaSearch, 
   FaClock,
   FaExclamationTriangle,
-  FaInfoCircle
+  FaInfoCircle,
+  FaFilter
 } from "react-icons/fa";
 import { Pagination } from 'antd';
 import "../styles/adherant.css";
@@ -279,7 +280,6 @@ const EquipmentDisponible = () => {
     </div>
   );
 
-
   if (loading && !showRequestModal && !showDetailsModal) {
     return (
       <div className="dashboard-container">
@@ -355,7 +355,7 @@ const EquipmentDisponible = () => {
       <main className={`content ${isBlurred ? "blur-background" : ""}`}>
         <h2>Équipements Disponibles</h2>
 
-
+        
 
         <div className="search-and-filters">
           <div className="search-bar">
@@ -369,31 +369,37 @@ const EquipmentDisponible = () => {
           </div>
 
           <div className="filters-container">
-            <select
-              className="filter-select"
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              value={selectedCategory}
-            >
-              <option value="">Toutes les catégories</option>
-              {categories.map((category, index) => (
-                <option key={index} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
+            <div className="filter-group">
+              <FaFilter className="filter-icon" />
+              <select
+                className="filter-select"
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                value={selectedCategory}
+              >
+                <option value="">Toutes les catégories</option>
+                {categories.map((category, index) => (
+                  <option key={index} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-            <select
-              className="filter-select"
-              onChange={(e) => setSelectedCenter(e.target.value)}
-              value={selectedCenter}
-            >
-              <option value="">Tous les centres</option>
-              {centers.map((center, index) => (
-                <option key={index} value={center}>
-                  {center}
-                </option>
-              ))}
-            </select>
+            <div className="filter-group">
+              <FaFilter className="filter-icon" />
+              <select
+                className="filter-select"
+                onChange={(e) => setSelectedCenter(e.target.value)}
+                value={selectedCenter}
+              >
+                <option value="">Tous les centres</option>
+                {centers.map((center, index) => (
+                  <option key={index} value={center}>
+                    {center}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 

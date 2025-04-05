@@ -16,7 +16,9 @@ import {
   FaSort,
   FaSortUp,
   FaSortDown,
-  FaFilter
+  FaFilter,
+  FaCheckCircle,
+  FaTimesCircle
 } from 'react-icons/fa';
 import { Pagination } from 'antd';
 import '../styles/responsable.css';
@@ -33,6 +35,8 @@ const HistoriqueDemandes = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [sortConfig, setSortConfig] = useState({ key: 'dateDemande', direction: 'desc' });
+  const [acceptedCount, setAcceptedCount] = useState(0);
+  const [rejectedCount, setRejectedCount] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -45,6 +49,12 @@ const HistoriqueDemandes = () => {
   useEffect(() => {
     fetchHistoriqueDemandes();
   }, []);
+
+  useEffect(() => {
+    if (demandes.length > 0) {
+      countStatus();
+    }
+  }, [demandes]);
 
   const fetchHistoriqueDemandes = async () => {
     try {
@@ -70,6 +80,14 @@ const HistoriqueDemandes = () => {
     } catch (error) {
       console.error("Erreur lors du chargement de l'historique:", error);
     }
+  };
+
+  const countStatus = () => {
+    const accepted = demandes.filter(d => d.statut === "ACCEPTEE").length;
+    const rejected = demandes.filter(d => d.statut === "REFUSEE").length;
+    
+    setAcceptedCount(accepted);
+    setRejectedCount(rejected);
   };
 
   const formatDateTime = (dateTime) => {
@@ -148,11 +166,13 @@ const HistoriqueDemandes = () => {
   const handleDetails = (demande) => {
     setSelectedDetails(demande);
     setShowDetailsModal(true);
+    document.body.style.overflow = 'hidden';
   };
 
   const closeDetailsModal = () => {
     setShowDetailsModal(false);
     setSelectedDetails(null);
+    document.body.style.overflow = 'auto';
   };
 
   const handleLogout = () => {
@@ -184,6 +204,25 @@ const HistoriqueDemandes = () => {
       return 'slow';
     return '';
   };
+
+  const StatusStatsPanel = () => (
+    <div className="status-stats-panel">
+      <div className="status-stat accepted">
+        <FaCheckCircle className="stat-icon" />
+        <div className="stat-content">
+          <span className="stat-count">{acceptedCount}</span>
+          <span className="stat-label">Acceptées</span>
+        </div>
+      </div>
+      <div className="status-stat rejected">
+        <FaTimesCircle className="stat-icon" />
+        <div className="stat-content">
+          <span className="stat-count">{rejectedCount}</span>
+          <span className="stat-label">Refusées</span>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className={`dashboard-container ${sidebarOpen ? 'sidebar-expanded' : ''}`}>
@@ -229,6 +268,8 @@ const HistoriqueDemandes = () => {
 
       <main className="content">
         <h2>Historique des Demandes</h2>
+
+        <StatusStatsPanel />
 
         <div className="search-and-filters">
           <div className="search-bar">
@@ -330,71 +371,73 @@ const HistoriqueDemandes = () => {
           />
         </div>
 
-        {showDetailsModal && selectedDetails && (
-          <div className="modal-overlay">
-            <div className="modal-content">
-              <button className="modal-close" onClick={closeDetailsModal}>
-                &times;
-              </button>
-              <h3>Détails de la demande</h3>
-              <div className="details-content">
-                <div className="detail-row">
-                  <span className="detail-label">Nom :</span>
-                  <span className="detail-value">{selectedDetails.nom}</span>
+        {showDetailsModal && (
+         <div className="modal-overlay">
+         <div className="modal-content">
+           <button className="modal-close" onClick={closeDetailsModal}>
+             &times;
+           </button>
+           <h3>Détails de la demande</h3>
+           {selectedDetails && (
+             <div className="details-content">
+                  <div className="detail-row">
+                    <span className="detail-label">Nom:</span>
+                    <span className="detail-value">{selectedDetails.nom}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Prénom:</span>
+                    <span className="detail-value">{selectedDetails.prenom}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Centre:</span>
+                    <span className="detail-value">{selectedDetails.centreEquipement}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Équipement:</span>
+                    <span className="detail-value">{selectedDetails.nomEquipement}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Catégorie:</span>
+                    <span className="detail-value">{selectedDetails.categorieEquipement}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Date de début:</span>
+                    <span className="detail-value">{formatDateTime(selectedDetails.dateDebut)}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Date de fin:</span>
+                    <span className="detail-value">{formatDateTime(selectedDetails.dateFin)}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Date de demande:</span>
+                    <span className="detail-value">{formatDateTime(selectedDetails.dateDemande)}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Date de réponse:</span>
+                    <span className="detail-value">{formatDateTime(selectedDetails.dateReponse)}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Temps de réponse:</span>
+                    <span className="detail-value">
+                      <FaClock /> {calculateResponseTime(selectedDetails)}
+                    </span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Remarques:</span>
+                    <span className="detail-value">{selectedDetails.remarques || 'Aucune remarque'}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Statut:</span>
+                    <span className={`detail-value ${getStatusBadgeClass(selectedDetails.statut)}`}>
+                      {selectedDetails.statut}
+                    </span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Commentaire responsable:</span>
+                    <span className="detail-value">{selectedDetails.commentaireResponsable || 'Aucun commentaire'}</span>
+                  </div>
                 </div>
-                <div className="detail-row">
-                  <span className="detail-label">Prénom :</span>
-                  <span className="detail-value">{selectedDetails.prenom}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Centre :</span>
-                  <span className="detail-value">{selectedDetails.centreEquipement}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Équipement :</span>
-                  <span className="detail-value">{selectedDetails.nomEquipement}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Catégorie :</span>
-                  <span className="detail-value">{selectedDetails.categorieEquipement}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Date de début :</span>
-                  <span className="detail-value">{formatDateTime(selectedDetails.dateDebut)}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Date de fin :</span>
-                  <span className="detail-value">{formatDateTime(selectedDetails.dateFin)}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Date de demande :</span>
-                  <span className="detail-value">{formatDateTime(selectedDetails.dateDemande)}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Date de réponse :</span>
-                  <span className="detail-value">{formatDateTime(selectedDetails.dateReponse)}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Temps de réponse :</span>
-                  <span className="detail-value">
-                    <FaClock /> {calculateResponseTime(selectedDetails)}
-                  </span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Remarques :</span>
-                  <span className="detail-value">{selectedDetails.remarques || 'Aucune remarque'}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Statut :</span>
-                  <span className={`detail-value ${getStatusBadgeClass(selectedDetails.statut)}`}>
-                    {selectedDetails.statut}
-                  </span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Commentaire responsable :</span>
-                  <span className="detail-value">{selectedDetails.commentaireResponsable || 'Aucun commentaire'}</span>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         )}
