@@ -18,6 +18,27 @@ export default function LoginPage() {
     setErrorMessage("");
     setIsLoading(true);
 
+    // Vérification statique pour l'admin
+    if (email === "admin@gmail.com" && password === "admin") {
+      // Stocker les informations admin statiques
+      localStorage.setItem("token", "static-admin-token");
+      localStorage.setItem("userRole", "ADMIN");
+      localStorage.setItem("userId", "admin-001");
+      localStorage.setItem("userEmail", "admin@gmail.com");
+      localStorage.setItem("userNom", "Admin");
+      localStorage.setItem("userPrenom", "System");
+      
+      if (rememberMe) {
+        localStorage.setItem("rememberMe", "true");
+      } else {
+        localStorage.removeItem("rememberMe");
+      }
+      
+      navigate("/AdminHome");
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch("http://localhost:8080/api/auth/login", {
         method: "POST",

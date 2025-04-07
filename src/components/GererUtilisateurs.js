@@ -228,7 +228,6 @@ const GererUtilisateurs = () => {
               <option value="ADHERANT">Adhérent</option>
               <option value="RESPONSABLE">Responsable</option>
               <option value="DIRECTEUR">Directeur</option>
-              <option value="ADMIN">Admin</option>
             </select>
           </div>
           
@@ -430,7 +429,7 @@ const GererUtilisateurs = () => {
                     <option value="ADHERANT">Adhérent</option>
                     <option value="RESPONSABLE">Responsable</option>
                     <option value="DIRECTEUR">Directeur</option>
-                    <option value="ADMIN">Admin</option>
+                    
                   </select>
                 </div>
                 <div className="modal-actions">
