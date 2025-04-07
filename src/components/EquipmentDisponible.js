@@ -355,7 +355,7 @@ const EquipmentDisponible = () => {
       <main className={`content ${isBlurred ? "blur-background" : ""}`}>
         <h2>Équipements Disponibles</h2>
 
-        
+        <AlertPanel />
 
         <div className="search-and-filters">
           <div className="search-bar">
@@ -445,273 +445,279 @@ const EquipmentDisponible = () => {
       </main>
 
       {showRequestModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <button className="modal-close" onClick={closeModal}>
-              &times;
-            </button>
-            <h3>Demander un équipement</h3>
-            
-            {requestSuccess ? (
-              <div className="success-message">
-                <p>Votre demande a été soumise avec succès !</p>
-                <button 
-                  className="close-button"
-                  onClick={closeModal}
-                >
-                  Fermer
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmitRequest}>
-                <div className="accordion-container">
-                  <div className="accordion-section">
-                    <div 
-                      className={`accordion-header ${activeSection === 'personal' ? 'active' : ''}`}
-                      onClick={() => toggleSection('personal')}
-                    >
-                      <span><FaUser /> Informations personnelles</span>
+        <>
+          <div className="modal-backdrop"></div>
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <button className="modal-close" onClick={closeModal}>
+                &times;
+              </button>
+              <h3>Demander un équipement</h3>
+              
+              {requestSuccess ? (
+                <div className="success-message">
+                  <p>Votre demande a été soumise avec succès !</p>
+                  <button 
+                    className="close-button"
+                    onClick={closeModal}
+                  >
+                    Fermer
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmitRequest}>
+                  <div className="accordion-container">
+                    <div className="accordion-section">
+                      <div 
+                        className={`accordion-header ${activeSection === 'personal' ? 'active' : ''}`}
+                        onClick={() => toggleSection('personal')}
+                      >
+                        <span><FaUser /> Informations personnelles</span>
+                      </div>
+                      <div className={`accordion-content ${activeSection === 'personal' ? 'show' : ''}`}>
+                        <div className="form-group">
+                          <label>Nom complet</label>
+                          <input
+                            type="text"
+                            value={`${userData?.prenom || ''} ${userData?.nom || ''}`}
+                            readOnly
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Téléphone</label>
+                          <input
+                            type="text"
+                            value={userData?.phone || ''}
+                            readOnly
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Email</label>
+                          <input
+                            type="text"
+                            value={userData?.email || ''}
+                            readOnly
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div className={`accordion-content ${activeSection === 'personal' ? 'show' : ''}`}>
-                      <div className="form-group">
-                        <label>Nom complet</label>
-                        <input
-                          type="text"
-                          value={`${userData?.prenom || ''} ${userData?.nom || ''}`}
-                          readOnly
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Téléphone</label>
-                        <input
-                          type="text"
-                          value={userData?.phone || ''}
-                          readOnly
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Email</label>
-                        <input
-                          type="text"
-                          value={userData?.email || ''}
-                          readOnly
-                        />
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className="accordion-section">
-                    <div 
-                      className={`accordion-header ${activeSection === 'equipment' ? 'active' : ''}`}
-                      onClick={() => toggleSection('equipment')}
-                    >
-                      <span><FaInfoCircle /> Équipement demandé</span>
+                    <div className="accordion-section">
+                      <div 
+                        className={`accordion-header ${activeSection === 'equipment' ? 'active' : ''}`}
+                        onClick={() => toggleSection('equipment')}
+                      >
+                        <span><FaInfoCircle /> Équipement demandé</span>
+                      </div>
+                      <div className={`accordion-content ${activeSection === 'equipment' ? 'show' : ''}`}>
+                        <div className="form-group">
+                          <label>Nom de l'équipement</label>
+                          <input
+                            type="text"
+                            value={selectedEquipment?.name || ""}
+                            readOnly
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Catégorie</label>
+                          <input
+                            type="text"
+                            value={selectedEquipment?.category || ""}
+                            readOnly
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Centre</label>
+                          <input
+                            type="text"
+                            value={selectedEquipment?.center || ""}
+                            readOnly
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div className={`accordion-content ${activeSection === 'equipment' ? 'show' : ''}`}>
-                      <div className="form-group">
-                        <label>Nom de l'équipement</label>
-                        <input
-                          type="text"
-                          value={selectedEquipment?.name || ""}
-                          readOnly
-                        />
+                    
+                    <div className="accordion-section">
+                      <div 
+                        className={`accordion-header ${activeSection === 'request' ? 'active' : ''}`}
+                        onClick={() => toggleSection('request')}
+                      >
+                        <span><FaClock /> Période de demande</span>
                       </div>
-                      <div className="form-group">
-                        <label>Catégorie</label>
-                        <input
-                          type="text"
-                          value={selectedEquipment?.category || ""}
-                          readOnly
-                        />
+                      <div className={`accordion-content ${activeSection === 'request' ? 'show' : ''}`}>
+                        <div className="form-group">
+                          <label>Date et heure de début *</label>
+                          <input
+                            type="datetime-local"
+                            name="startDate"
+                            value={requestForm.startDate}
+                            onChange={(e) => setRequestForm({...requestForm, startDate: e.target.value})}
+                            required
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Date et heure de fin *</label>
+                          <input
+                            type="datetime-local"
+                            name="endDate"
+                            value={requestForm.endDate}
+                            onChange={(e) => setRequestForm({...requestForm, endDate: e.target.value})}
+                            required
+                            min={requestForm.startDate}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Remarques</label>
+                          <textarea
+                            name="remarks"
+                            value={requestForm.remarks}
+                            onChange={(e) => setRequestForm({...requestForm, remarks: e.target.value})}
+                            placeholder="Facultatif"
+                          />
+                        </div>
                       </div>
-                      <div className="form-group">
-                        <label>Centre</label>
-                        <input
-                          type="text"
-                          value={selectedEquipment?.center || ""}
-                          readOnly
-                        />
+                    </div>
+
+                    <div className="accordion-section">
+                      <div 
+                        className={`accordion-header ${activeSection === 'urgency' ? 'active' : ''}`}
+                        onClick={() => toggleSection('urgency')}
+                      >
+                        <span><FaExclamationTriangle /> Niveau d'urgence</span>
+                      </div>
+                      <div className={`accordion-content ${activeSection === 'urgency' ? 'show' : ''}`}>
+                        <div className="urgency-notice">
+                          Sélectionnez le niveau d'urgence approprié pour votre demande
+                        </div>
+                        <div className="urgency-levels">
+                          <div 
+                            className={`urgency-level ${requestForm.urgency === 'NORMALE' ? 'selected' : ''}`}
+                            onClick={() => setRequestForm({...requestForm, urgency: 'NORMALE'})}
+                          >
+                            <div className="urgency-indicator normal"></div>
+                            <div className="urgency-content">
+                              <h4>Normale</h4>
+                              <p>Traitement standard sous 5-7 jours ouvrés</p>
+                              <div className="urgency-details">
+                                <span>Pour les demandes non critiques</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div 
+                            className={`urgency-level ${requestForm.urgency === 'MOYENNE' ? 'selected' : ''}`}
+                            onClick={() => setRequestForm({...requestForm, urgency: 'MOYENNE'})}
+                          >
+                            <div className="urgency-indicator medium"></div>
+                            <div className="urgency-content">
+                              <h4>Moyenne</h4>
+                              <p>Traitement accéléré sous 2-3 jours ouvrés</p>
+                              <div className="urgency-details">
+                                <span>Pour les besoins importants</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div 
+                            className={`urgency-level ${requestForm.urgency === 'ELEVEE' ? 'selected' : ''}`}
+                            onClick={() => setRequestForm({...requestForm, urgency: 'ELEVEE'})}
+                          >
+                            <div className="urgency-indicator high"></div>
+                            <div className="urgency-content">
+                              <h4>Élevée</h4>
+                              <p>Traitement immédiat (24h maximum)</p>
+                              <div className="urgency-details">
+                                <span>Pour les situations critiques</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="accordion-section">
-                    <div 
-                      className={`accordion-header ${activeSection === 'request' ? 'active' : ''}`}
-                      onClick={() => toggleSection('request')}
+                  <div className="form-actions">
+                    <button 
+                      type="button" 
+                      className="cancel-button"
+                      onClick={closeModal}
                     >
-                      <span><FaClock /> Période de demande</span>
-                    </div>
-                    <div className={`accordion-content ${activeSection === 'request' ? 'show' : ''}`}>
-                      <div className="form-group">
-                        <label>Date et heure de début *</label>
-                        <input
-                          type="datetime-local"
-                          name="startDate"
-                          value={requestForm.startDate}
-                          onChange={(e) => setRequestForm({...requestForm, startDate: e.target.value})}
-                          required
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Date et heure de fin *</label>
-                        <input
-                          type="datetime-local"
-                          name="endDate"
-                          value={requestForm.endDate}
-                          onChange={(e) => setRequestForm({...requestForm, endDate: e.target.value})}
-                          required
-                          min={requestForm.startDate}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Remarques</label>
-                        <textarea
-                          name="remarks"
-                          value={requestForm.remarks}
-                          onChange={(e) => setRequestForm({...requestForm, remarks: e.target.value})}
-                          placeholder="Facultatif"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="accordion-section">
-                    <div 
-                      className={`accordion-header ${activeSection === 'urgency' ? 'active' : ''}`}
-                      onClick={() => toggleSection('urgency')}
+                      Annuler
+                    </button>
+                    <button 
+                      type="submit" 
+                      disabled={loading} 
+                      className="submit-button"
                     >
-                      <span><FaExclamationTriangle /> Niveau d'urgence</span>
-                    </div>
-                    <div className={`accordion-content ${activeSection === 'urgency' ? 'show' : ''}`}>
-                      <div className="urgency-notice">
-                        Sélectionnez le niveau d'urgence approprié pour votre demande
-                      </div>
-                      <div className="urgency-levels">
-                        <div 
-                          className={`urgency-level ${requestForm.urgency === 'NORMALE' ? 'selected' : ''}`}
-                          onClick={() => setRequestForm({...requestForm, urgency: 'NORMALE'})}
-                        >
-                          <div className="urgency-indicator normal"></div>
-                          <div className="urgency-content">
-                            <h4>Normale</h4>
-                            <p>Traitement standard sous 5-7 jours ouvrés</p>
-                            <div className="urgency-details">
-                              <span>Pour les demandes non critiques</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div 
-                          className={`urgency-level ${requestForm.urgency === 'MOYENNE' ? 'selected' : ''}`}
-                          onClick={() => setRequestForm({...requestForm, urgency: 'MOYENNE'})}
-                        >
-                          <div className="urgency-indicator medium"></div>
-                          <div className="urgency-content">
-                            <h4>Moyenne</h4>
-                            <p>Traitement accéléré sous 2-3 jours ouvrés</p>
-                            <div className="urgency-details">
-                              <span>Pour les besoins importants</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div 
-                          className={`urgency-level ${requestForm.urgency === 'ELEVEE' ? 'selected' : ''}`}
-                          onClick={() => setRequestForm({...requestForm, urgency: 'ELEVEE'})}
-                        >
-                          <div className="urgency-indicator high"></div>
-                          <div className="urgency-content">
-                            <h4>Élevée</h4>
-                            <p>Traitement immédiat (24h maximum)</p>
-                            <div className="urgency-details">
-                              <span>Pour les situations critiques</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                      {loading ? "Envoi en cours..." : "Soumettre la demande"}
+                    </button>
                   </div>
-                </div>
-                
-                <div className="form-actions">
-                  <button 
-                    type="button" 
-                    className="cancel-button"
-                    onClick={closeModal}
-                  >
-                    Annuler
-                  </button>
-                  <button 
-                    type="submit" 
-                    disabled={loading} 
-                    className="submit-button"
-                  >
-                    {loading ? "Envoi en cours..." : "Soumettre la demande"}
-                  </button>
-                </div>
-              </form>
-            )}
+                </form>
+              )}
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {showDetailsModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <button className="modal-close" onClick={closeModal}>
-              &times;
-            </button>
-            <h3>Détails de l'équipement</h3>
-            {selectedEquipment && (
-              <div className="details-content">
-                <img 
-                  src={selectedEquipment.imageUrl || "/images/pc.jpg"} 
-                  alt="Équipement" 
-                  className="detail-image"
-                />
-                <div className="detail-group">
-                  <span className="detail-label">Nom:</span>
-                  <span className="detail-value">{selectedEquipment.name}</span>
+        <>
+          <div className="modal-backdrop"></div>
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <button className="modal-close" onClick={closeModal}>
+                &times;
+              </button>
+              <h3>Détails de l'équipement</h3>
+              {selectedEquipment && (
+                <div className="details-content">
+                  <img 
+                    src={selectedEquipment.imageUrl || "/images/pc.jpg"} 
+                    alt="Équipement" 
+                    className="detail-image"
+                  />
+                  <div className="detail-group">
+                    <span className="detail-label">Nom:</span>
+                    <span className="detail-value">{selectedEquipment.name}</span>
+                  </div>
+                  <div className="detail-group">
+                    <span className="detail-label">Catégorie:</span>
+                    <span className="detail-value">{selectedEquipment.category}</span>
+                  </div>
+                  <div className="detail-group">
+                    <span className="detail-label">Centre:</span>
+                    <span className="detail-value">{selectedEquipment.center}</span>
+                  </div>
+                  <div className="detail-group">
+                    <span className="detail-label">Description:</span>
+                    <span className="detail-value">{selectedEquipment.description || "Non spécifiée"}</span>
+                  </div>
+                  {selectedEquipment.specifications && (
+                    <>
+                      <h4 className="specifications-title">Spécifications techniques:</h4>
+                      <div className="specifications-grid">
+                        {Object.entries(selectedEquipment.specifications).map(([key, value]) => (
+                          <div key={key} className="specification-item">
+                            <span className="spec-label">{key}:</span>
+                            <span className="spec-value">{value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  <button 
+                    className="request-button"
+                    onClick={() => {
+                      closeModal();
+                      handleRequestEquipment(selectedEquipment);
+                    }}
+                  >
+                    Demander cet équipement
+                  </button>
                 </div>
-                <div className="detail-group">
-                  <span className="detail-label">Catégorie:</span>
-                  <span className="detail-value">{selectedEquipment.category}</span>
-                </div>
-                <div className="detail-group">
-                  <span className="detail-label">Centre:</span>
-                  <span className="detail-value">{selectedEquipment.center}</span>
-                </div>
-                <div className="detail-group">
-                  <span className="detail-label">Description:</span>
-                  <span className="detail-value">{selectedEquipment.description || "Non spécifiée"}</span>
-                </div>
-                {selectedEquipment.specifications && (
-                  <>
-                    <h4 className="specifications-title">Spécifications techniques:</h4>
-                    <div className="specifications-grid">
-                      {Object.entries(selectedEquipment.specifications).map(([key, value]) => (
-                        <div key={key} className="specification-item">
-                          <span className="spec-label">{key}:</span>
-                          <span className="spec-value">{value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-                <button 
-                  className="request-button"
-                  onClick={() => {
-                    closeModal();
-                    handleRequestEquipment(selectedEquipment);
-                  }}
-                >
-                  Demander cet équipement
-                </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
