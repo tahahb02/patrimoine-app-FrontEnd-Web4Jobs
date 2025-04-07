@@ -351,98 +351,100 @@ const GererUtilisateurs = () => {
 
         {/* Modal pour ajouter/modifier un utilisateur */}
         {showModal && (
-          <div className="modal-overlay">
-            <div className="modal-content">
-              <button className="modal-close" onClick={closeModal}>
-                &times;
-              </button>
-              <h3>{selectedUtilisateur ? "Modifier l'Utilisateur" : "Ajouter un Utilisateur"}</h3>
-              <form onSubmit={handleSubmit}>
-                <div className="form-group">
-                  <label>Nom</label>
-                  <input
-                    type="text"
-                    name="nom"
-                    value={formData.nom}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Prénom</label>
-                  <input
-                    type="text"
-                    name="prenom"
-                    value={formData.prenom}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Email</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Mot de passe</label>
-                  <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Téléphone</label>
-                  <input
-                    type="text"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Ville</label>
-                  <input
-                    type="text"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Rôle</label>
-                  <select
-                    name="role"
-                    value={formData.role}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="ADHERANT">Adhérent</option>
-                    <option value="RESPONSABLE">Responsable</option>
-                    <option value="DIRECTEUR">Directeur</option>
-                    
-                  </select>
-                </div>
-                <div className="modal-actions">
-                  <button type="submit" className="save-button">
-                    {selectedUtilisateur ? "Modifier" : "Ajouter"}
-                  </button>
-                  <button type="button" className="cancel-button" onClick={closeModal}>
-                    Annuler
-                  </button>
-                </div>
-              </form>
+          <>
+            <div className="modal-backdrop"></div>
+            <div className="modal-overlay">
+              <div className="modal-content">
+                <button className="modal-close" onClick={closeModal}>
+                  &times;
+                </button>
+                <h3>{selectedUtilisateur ? "Modifier l'Utilisateur" : "Ajouter un Utilisateur"}</h3>
+                <form onSubmit={handleSubmit}>
+                  <div className="form-group">
+                    <label>Nom</label>
+                    <input
+                      type="text"
+                      name="nom"
+                      value={formData.nom}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Prénom</label>
+                    <input
+                      type="text"
+                      name="prenom"
+                      value={formData.prenom}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Email</label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Mot de passe</label>
+                    <input
+                      type="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      required={!selectedUtilisateur}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Téléphone</label>
+                    <input
+                      type="text"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Ville</label>
+                    <input
+                      type="text"
+                      name="city"
+                      value={formData.city}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Rôle</label>
+                    <select
+                      name="role"
+                      value={formData.role}
+                      onChange={handleChange}
+                      required
+                    >
+                      <option value="ADHERANT">Adhérent</option>
+                      <option value="RESPONSABLE">Responsable</option>
+                      <option value="DIRECTEUR">Directeur</option>
+                    </select>
+                  </div>
+                  <div className="modal-actions">
+                    <button type="submit" className="save-button">
+                      {selectedUtilisateur ? "Modifier" : "Ajouter"}
+                    </button>
+                    <button type="button" className="cancel-button" onClick={closeModal}>
+                      Annuler
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
-          </div>
+          </>
         )}
       </main>
     </div>
