@@ -5,6 +5,7 @@ import {
   FaBell, FaUser, FaSignOutAlt, FaSearch, FaHistory, FaUsers,
   FaPhone, FaEnvelope, FaClock
 } from 'react-icons/fa';
+import { Pagination } from 'antd';
 import '../styles/responsable.css';
 
 const API_URL = 'http://localhost:8080/api/equipments';
@@ -16,8 +17,10 @@ const HistoriqueEquipements = () => {
   const [selectedEquipment, setSelectedEquipment] = useState(null);
   const [historique, setHistorique] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(25);
   const navigate = useNavigate();
-  const location = useLocation(); // Hook pour obtenir l'URL actuelle
+  const location = useLocation();
 
   useEffect(() => {
     fetchEquipments();
@@ -79,11 +82,32 @@ const HistoriqueEquipements = () => {
     navigate("/login");
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    const formattedDate = date.toISOString()
+      .replace('T', ' ')
+      .replace(/\.\d+Z$/, '')
+      .replace(/-/g, '/');
+    return formattedDate;
+  };
+
   const filteredEquipments = equipments.filter(equipment =>
-    equipment.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    equipment.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    equipment.center.toLowerCase().includes(searchTerm.toLowerCase())
+    equipment.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Pagination logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentEquipments = filteredEquipments.slice(indexOfFirstItem, indexOfLastItem);
+
+  // Calcul du total des heures d'utilisation
+  const calculateTotalHeures = () => {
+    if (!historique || !historique.utilisations) return 0;
+    return historique.utilisations.reduce((total, utilisation) => {
+      return total + (utilisation.heuresUtilisation || 0);
+    }, 0);
+  };
 
   return (
     <div className={`dashboard-container ${sidebarOpen ? 'sidebar-expanded' : ''}`}>
@@ -138,7 +162,7 @@ const HistoriqueEquipements = () => {
             <FaSearch className="search-icon" />
             <input
               type="text"
-              placeholder="Rechercher par nom, catégorie ou centre..."
+              placeholder="Rechercher par nom d'équipement..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -157,12 +181,12 @@ const HistoriqueEquipements = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredEquipments.map((equipment) => (
+              {currentEquipments.map((equipment) => (
                 <tr key={equipment.id}>
                   <td>{equipment.name}</td>
                   <td>{equipment.category}</td>
                   <td>{equipment.center}</td>
-                  <td>{equipment.dateAdded}</td>
+                  <td>{formatDate(equipment.dateAdded)}</td>
                   <td>
                     <button
                       className="view-button"
@@ -180,6 +204,16 @@ const HistoriqueEquipements = () => {
           </table>
         </div>
 
+        <div className="pagination-container">
+          <Pagination
+            current={currentPage}
+            total={filteredEquipments.length}
+            pageSize={itemsPerPage}
+            onChange={(page) => setCurrentPage(page)}
+            showSizeChanger={false}
+          />
+        </div>
+
         {selectedEquipment && (
           <div className="modal-overlay">
             <div className="modal-content" style={{ maxWidth: '800px' }}>
@@ -194,6 +228,9 @@ const HistoriqueEquipements = () => {
                 <div className="details-content">
                   <p>
                     <strong>Total d'utilisations:</strong> {historique.totalUtilisations || 0}
+                  </p>
+                  <p>
+                    <strong>Total des heures d'utilisation:</strong> {calculateTotalHeures()} heures
                   </p>
 
                   {historique.utilisations && historique.utilisations.length > 0 ? (
