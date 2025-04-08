@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList,
-  FaBell, FaUser, FaSignOutAlt, FaSearch, FaHistory, FaUsers,
-  FaPhone, FaEnvelope, FaClock
+  FaBell, FaUser, FaSignOutAlt, FaSearch, FaHistory,
+  FaPhone, FaEnvelope, FaClock, FaSort, FaSortUp, FaSortDown
 } from 'react-icons/fa';
 import { Pagination } from 'antd';
 import '../styles/responsable.css';
@@ -19,6 +19,7 @@ const HistoriqueEquipements = () => {
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(25);
+  const [sortConfig, setSortConfig] = useState({ key: 'dateAdded', direction: 'desc' });
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -85,23 +86,58 @@ const HistoriqueEquipements = () => {
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
-    const formattedDate = date.toISOString()
-      .replace('T', ' ')
-      .replace(/\.\d+Z$/, '')
-      .replace(/-/g, '/');
-    return formattedDate;
+    return date.toLocaleString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
-  const filteredEquipments = equipments.filter(equipment =>
-    equipment.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const requestSort = (key) => {
+    let direction = 'desc';
+    if (sortConfig.key === key && sortConfig.direction === 'desc') {
+      direction = 'asc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key) => {
+    if (sortConfig.key !== key) return <FaSort />;
+    return sortConfig.direction === 'asc' ? <FaSortUp /> : <FaSortDown />;
+  };
+
+  const filteredEquipments = useMemo(() => {
+    return equipments.filter(equipment =>
+      equipment.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [equipments, searchTerm]);
+
+  const sortedEquipments = useMemo(() => {
+    const sortableItems = [...filteredEquipments];
+    if (sortConfig.key) {
+      sortableItems.sort((a, b) => {
+        const aValue = new Date(a[sortConfig.key]);
+        const bValue = new Date(b[sortConfig.key]);
+        
+        if (aValue < bValue) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [filteredEquipments, sortConfig]);
 
   // Pagination logic
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentEquipments = filteredEquipments.slice(indexOfFirstItem, indexOfLastItem);
+  const currentEquipments = sortedEquipments.slice(indexOfFirstItem, indexOfLastItem);
 
-  // Calcul du total des heures d'utilisation
   const calculateTotalHeures = () => {
     if (!historique || !historique.utilisations) return 0;
     return historique.utilisations.reduce((total, utilisation) => {
@@ -176,30 +212,45 @@ const HistoriqueEquipements = () => {
                 <th>Nom</th>
                 <th>Catégorie</th>
                 <th>Centre</th>
-                <th>Date d'ajout</th>
+                <th onClick={() => requestSort('dateAdded')}>
+                  <div className="sortable-header">
+                    Date d'ajout
+                    <span className="sort-icon">
+                      {getSortIcon('dateAdded')}
+                    </span>
+                  </div>
+                </th>
                 <th>Historique d'utilisation</th>
               </tr>
             </thead>
             <tbody>
-              {currentEquipments.map((equipment) => (
-                <tr key={equipment.id}>
-                  <td>{equipment.name}</td>
-                  <td>{equipment.category}</td>
-                  <td>{equipment.center}</td>
-                  <td>{formatDate(equipment.dateAdded)}</td>
-                  <td>
-                    <button
-                      className="view-button"
-                      onClick={() => {
-                        setSelectedEquipment(equipment);
-                        fetchHistorique(equipment.id);
-                      }}
-                    >
-                      <FaHistory /> Voir historique
-                    </button>
+              {currentEquipments.length > 0 ? (
+                currentEquipments.map((equipment) => (
+                  <tr key={equipment.id}>
+                    <td>{equipment.name}</td>
+                    <td>{equipment.category}</td>
+                    <td>{equipment.center}</td>
+                    <td className="date-cell">{formatDate(equipment.dateAdded)}</td>
+                    <td>
+                      <button
+                        className="view-button"
+                        onClick={() => {
+                          setSelectedEquipment(equipment);
+                          fetchHistorique(equipment.id);
+                        }}
+                      >
+                        <FaHistory /> Voir historique
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="5" style={{ textAlign: 'center' }}>
+                    Aucun équipement trouvé
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
@@ -207,7 +258,7 @@ const HistoriqueEquipements = () => {
         <div className="pagination-container">
           <Pagination
             current={currentPage}
-            total={filteredEquipments.length}
+            total={sortedEquipments.length}
             pageSize={itemsPerPage}
             onChange={(page) => setCurrentPage(page)}
             showSizeChanger={false}
