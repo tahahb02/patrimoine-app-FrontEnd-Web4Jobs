@@ -267,7 +267,7 @@ const HistoriqueEquipements = () => {
 
         {selectedEquipment && (
           <div className="modal-overlay">
-            <div className="modal-content" style={{ maxWidth: '800px' }}>
+            <div className="modal-content">
               <button className="modal-close" onClick={() => setSelectedEquipment(null)}>
                 &times;
               </button>
@@ -277,15 +277,19 @@ const HistoriqueEquipements = () => {
                 <p>Chargement de l'historique...</p>
               ) : historique ? (
                 <div className="details-content">
-                  <p>
-                    <strong>Total d'utilisations:</strong> {historique.totalUtilisations || 0}
-                  </p>
-                  <p>
-                    <strong>Total des heures d'utilisation:</strong> {calculateTotalHeures()} heures
-                  </p>
+                  <div className="stats-container">
+                    <div className="stat-card">
+                      <h4>Total d'utilisations</h4>
+                      <p>{historique.totalUtilisations || 0}</p>
+                    </div>
+                    <div className="stat-card">
+                      <h4>Total heures d'utilisation</h4>
+                      <p>{calculateTotalHeures()} heures</p>
+                    </div>
+                  </div>
 
                   {historique.utilisations && historique.utilisations.length > 0 ? (
-                    <div className="table-container" style={{ marginTop: '20px' }}>
+                    <div className="historique-table-container">
                       <table className="historique-table">
                         <thead>
                           <tr>
