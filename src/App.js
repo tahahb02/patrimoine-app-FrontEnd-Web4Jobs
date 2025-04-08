@@ -12,6 +12,7 @@ import GererUtilisateurs from './components/GererUtilisateurs';
 import SuiviDemandeAdherant from './components/SuiviDemandeAdherant';
 import Account from './components/Account';
 import HistoriqueDemandes from './components/HistoriqueDemandes';
+import HistoriqueEquipements from './components/HistoriqueEquipements';
 
 function App() {
     return (
@@ -29,6 +30,7 @@ function App() {
                 <Route path="/SuiviDemandeAdherant" element={<SuiviDemandeAdherant />} />
                 <Route path="/Account" element={<Account />} />
                 <Route path="/HistoriqueDemandes" element={<HistoriqueDemandes />} />
+                <Route path="/HistoriqueEquipements" element={<HistoriqueEquipements />} />
             </Routes>
         </Router>
     );

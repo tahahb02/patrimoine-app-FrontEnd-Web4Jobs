@@ -861,6 +861,78 @@
 }
 
 
+/* Styles pour le tableau d'historique */
+.historique-table {
+  width: 100%;
+  margin-top: 20px;
+  border-collapse: collapse;
+}
 
+.historique-table th, 
+.historique-table td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.historique-table th {
+  background-color: #f8f5ff;
+  color: #4a148c;
+  font-weight: 500;
+}
+
+.historique-table tr:hover {
+  background-color: #f9f9f9;
+}
+
+/* Styles pour les liens dans le tableau */
+.historique-table a {
+  color: #4a148c;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.historique-table a:hover {
+  text-decoration: underline;
+}
+
+/* Styles pour les icônes dans le tableau */
+.historique-table svg {
+  font-size: 0.9rem;
+}
+
+/* Message lorsqu'il n'y a pas d'historique */
+.no-history-message {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  margin-top: 20px;
+}
+
+/* Amélioration du bouton Voir historique */
+.view-button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 12px;
+  background-color: #4a148c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.view-button:hover {
+  background-color: #6a1b9a;
+}
+
+.view-button svg {
+  margin-right: 5px;
+}
 
 

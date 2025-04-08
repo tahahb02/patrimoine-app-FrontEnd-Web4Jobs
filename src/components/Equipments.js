@@ -268,6 +268,9 @@ const Equipments = () => {
           <li className={location.pathname === '/HistoriqueDemandes' ? 'active' : ''}>
             <Link to="/HistoriqueDemandes"><FaHistory /><span>Historique des Demandes</span></Link>
           </li>
+          <li className={location.pathname === '/HistoriqueEquipements' ? 'active' : ''}>
+             <Link to="/HistoriqueEquipements"><FaHistory /><span>Historique des Équipements</span></Link>
+            </li>
           <li className={location.pathname === '/Notifications' ? 'active' : ''}>
             <Link to="/Notifications"><FaBell /><span>Notifications</span></Link>
           </li>

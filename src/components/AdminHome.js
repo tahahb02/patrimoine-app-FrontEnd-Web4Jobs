@@ -39,10 +39,7 @@ const AdminHome = () => {
                 </ul>
 
                 <div className="sidebar-bottom">
-                    <ul>
-                        <li className={location.pathname === '/account' ? 'active' : ''}>
-                            <Link to="/account"><FaUser /><span>Compte</span></Link>
-                        </li>
+                    <ul>    
                         <li className="logout">
                             <button onClick={handleLogout} style={{ background: 'none', border: 'none', padding: '10px', width: '100%', textAlign: 'left' }}>
                                 <FaSignOutAlt /><span>Déconnexion</span>

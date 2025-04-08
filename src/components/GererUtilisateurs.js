@@ -193,9 +193,6 @@ const GererUtilisateurs = () => {
 
         <div className="sidebar-bottom">
           <ul>
-            <li className={location.pathname === '/account' ? 'active' : ''}>
-              <Link to="/account"><FaUser /><span>Compte</span></Link>
-            </li>
             <li className="logout"><Link to="/logout"><FaSignOutAlt /><span>Déconnexion</span></Link></li>
           </ul>
         </div>
