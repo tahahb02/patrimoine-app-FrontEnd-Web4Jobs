@@ -263,22 +263,7 @@ const EquipmentDisponible = () => {
     }
   };
 
-  const AlertPanel = () => (
-    <div className="alert-panel">
-      {urgentRequests.length > 0 && (
-        <div className="alert urgent-alert">
-          <FaExclamationTriangle />
-          <span>{urgentRequests.length} demande(s) urgente(s)</span>
-        </div>
-      )}
-      {lateRequests.length > 0 && (
-        <div className="alert late-alert">
-          <FaClock />
-          <span>{lateRequests.length} demande(s) en retard</span>
-        </div>
-      )}
-    </div>
-  );
+ 
 
   if (loading && !showRequestModal && !showDetailsModal) {
     return (
@@ -355,7 +340,7 @@ const EquipmentDisponible = () => {
       <main className={`content ${isBlurred ? "blur-background" : ""}`}>
         <h2>Équipements Disponibles</h2>
 
-        <AlertPanel />
+      
 
         <div className="search-and-filters">
           <div className="search-bar">

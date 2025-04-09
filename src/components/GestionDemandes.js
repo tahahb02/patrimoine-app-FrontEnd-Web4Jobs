@@ -42,6 +42,8 @@ const GestionDemandes = () => {
   const [urgentCount, setUrgentCount] = useState(0);
   const [mediumCount, setMediumCount] = useState(0);
   const [normalCount, setNormalCount] = useState(0);
+  const [lateCount, setLateCount] = useState(0);
+  const [veryLateCount, setVeryLateCount] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -66,6 +68,9 @@ const GestionDemandes = () => {
   useEffect(() => {
     if (demandes.length > 0) {
       countUrgencyLevels();
+      const { lateCount, veryLateCount } = countDelayedRequests();
+      setLateCount(lateCount);
+      setVeryLateCount(veryLateCount);
     }
   }, [demandes]);
 
@@ -103,6 +108,46 @@ const GestionDemandes = () => {
     setUrgentCount(urgent);
     setMediumCount(medium);
     setNormalCount(normal);
+  };
+
+  const calculateDelayStatus = (dateDemande) => {
+    if (!dateDemande) return 'no-delay';
+    const demandeDate = new Date(dateDemande);
+    const now = new Date();
+    const diffHours = (now - demandeDate) / (1000 * 60 * 60);
+    
+    if (diffHours > 48) return 'very-late';
+    if (diffHours > 24) return 'late';
+    return 'no-delay';
+  };
+
+  const countDelayedRequests = () => {
+    const now = new Date();
+    let lateCount = 0;
+    let veryLateCount = 0;
+
+    demandes.forEach(demande => {
+      if (!demande.dateDemande) return;
+      const demandeDate = new Date(demande.dateDemande);
+      const diffHours = (now - demandeDate) / (1000 * 60 * 60);
+      
+      if (diffHours > 48) veryLateCount++;
+      else if (diffHours > 24) lateCount++;
+    });
+
+    return { lateCount, veryLateCount };
+  };
+
+  const getDelayBadgeClass = (dateDemande) => {
+    const status = calculateDelayStatus(dateDemande);
+    switch(status) {
+      case 'very-late':
+        return 'delay-badge very-late';
+      case 'late':
+        return 'delay-badge late';
+      default:
+        return 'delay-badge';
+    }
   };
 
   const formatDateTime = (dateTime) => {
@@ -282,6 +327,29 @@ const GestionDemandes = () => {
     </div>
   );
 
+  const DelayAlertsPanel = () => (
+    <div className="delay-alerts-panel">
+      {veryLateCount > 0 && (
+        <div className="delay-alert very-late">
+          <FaExclamationTriangle className="alert-icon" />
+          <div className="alert-content">
+            <span className="alert-count">{veryLateCount}</span>
+            <span className="alert-label">Demandes très en retard (+48h)</span>
+          </div>
+        </div>
+      )}
+      {lateCount > 0 && (
+        <div className="delay-alert late">
+          <FaExclamationTriangle className="alert-icon" />
+          <div className="alert-content">
+            <span className="alert-count">{lateCount}</span>
+            <span className="alert-label">Demandes en retard (+24h)</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className={`dashboard-container ${sidebarOpen ? "sidebar-expanded" : ""}`}>
       <nav className="navbar">
@@ -331,6 +399,7 @@ const GestionDemandes = () => {
         <h2>Gestion des Demandes</h2>
 
         <UrgencyStatsPanel />
+        <DelayAlertsPanel />
 
         <div className="search-and-filters">
           <div className="search-bar">
@@ -408,7 +477,18 @@ const GestionDemandes = () => {
                       {demande.statut}
                     </span>
                   </td>
-                  <td className="date-cell">{formatDateTime(demande.dateDemande)}</td>
+                  <td className="date-cell">
+                    <div className="date-with-indicator">
+                      {formatDateTime(demande.dateDemande)}
+                      {calculateDelayStatus(demande.dateDemande) !== 'no-delay' && (
+                        <span className={getDelayBadgeClass(demande.dateDemande)}>
+                          {calculateDelayStatus(demande.dateDemande) === 'very-late' 
+                            ? 'Très en retard' 
+                            : 'En retard'}
+                        </span>
+                      )}
+                    </div>
+                  </td>
                   <td>
                     <span className={getUrgencyBadgeClass(demande.urgence)}>
                       {demande.urgence}
@@ -484,62 +564,62 @@ const GestionDemandes = () => {
 
         {showDetailsModal && (
           <div className="modal-overlay">
-          <div className="modal-content">
-            <button className="modal-close" onClick={closeDetailsModal}>
-              &times;
-            </button>
-            <h3>Détails de la demande</h3>
-            {selectedDetails && (
-              <div className="details-content">
-                  <div className="detail-row">
-                    <span className="detail-label">Nom:</span>
-                    <span className="detail-value">{selectedDetails.nom}</span>
+            <div className="modal-content">
+              <button className="modal-close" onClick={closeDetailsModal}>
+                &times;
+              </button>
+              <h3>Détails de la demande</h3>
+              {selectedDetails && (
+                <div className="details-content">
+                    <div className="detail-row">
+                      <span className="detail-label">Nom:</span>
+                      <span className="detail-value">{selectedDetails.nom}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Prénom:</span>
+                      <span className="detail-value">{selectedDetails.prenom}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Centre:</span>
+                      <span className="detail-value">{selectedDetails.centreEquipement}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Équipement:</span>
+                      <span className="detail-value">{selectedDetails.nomEquipement}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Catégorie:</span>
+                      <span className="detail-value">{selectedDetails.categorieEquipement}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Date de début:</span>
+                      <span className="detail-value">{formatDateTime(selectedDetails.dateDebut)}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Date de fin:</span>
+                      <span className="detail-value">{formatDateTime(selectedDetails.dateFin)}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Date de demande:</span>
+                      <span className="detail-value">{formatDateTime(selectedDetails.dateDemande)}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Statut:</span>
+                      <span className={`detail-value ${getStatusBadgeClass(selectedDetails.statut)}`}>
+                        {selectedDetails.statut}
+                      </span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Degré d'urgence:</span>
+                      <span className={`detail-value ${getUrgencyBadgeClass(selectedDetails.urgence)}`}>
+                        {selectedDetails.urgence}
+                      </span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Commentaire responsable:</span>
+                      <span className="detail-value">{selectedDetails.commentaireResponsable || "Aucun commentaire"}</span>
+                    </div>
                   </div>
-                  <div className="detail-row">
-                    <span className="detail-label">Prénom:</span>
-                    <span className="detail-value">{selectedDetails.prenom}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span className="detail-label">Centre:</span>
-                    <span className="detail-value">{selectedDetails.centreEquipement}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span className="detail-label">Équipement:</span>
-                    <span className="detail-value">{selectedDetails.nomEquipement}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span className="detail-label">Catégorie:</span>
-                    <span className="detail-value">{selectedDetails.categorieEquipement}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span className="detail-label">Date de début:</span>
-                    <span className="detail-value">{formatDateTime(selectedDetails.dateDebut)}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span className="detail-label">Date de fin:</span>
-                    <span className="detail-value">{formatDateTime(selectedDetails.dateFin)}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span className="detail-label">Date de demande:</span>
-                    <span className="detail-value">{formatDateTime(selectedDetails.dateDemande)}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span className="detail-label">Statut:</span>
-                    <span className={`detail-value ${getStatusBadgeClass(selectedDetails.statut)}`}>
-                      {selectedDetails.statut}
-                    </span>
-                  </div>
-                  <div className="detail-row">
-                    <span className="detail-label">Degré d'urgence:</span>
-                    <span className={`detail-value ${getUrgencyBadgeClass(selectedDetails.urgence)}`}>
-                      {selectedDetails.urgence}
-                    </span>
-                  </div>
-                  <div className="detail-row">
-                    <span className="detail-label">Commentaire responsable:</span>
-                    <span className="detail-value">{selectedDetails.commentaireResponsable || "Aucun commentaire"}</span>
-                  </div>
-                </div>
               )}
             </div>
           </div>

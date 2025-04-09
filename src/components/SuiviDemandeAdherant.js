@@ -373,7 +373,7 @@ const SuiviDemandeAdherant = () => {
                     <th>Équipement</th>
                     <th>Centre</th>
                     <th>Statut</th>
-                    <th>Urgence</th>
+                    
                     <th onClick={() => requestSort('dateDemande')}>
                       <div className="sortable-header">
                         Date Demande
@@ -395,11 +395,7 @@ const SuiviDemandeAdherant = () => {
                           {demande.statut || 'EN_ATTENTE'}
                         </span>
                       </td>
-                      <td>
-                        <span className={getUrgencyBadgeClass(demande.urgence)}>
-                          {demande.urgence || 'NORMALE'}
-                        </span>
-                      </td>
+                      
                       <td className="date-cell">{formatDateTime(demande.dateDemande)}</td>
                       <td>
                         <button
