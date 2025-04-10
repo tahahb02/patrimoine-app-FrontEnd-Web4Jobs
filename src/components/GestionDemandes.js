@@ -301,55 +301,122 @@ const GestionDemandes = () => {
     }
   };
 
-  const UrgencyStatsPanel = () => (
-    <div className="urgency-stats-panel">
-      <div className="urgency-stat urgent">
-        <FaExclamationTriangle className="stat-icon" />
-        <div className="stat-content">
-          <span className="stat-count">{urgentCount}</span>
-          <span className="stat-label">Urgentes</span>
+  const UrgencyCircle = () => {
+    const total = urgentCount + mediumCount + normalCount;
+    const urgentPercent = total > 0 ? (urgentCount / total) * 100 : 0;
+    const mediumPercent = total > 0 ? (mediumCount / total) * 100 : 0;
+    const normalPercent = total > 0 ? (normalCount / total) * 100 : 0;
+  
+    const getConicGradient = () => {
+      if (total === 0) return '#f5f5f5';
+      return `
+        #f44336 0 ${urgentPercent}%,
+        #ff9800 ${urgentPercent}% ${urgentPercent + mediumPercent}%,
+        #4caf50 ${urgentPercent + mediumPercent}% 100%
+      `;
+    };
+  
+    return (
+      <div className="stats-card">
+        <div className="stats-header">
+          <FaExclamationTriangle className="stats-icon" />
+          <h3>Niveaux d'urgence</h3>
         </div>
-      </div>
-      <div className="urgency-stat medium">
-        <FaExclamationTriangle className="stat-icon" />
-        <div className="stat-content">
-          <span className="stat-count">{mediumCount}</span>
-          <span className="stat-label">Moyennes</span>
-        </div>
-      </div>
-      <div className="urgency-stat normal">
-        <FaExclamationTriangle className="stat-icon" />
-        <div className="stat-content">
-          <span className="stat-count">{normalCount}</span>
-          <span className="stat-label">Normales</span>
-        </div>
-      </div>
-    </div>
-  );
-
-  const DelayAlertsPanel = () => (
-    <div className="delay-alerts-panel">
-      {veryLateCount > 0 && (
-        <div className="delay-alert very-late">
-          <FaExclamationTriangle className="alert-icon" />
-          <div className="alert-content">
-            <span className="alert-count">{veryLateCount}</span>
-            <span className="alert-label">Demandes très en retard (+48h)</span>
+        <div className="progress-circle-wrapper">
+          <div 
+            className="progress-circle"
+            style={{ 
+              background: `conic-gradient(${getConicGradient()})`,
+              backgroundSize: '100% 100%',
+              backgroundRepeat: 'no-repeat'
+            }}
+          >
+            <div className="circle-info">
+              <div className="circle-value">{total}</div>
+              <div className="circle-label">Total</div>
+            </div>
+          </div>
+          <div className="stats-details">
+            <div className="stat-item urgent">
+              <div className="stat-value">{urgentCount}</div>
+              <div className="stat-label">Urgentes</div>
+              <div className="stat-percent">{urgentPercent.toFixed(1)}%</div>
+            </div>
+            <div className="stat-item medium">
+              <div className="stat-value">{mediumCount}</div>
+              <div className="stat-label">Moyennes</div>
+              <div className="stat-percent">{mediumPercent.toFixed(1)}%</div>
+            </div>
+            <div className="stat-item normal">
+              <div className="stat-value">{normalCount}</div>
+              <div className="stat-label">Normales</div>
+              <div className="stat-percent">{normalPercent.toFixed(1)}%</div>
+            </div>
           </div>
         </div>
-      )}
-      {lateCount > 0 && (
-        <div className="delay-alert late">
-          <FaExclamationTriangle className="alert-icon" />
-          <div className="alert-content">
-            <span className="alert-count">{lateCount}</span>
-            <span className="alert-label">Demandes en retard (+24h)</span>
+      </div>
+    );
+  };
+  
+  const DelayCircle = () => {
+    const totalDelayed = lateCount + veryLateCount;
+    const totalDemandes = demandes.length;
+    const onTimeCount = totalDemandes - totalDelayed;
+    
+    const latePercent = totalDemandes > 0 ? (lateCount / totalDemandes) * 100 : 0;
+    const veryLatePercent = totalDemandes > 0 ? (veryLateCount / totalDemandes) * 100 : 0;
+    const onTimePercent = totalDemandes > 0 ? (onTimeCount / totalDemandes) * 100 : 0;
+  
+    const getConicGradient = () => {
+      if (totalDemandes === 0) return '#f5f5f5';
+      return `
+        #f44336 0 ${veryLatePercent}%,
+        #ff9800 ${veryLatePercent}% ${veryLatePercent + latePercent}%,
+        #4caf50 ${veryLatePercent + latePercent}% 100%
+      `;
+    };
+  
+    return (
+      <div className="stats-card">
+        <div className="stats-header">
+          <FaClock className="stats-icon" />
+          <h3>Délais de traitement</h3>
+        </div>
+        <div className="progress-circle-wrapper">
+          <div 
+            className="progress-circle"
+            style={{ 
+              background: `conic-gradient(${getConicGradient()})`,
+              backgroundSize: '100% 100%',
+              backgroundRepeat: 'no-repeat'
+            }}
+          >
+            <div className="circle-info">
+              <div className="circle-value">{totalDelayed}</div>
+              <div className="circle-label">En retard</div>
+            </div>
+          </div>
+          <div className="stats-details">
+            <div className="stat-item very-late">
+              <div className="stat-value">{veryLateCount}</div>
+              <div className="stat-label">Très en retard (+48h)</div>
+              <div className="stat-percent">{veryLatePercent.toFixed(1)}%</div>
+            </div>
+            <div className="stat-item late">
+              <div className="stat-value">{lateCount}</div>
+              <div className="stat-label">En retard (+24h)</div>
+              <div className="stat-percent">{latePercent.toFixed(1)}%</div>
+            </div>
+            <div className="stat-item on-time">
+              <div className="stat-value">{onTimeCount}</div>
+              <div className="stat-label">À temps</div>
+              <div className="stat-percent">{onTimePercent.toFixed(1)}%</div>
+            </div>
           </div>
         </div>
-      )}
-    </div>
-  );
-
+      </div>
+    );
+  };
   return (
     <div className={`dashboard-container ${sidebarOpen ? "sidebar-expanded" : ""}`}>
       <nav className="navbar">
@@ -398,8 +465,10 @@ const GestionDemandes = () => {
       <main className="content">
         <h2>Gestion des Demandes</h2>
 
-        <UrgencyStatsPanel />
-        <DelayAlertsPanel />
+        <div className="stats-panels">
+          <UrgencyCircle />
+          <DelayCircle />
+        </div>
 
         <div className="search-and-filters">
           <div className="search-bar">
