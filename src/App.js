@@ -13,6 +13,7 @@ import SuiviDemandeAdherant from './components/SuiviDemandeAdherant';
 import Account from './components/Account';
 import HistoriqueDemandes from './components/HistoriqueDemandes';
 import HistoriqueEquipements from './components/HistoriqueEquipements';
+import LivraisonsRetours from './components/LivraisonsRetours';
 
 function App() {
     return (
@@ -31,6 +32,7 @@ function App() {
                 <Route path="/Account" element={<Account />} />
                 <Route path="/HistoriqueDemandes" element={<HistoriqueDemandes />} />
                 <Route path="/HistoriqueEquipements" element={<HistoriqueEquipements />} />
+                <Route path="/LivraisonsRetours" element={<LivraisonsRetours />} />
             </Routes>
         </Router>
     );
