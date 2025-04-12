@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt,
   FaSearch, FaEye, FaHistory, FaBoxOpen, FaBox, FaCheckCircle, FaArrowLeft
 } from 'react-icons/fa';
-import { Pagination } from 'antd';
+import { Pagination, message } from 'antd';
 import '../styles/responsable.css';
 
 const API_URL = 'http://localhost:8080/api/demandes';
@@ -18,6 +18,7 @@ const LivraisonsRetours = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     fetchData();
@@ -27,26 +28,41 @@ const LivraisonsRetours = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+      
+      const endpoint = activeTab === 'livraisons' 
+        ? `${API_URL}/livraisons-aujourdhui` 
+        : `${API_URL}/retours-aujourdhui`;
+      
+      const response = await fetch(endpoint, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.removeItem("token");
+          navigate("/login");
+          return;
+        }
+        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const formattedData = Array.isArray(data) ? data : [];
       
       if (activeTab === 'livraisons') {
-        const response = await fetch(`${API_URL}/livraisons-aujourdhui`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        const data = await response.json();
-        setLivraisons(Array.isArray(data) ? data : []);
+        setLivraisons(formattedData);
       } else {
-        const response = await fetch(`${API_URL}/retours-aujourdhui`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        const data = await response.json();
-        setRetours(Array.isArray(data) ? data : []);
+        setRetours(formattedData);
       }
     } catch (error) {
       console.error("Erreur lors du chargement des données:", error);
+      message.error("Erreur lors du chargement des données");
     } finally {
       setLoading(false);
     }
@@ -54,14 +70,18 @@ const LivraisonsRetours = () => {
 
   const formatDateTime = (dateTime) => {
     if (!dateTime) return 'Non disponible';
-    const date = new Date(dateTime);
-    return date.toLocaleString('fr-FR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    try {
+      const date = new Date(dateTime);
+      return date.toLocaleString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      return 'Format invalide';
+    }
   };
 
   const handleValiderLivraison = async (id) => {
@@ -76,12 +96,15 @@ const LivraisonsRetours = () => {
       });
       
       if (response.ok) {
-        fetchData(); // Rafraîchir les données
+        message.success("Livraison validée avec succès");
+        fetchData();
       } else {
-        console.error("Erreur lors de la validation");
+        const errorData = await response.json();
+        message.error(errorData.message || "Erreur lors de la validation");
       }
     } catch (error) {
       console.error("Erreur:", error);
+      message.error("Une erreur est survenue");
     }
   };
 
@@ -97,12 +120,15 @@ const LivraisonsRetours = () => {
       });
       
       if (response.ok) {
-        fetchData(); // Rafraîchir les données
+        message.success("Retour validé avec succès");
+        fetchData();
       } else {
-        console.error("Erreur lors de la validation");
+        const errorData = await response.json();
+        message.error(errorData.message || "Erreur lors de la validation");
       }
     } catch (error) {
       console.error("Erreur:", error);
+      message.error("Une erreur est survenue");
     }
   };
 
@@ -132,36 +158,36 @@ const LivraisonsRetours = () => {
 
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <ul className="sidebar-menu">
-          <li>
+          <li className={location.pathname === '/ResponsableHome' ? 'active' : ''}>
             <Link to="/ResponsableHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
           </li>
-          <li>
+          <li className={location.pathname === '/Equipments' ? 'active' : ''}>
             <Link to="/Equipments"><FaCogs /><span>Gestion des Équipements</span></Link>
           </li>
-          <li>
+          <li className={location.pathname === '/GestionDemandes' ? 'active' : ''}>
             <Link to="/GestionDemandes"><FaClipboardList /><span>Gestion des Demandes</span></Link>
           </li>
-          <li>
-            <Link to="/LivraisonsRetours" className="active"><FaBoxOpen /><span>Livraisons/Retours</span></Link>
+          <li className={location.pathname === '/LivraisonsRetours' ? 'active' : ''}>
+            <Link to="/LivraisonsRetours"><FaBoxOpen /><span>Livraisons/Retours</span></Link>
           </li>
-          <li>
+          <li className={location.pathname === '/HistoriqueDemandes' ? 'active' : ''}>
             <Link to="/HistoriqueDemandes"><FaHistory /><span>Historique des Demandes</span></Link>
           </li>
-          <li>
+          <li className={location.pathname === '/HistoriqueEquipements' ? 'active' : ''}>
             <Link to="/HistoriqueEquipements"><FaHistory /><span>Historique des Équipements</span></Link>
           </li>
-          <li>
+          <li className={location.pathname === '/Notifications' ? 'active' : ''}>
             <Link to="/Notifications"><FaBell /><span>Notifications</span></Link>
           </li>
         </ul>
 
         <div className="sidebar-bottom">
           <ul>
-            <li>
+            <li className={location.pathname === '/account' ? 'active' : ''}>
               <Link to="/account"><FaUser /><span>Compte</span></Link>
             </li>
             <li className="logout">
-              <button onClick={handleLogout} style={{ background: 'none', border: 'none', padding: '10px', width: '100%', textAlign: 'left' }}>
+              <button onClick={handleLogout} className="logout-button">
                 <FaSignOutAlt /><span>Déconnexion</span>
               </button>
             </li>
@@ -183,13 +209,19 @@ const LivraisonsRetours = () => {
           <div className="tabs">
             <button
               className={`tab ${activeTab === 'livraisons' ? 'active' : ''}`}
-              onClick={() => setActiveTab('livraisons')}
+              onClick={() => {
+                setCurrentPage(1);
+                setActiveTab('livraisons');
+              }}
             >
               <FaBoxOpen /> Livraisons aujourd'hui ({livraisons.length})
             </button>
             <button
               className={`tab ${activeTab === 'retours' ? 'active' : ''}`}
-              onClick={() => setActiveTab('retours')}
+              onClick={() => {
+                setCurrentPage(1);
+                setActiveTab('retours');
+              }}
             >
               <FaBox /> Retours aujourd'hui ({retours.length})
             </button>
@@ -244,6 +276,7 @@ const LivraisonsRetours = () => {
                             <button
                               className="validate-button"
                               onClick={() => handleValiderLivraison(item.id)}
+                              disabled={loading}
                             >
                               <FaCheckCircle /> Valider livraison
                             </button>
@@ -251,6 +284,7 @@ const LivraisonsRetours = () => {
                             <button
                               className="validate-button retour"
                               onClick={() => handleValiderRetour(item.id)}
+                              disabled={loading}
                             >
                               <FaCheckCircle /> Valider retour
                             </button>
@@ -261,7 +295,9 @@ const LivraisonsRetours = () => {
                   ) : (
                     <tr>
                       <td colSpan="6" className="no-data">
-                        Aucune donnée disponible
+                        {activeTab === 'livraisons' 
+                          ? "Aucune livraison prévue aujourd'hui" 
+                          : "Aucun retour prévu aujourd'hui"}
                       </td>
                     </tr>
                   )}
@@ -269,7 +305,7 @@ const LivraisonsRetours = () => {
               </table>
             </div>
 
-            {currentData.length > 0 && (
+            {currentData.length > itemsPerPage && (
               <div className="pagination-container">
                 <Pagination
                   current={currentPage}

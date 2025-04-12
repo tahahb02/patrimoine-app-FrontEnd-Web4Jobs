@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt, FaHistory } from "react-icons/fa";
+import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt, FaHistory,FaBoxOpen   } from "react-icons/fa";
 import "../styles/responsable.css";
 
 const ResponsableHome = () => {
@@ -21,7 +21,7 @@ const ResponsableHome = () => {
                 </div>
                 <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
             </nav>
-
+\+
             <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
                 <ul className="sidebar-menu">
                     <li className={location.pathname === '/ResponsableHome' ? 'active' : ''}>
@@ -32,6 +32,9 @@ const ResponsableHome = () => {
                     </li>
                     <li className={location.pathname === '/GestionDemandes' ? 'active' : ''}>
                         <Link to="/GestionDemandes"><FaClipboardList /><span>Gestion des Demandes</span></Link>
+                    </li >
+                    <li className={location.pathname === '/LivraisonsRetours' ? 'active' : ''}>
+                        <Link to="/LivraisonsRetours"><FaBoxOpen /><span>Livraisons/Retours</span></Link>
                     </li>
                     <li className={location.pathname === '/HistoriqueDemandes' ? 'active' : ''}>
                         <Link to="/HistoriqueDemandes"><FaHistory /><span>Historique des Demandes</span></Link>

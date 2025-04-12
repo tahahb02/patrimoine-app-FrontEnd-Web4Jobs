@@ -18,7 +18,8 @@ import {
   FaSortDown,
   FaFilter,
   FaCheckCircle,
-  FaTimesCircle
+  FaTimesCircle,
+  FaBoxOpen
 } from 'react-icons/fa';
 import { Pagination } from 'antd';
 import '../styles/responsable.css';
@@ -243,6 +244,9 @@ const HistoriqueDemandes = () => {
           </li>
           <li className={location.pathname === '/GestionDemandes' ? 'active' : ''}>
             <Link to="/GestionDemandes"><FaClipboardList /><span>Gestion des Demandes</span></Link>
+          </li>
+          <li className={location.pathname === '/LivraisonsRetours' ? 'active' : ''}>
+          <Link to="/LivraisonsRetours"><FaBoxOpen /><span>Livraisons/Retours</span></Link>
           </li>
           <li className={location.pathname === '/HistoriqueDemandes' ? 'active' : ''}>
             <Link to="/HistoriqueDemandes"><FaHistory /><span>Historique des Demandes</span></Link>
