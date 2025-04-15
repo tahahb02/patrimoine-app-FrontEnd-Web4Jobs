@@ -14,18 +14,22 @@ const LivraisonsRetours = () => {
   const [activeTab, setActiveTab] = useState('livraisons');
   const [livraisons, setLivraisons] = useState([]);
   const [retours, setRetours] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState({
+    livraisons: false,
+    retours: false
+  });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    fetchData();
-  }, [activeTab]);
+    fetchLivraisons();
+    fetchRetours();
+  }, []);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchLivraisons = async () => {
+    setLoading(prev => ({...prev, livraisons: true}));
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -33,11 +37,7 @@ const LivraisonsRetours = () => {
         return;
       }
       
-      const endpoint = activeTab === 'livraisons' 
-        ? `${API_URL}/livraisons-aujourdhui` 
-        : `${API_URL}/retours-aujourdhui`;
-      
-      const response = await fetch(endpoint, {
+      const response = await fetch(`${API_URL}/livraisons-aujourdhui`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -53,18 +53,46 @@ const LivraisonsRetours = () => {
       }
 
       const data = await response.json();
-      const formattedData = Array.isArray(data) ? data : [];
-      
-      if (activeTab === 'livraisons') {
-        setLivraisons(formattedData);
-      } else {
-        setRetours(formattedData);
-      }
+      setLivraisons(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error("Erreur lors du chargement des données:", error);
-      message.error("Erreur lors du chargement des données");
+      console.error("Erreur lors du chargement des livraisons:", error);
+      message.error("Erreur lors du chargement des livraisons");
     } finally {
-      setLoading(false);
+      setLoading(prev => ({...prev, livraisons: false}));
+    }
+  };
+
+  const fetchRetours = async () => {
+    setLoading(prev => ({...prev, retours: true}));
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+      
+      const response = await fetch(`${API_URL}/retours-aujourdhui`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.removeItem("token");
+          navigate("/login");
+          return;
+        }
+        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setRetours(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Erreur lors du chargement des retours:", error);
+      message.error("Erreur lors du chargement des retours");
+    } finally {
+      setLoading(prev => ({...prev, retours: false}));
     }
   };
 
@@ -97,7 +125,7 @@ const LivraisonsRetours = () => {
       
       if (response.ok) {
         message.success("Livraison validée avec succès");
-        fetchData();
+        fetchLivraisons();
       } else {
         const errorData = await response.json();
         message.error(errorData.message || "Erreur lors de la validation");
@@ -121,7 +149,7 @@ const LivraisonsRetours = () => {
       
       if (response.ok) {
         message.success("Retour validé avec succès");
-        fetchData();
+        fetchRetours();
       } else {
         const errorData = await response.json();
         message.error(errorData.message || "Erreur lors de la validation");
@@ -146,6 +174,8 @@ const LivraisonsRetours = () => {
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = currentData.slice(indexOfFirstItem, indexOfLastItem);
+
+  const isLoading = activeTab === 'livraisons' ? loading.livraisons : loading.retours;
 
   return (
     <div className={`dashboard-container ${sidebarOpen ? 'sidebar-expanded' : ''}`}>
@@ -214,7 +244,10 @@ const LivraisonsRetours = () => {
                 setActiveTab('livraisons');
               }}
             >
-              <FaBoxOpen /> Livraisons aujourd'hui ({livraisons.length})
+              <FaBoxOpen /> Livraisons aujourd'hui
+              <span className={`count-badge ${livraisons.length === 0 ? 'zero' : ''}`}>
+                {livraisons.length}
+              </span>
             </button>
             <button
               className={`tab ${activeTab === 'retours' ? 'active' : ''}`}
@@ -223,12 +256,15 @@ const LivraisonsRetours = () => {
                 setActiveTab('retours');
               }}
             >
-              <FaBox /> Retours aujourd'hui ({retours.length})
+              <FaBox /> Retours aujourd'hui
+              <span className={`count-badge retour ${retours.length === 0 ? 'zero' : ''}`}>
+                {retours.length}
+              </span>
             </button>
           </div>
         </div>
 
-        {loading ? (
+        {isLoading ? (
           <div className="loading-indicator">
             <div className="spinner"></div>
             <p>Chargement en cours...</p>
@@ -276,7 +312,7 @@ const LivraisonsRetours = () => {
                             <button
                               className="validate-button"
                               onClick={() => handleValiderLivraison(item.id)}
-                              disabled={loading}
+                              disabled={loading.livraisons}
                             >
                               <FaCheckCircle /> Valider livraison
                             </button>
@@ -284,7 +320,7 @@ const LivraisonsRetours = () => {
                             <button
                               className="validate-button retour"
                               onClick={() => handleValiderRetour(item.id)}
-                              disabled={loading}
+                              disabled={loading.retours}
                             >
                               <FaCheckCircle /> Valider retour
                             </button>
