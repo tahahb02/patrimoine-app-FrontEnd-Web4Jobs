@@ -15,6 +15,7 @@ import HistoriqueDemandes from './components/HistoriqueDemandes';
 import HistoriqueEquipements from './components/HistoriqueEquipements';
 import LivraisonsRetours from './components/LivraisonsRetours';
 import TechnicienHome from './components/TechnicienHome';
+import FormulaireFeedback from './components/FormulaireFeedback';
 
 function App() {
     return (
@@ -35,6 +36,7 @@ function App() {
                 <Route path="/HistoriqueEquipements" element={<HistoriqueEquipements />} />
                 <Route path="/LivraisonsRetours" element={<LivraisonsRetours />} />
                 <Route path="/TechnicienHome" element={<TechnicienHome />} />
+                <Route path="/FormulaireFeedback" element={<FormulaireFeedback />} />
             </Routes>
         </Router>
     );
