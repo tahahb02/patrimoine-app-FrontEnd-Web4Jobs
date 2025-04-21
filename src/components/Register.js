@@ -160,9 +160,14 @@ const RegisterPage = () => {
                 required
               >
                 <option value="">Sélectionnez votre ville</option>
-                <option value="Casablanca">Casablanca</option>
-                <option value="Rabat">Rabat</option>
-                <option value="Fes">Fes</option>
+                <option value="Tinghir">Tinghir</option>
+                <option value="Temara">Temara</option>
+                <option value="Essaouira">Essaouira</option>
+                <option value="Dakhla">Dakhla</option>
+                <option value="Laayoune">Laayoune</option>
+                <option value="Nador">Nador</option>
+                <option value="Ain El Aouda">Ain El Aouda</option>
+               
               </select>
             </div>
 

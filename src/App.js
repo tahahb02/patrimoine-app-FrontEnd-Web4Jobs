@@ -14,6 +14,7 @@ import Account from './components/Account';
 import HistoriqueDemandes from './components/HistoriqueDemandes';
 import HistoriqueEquipements from './components/HistoriqueEquipements';
 import LivraisonsRetours from './components/LivraisonsRetours';
+import TechnicienHome from './components/TechnicienHome';
 
 function App() {
     return (
@@ -33,6 +34,7 @@ function App() {
                 <Route path="/HistoriqueDemandes" element={<HistoriqueDemandes />} />
                 <Route path="/HistoriqueEquipements" element={<HistoriqueEquipements />} />
                 <Route path="/LivraisonsRetours" element={<LivraisonsRetours />} />
+                <Route path="/TechnicienHome" element={<TechnicienHome />} />
             </Routes>
         </Router>
     );
