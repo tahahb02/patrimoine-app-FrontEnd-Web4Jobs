@@ -12,6 +12,7 @@ const RegisterPage = () => {
     confirmPassword: "",
     phone: "",
     city: "",
+    villeCentre: "",
   });
 
   const handleChange = (e) => {
@@ -25,35 +26,36 @@ const RegisterPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Vérification de la correspondance des mots de passe
     if (formData.password !== formData.confirmPassword) {
       alert("Les mots de passe ne correspondent pas.");
       return;
     }
 
-    // Validation de l'email
     const isValidEmail = /\S+@\S+\.\S+/;
     if (!isValidEmail.test(formData.email)) {
       alert("L'email est invalide.");
       return;
     }
 
-    // Validation du numéro de téléphone (ex: 06XXXXXXXX)
     const phoneRegex = /^0[6-7]\d{8}$/;
     if (!phoneRegex.test(formData.phone)) {
       alert("Le numéro de téléphone est invalide.");
       return;
     }
 
-    // Données à envoyer
-    const utilisateurData = {
-      nom: formData.nom,
-      prenom: formData.prenom,
-      email: formData.email,
-      password: formData.password,
-      phone: formData.phone,
-      city: formData.city,
-    };
+    if (!formData.villeCentre) {
+      alert("Veuillez sélectionner votre ville centre.");
+      return;
+    }
+
+    const params = new URLSearchParams();
+    params.append('nom', formData.nom);
+    params.append('prenom', formData.prenom);
+    params.append('email', formData.email);
+    params.append('password', formData.password);
+    params.append('phone', formData.phone);
+    params.append('city', formData.city);
+    params.append('villeCentre', formData.villeCentre);
 
     try {
       const response = await fetch("http://localhost:8080/api/register", {
@@ -61,19 +63,20 @@ const RegisterPage = () => {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
         },
-        body: new URLSearchParams(utilisateurData).toString(),
+        body: params.toString(),
       });
 
       const result = await response.json();
 
       if (response.ok) {
-        alert("Inscription réussie ! Vous allez être redirigé vers la page de connexion.");
+        alert("Inscription réussie !");
         window.location.href = "/";
       } else {
-        alert(result.message || "Erreur lors de l'inscription. Veuillez réessayer.");
+        alert(result.message || "Erreur lors de l'inscription.");
       }
     } catch (error) {
-      alert("Erreur de connexion avec le backend. Veuillez réessayer plus tard.");
+      console.error("Erreur:", error);
+      alert("Erreur de connexion avec le serveur.");
     }
   };
 
@@ -152,22 +155,32 @@ const RegisterPage = () => {
               />
             </div>
             <div className="form-group">
-              <label>La ville où se trouve votre centre</label>
-              <select
+              <label>Ville</label>
+              <input
+                type="text"
                 name="city"
+                placeholder="Entrez votre ville"
                 value={formData.city}
                 onChange={handleChange}
                 required
+              />
+            </div>
+            <div className="form-group">
+              <label>Ville Centre</label>
+              <select
+                name="villeCentre"
+                value={formData.villeCentre}
+                onChange={handleChange}
+                required
               >
-                <option value="">Sélectionnez votre ville</option>
-                <option value="Tinghir">Tinghir</option>
-                <option value="Temara">Temara</option>
-                <option value="Essaouira">Essaouira</option>
-                <option value="Dakhla">Dakhla</option>
-                <option value="Laayoune">Laayoune</option>
-                <option value="Nador">Nador</option>
-                <option value="Ain El Aouda">Ain El Aouda</option>
-               
+                <option value="">Sélectionnez votre ville centre</option>
+                <option value="TINGHIR">Tinghir</option>
+                <option value="TEMARA">Temara</option>
+                <option value="ESSAOUIRA">Essaouira</option>
+                <option value="DAKHLA">Dakhla</option>
+                <option value="LAAYOUNE">Laayoune</option>
+                <option value="NADOR">Nador</option>
+                <option value="AIN_EL_AOUDA">Ain El Aouda</option>
               </select>
             </div>
 
