@@ -12,7 +12,7 @@ const Equipments = () => {
   const [newEquipment, setNewEquipment] = useState({ 
     name: "", 
     category: "", 
-    villeCentre: "", 
+    villeCentre: localStorage.getItem("userVilleCentre") || "TEMARA", 
     dateAdded: "", 
     description: "", 
     imageUrl: "" 
@@ -26,17 +26,10 @@ const Equipments = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [categories, setCategories] = useState(["PC Portable", "PC Bureau", "Bureautique", "Imprimante"]);
-  const [centers] = useState([
-    "TINGHIR", "TEMARA", "ESSAOUIRA", "DAKHLA", 
-    "LAAYOUNE", "NADOR", "AIN_EL_AOUDA"
-  ]);
   const [newCategory, setNewCategory] = useState("");
-  const [newCenter, setNewCenter] = useState("");
   const [showAddCategory, setShowAddCategory] = useState(false);
-  const [showAddCenter, setShowAddCenter] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedCenter, setSelectedCenter] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -50,21 +43,13 @@ const Equipments = () => {
       const userCenter = localStorage.getItem("userVilleCentre");
       const userRole = localStorage.getItem("userRole");
       
-      let url;
-      if (userRole === "ADMIN") {
-        url = API_URL;
-      } else if (userRole === "RESPONSABLE") {
-        url = `${API_URL}/ville/${userCenter}`;
-      } else {
-        navigate("/unauthorized");
-        return;
-      }
-
-      const response = await fetch(url, {
+      const response = await fetch(API_URL, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'X-User-Center': userCenter,
+          'X-User-Role': userRole
         }
       });
 
@@ -82,6 +67,11 @@ const Equipments = () => {
     } catch (error) {
       console.error("Erreur lors du chargement des équipements:", error);
     }
+  };
+
+  const formatVilleCentre = (ville) => {
+    if (!ville) return "TEMARA";
+    return ville.charAt(0) + ville.slice(1).toLowerCase().replace(/_/g, " ");
   };
 
   const handleInputChange = (e) => {
@@ -125,36 +115,41 @@ const Equipments = () => {
     }
   };
 
-  const handleAddNewCenter = () => {
-    if (newCenter.trim()) {
-      setNewEquipment({ ...newEquipment, villeCentre: newCenter });
-      setNewCenter("");
-      setShowAddCenter(false);
-    }
-  };
-
   const handleAddEquipment = async () => {
-    if (!newEquipment.name || !newEquipment.category || !newEquipment.villeCentre) {
+    if (!newEquipment.name || !newEquipment.category) {
       alert("Tous les champs sont obligatoires !");
       return;
     }
 
+    const userCenter = localStorage.getItem("userVilleCentre") || "TEMARA";
     const currentDate = new Date().toISOString();
-    const equipmentWithDate = { ...newEquipment, dateAdded: currentDate };
+    const equipmentWithDate = { 
+      ...newEquipment, 
+      dateAdded: currentDate,
+      villeCentre: userCenter
+    };
 
     try {
       const response = await fetch(`${API_URL}/add`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          'Authorization': `Bearer ${localStorage.getItem("token")}`
+          'Authorization': `Bearer ${localStorage.getItem("token")}`,
+          'X-User-Center': userCenter
         },
         body: JSON.stringify(equipmentWithDate),
       });
 
       if (response.ok) {
         fetchEquipments();
-        setNewEquipment({ name: "", category: "", villeCentre: "", dateAdded: "", description: "", imageUrl: "" });
+        setNewEquipment({ 
+          name: "", 
+          category: "", 
+          villeCentre: userCenter, 
+          dateAdded: "", 
+          description: "", 
+          imageUrl: "" 
+        });
         setSelectedImage(null);
         setShowAddModal(false);
       } else {
@@ -169,7 +164,7 @@ const Equipments = () => {
   const handleUpdateEquipment = async () => {
     if (!editingEquipment) return;
 
-    if (!newEquipment.name || !newEquipment.category || !newEquipment.villeCentre) {
+    if (!newEquipment.name || !newEquipment.category) {
       alert("Tous les champs sont obligatoires !");
       return;
     }
@@ -179,7 +174,8 @@ const Equipments = () => {
         method: "PUT",
         headers: { 
           "Content-Type": "application/json",
-          'Authorization': `Bearer ${localStorage.getItem("token")}`
+          'Authorization': `Bearer ${localStorage.getItem("token")}`,
+          'X-User-Center': localStorage.getItem("userVilleCentre") || "TEMARA"
         },
         body: JSON.stringify(newEquipment),
       });
@@ -187,7 +183,14 @@ const Equipments = () => {
       if (response.ok) {
         fetchEquipments();
         setEditingEquipment(null);
-        setNewEquipment({ name: "", category: "", villeCentre: "", dateAdded: "", description: "", imageUrl: "" });
+        setNewEquipment({ 
+          name: "", 
+          category: "", 
+          villeCentre: localStorage.getItem("userVilleCentre") || "TEMARA", 
+          dateAdded: "", 
+          description: "", 
+          imageUrl: "" 
+        });
         setShowEditModal(false);
       } else {
         const errorData = await response.json();
@@ -250,11 +253,7 @@ const Equipments = () => {
       ? equipment.category === selectedCategory
       : true;
 
-    const matchesCenter = selectedCenter
-      ? equipment.villeCentre === selectedCenter
-      : true;
-
-    return matchesSearch && matchesCategory && matchesCenter;
+    return matchesSearch && matchesCategory;
   });
 
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -265,11 +264,6 @@ const Equipments = () => {
 
   const onChange = (page) => {
     setCurrentPage(page);
-  };
-
-  const formatVilleCentre = (ville) => {
-    if (!ville) return "";
-    return ville.charAt(0) + ville.slice(1).toLowerCase().replace(/_/g, " ");
   };
 
   return (
@@ -350,24 +344,6 @@ const Equipments = () => {
                 ))}
               </select>
             </div>
-
-            {localStorage.getItem("userRole") === "ADMIN" && (
-              <div className="filter-group">
-                <FaFilter className="filter-icon" />
-                <select
-                  className="filter-select"
-                  value={selectedCenter}
-                  onChange={(e) => setSelectedCenter(e.target.value)}
-                >
-                  <option value="">Tous les centres</option>
-                  {centers.map((center, index) => (
-                    <option key={index} value={center}>
-                      {formatVilleCentre(center)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
           </div>
         </div>
 
@@ -487,40 +463,9 @@ const Equipments = () => {
                   </button>
                 </div>
               )}
-              <select
-                name="villeCentre"
-                value={newEquipment.villeCentre}
-                onChange={(e) => {
-                  handleInputChange(e);
-                  if (e.target.value === "new") {
-                    setShowAddCenter(true);
-                  } else {
-                    setShowAddCenter(false);
-                  }
-                }}
-                required
-              >
-                <option value="">Sélectionnez un centre</option>
-                {centers.map((center, index) => (
-                  <option key={index} value={center}>
-                    {formatVilleCentre(center)}
-                  </option>
-                ))}
-                <option value="new">Ajouter un nouveau centre</option>
-              </select>
-              {showAddCenter && (
-                <div className="add-new-item">
-                  <input
-                    type="text"
-                    placeholder="Entrez le nom du nouveau centre"
-                    value={newCenter}
-                    onChange={(e) => setNewCenter(e.target.value)}
-                  />
-                  <button type="button" onClick={handleAddNewCenter}>
-                    <FaPlus /> Ajouter
-                  </button>
-                </div>
-              )}
+              <div className="center-display">
+                <p><strong>Centre:</strong> {formatVilleCentre(newEquipment.villeCentre)}</p>
+              </div>
               <button type="submit">Ajouter</button>
             </form>
           </div>
@@ -594,40 +539,9 @@ const Equipments = () => {
                   </button>
                 </div>
               )}
-              <select
-                name="villeCentre"
-                value={newEquipment.villeCentre}
-                onChange={(e) => {
-                  handleInputChange(e);
-                  if (e.target.value === "new") {
-                    setShowAddCenter(true);
-                  } else {
-                    setShowAddCenter(false);
-                  }
-                }}
-                required
-              >
-                <option value="">Sélectionnez un centre</option>
-                {centers.map((center, index) => (
-                  <option key={index} value={center}>
-                    {formatVilleCentre(center)}
-                  </option>
-                ))}
-                <option value="new">Ajouter un nouveau centre</option>
-              </select>
-              {showAddCenter && (
-                <div className="add-new-item">
-                  <input
-                    type="text"
-                    placeholder="Entrez le nom du nouveau centre"
-                    value={newCenter}
-                    onChange={(e) => setNewCenter(e.target.value)}
-                  />
-                  <button type="button" onClick={handleAddNewCenter}>
-                    <FaPlus /> Ajouter
-                  </button>
-                </div>
-              )}
+              <div className="center-display">
+                <p><strong>Centre:</strong> {formatVilleCentre(newEquipment.villeCentre)}</p>
+              </div>
               <button type="submit">Modifier</button>
             </form>
           </div>
@@ -659,4 +573,3 @@ const Equipments = () => {
 };
 
 export default Equipments;
-

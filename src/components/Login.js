@@ -18,15 +18,14 @@ export default function LoginPage() {
     setErrorMessage("");
     setIsLoading(true);
 
-    // Vérification statique pour l'admin
     if (email === "admin@gmail.com" && password === "admin") {
-      // Stocker les informations admin statiques
       localStorage.setItem("token", "static-admin-token");
       localStorage.setItem("userRole", "ADMIN");
       localStorage.setItem("userId", "admin-001");
       localStorage.setItem("userEmail", "admin@gmail.com");
       localStorage.setItem("userNom", "Admin");
       localStorage.setItem("userPrenom", "System");
+      localStorage.setItem("userVilleCentre", "TEMARA");
       
       if (rememberMe) {
         localStorage.setItem("rememberMe", "true");
@@ -55,8 +54,7 @@ export default function LoginPage() {
         throw new Error(data.message || "Email ou mot de passe incorrect.");
       }
 
-      // Stocker le token et les informations utilisateur
-      localStorage.setItem("token", data.token);
+      localStorage.setItem("token", "authenticated");
       localStorage.setItem("userRole", data.role);
       localStorage.setItem("userId", data.id);
       localStorage.setItem("userEmail", data.email);
@@ -64,6 +62,7 @@ export default function LoginPage() {
       localStorage.setItem("userPrenom", data.prenom);
       localStorage.setItem("userPhone", data.phone || "");
       localStorage.setItem("userCity", data.city || "");
+      localStorage.setItem("userVilleCentre", data.villeCentre || "TEMARA");
 
       if (rememberMe) {
         localStorage.setItem("rememberMe", "true");
@@ -71,7 +70,6 @@ export default function LoginPage() {
         localStorage.removeItem("rememberMe");
       }
 
-      // Redirection basée sur le rôle
       switch (data.role) {
         case "ADHERANT":
           navigate("/AdherantHome");
