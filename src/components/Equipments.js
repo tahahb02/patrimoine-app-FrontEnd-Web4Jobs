@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt, FaPlus, FaEdit, FaTrash, FaSearch, FaHistory, FaFilter,FaBoxOpen } from "react-icons/fa";
+import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt, FaPlus, FaEdit, FaTrash, FaSearch, FaHistory, FaFilter, FaBoxOpen } from "react-icons/fa";
 import { Pagination } from 'antd';
 import "../styles/responsable.css";
 
@@ -9,7 +9,14 @@ const API_URL = "http://localhost:8080/api/equipments";
 const Equipments = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [equipments, setEquipments] = useState([]);
-  const [newEquipment, setNewEquipment] = useState({ name: "", category: "", center: "", dateAdded: "", description: "", imageUrl: "" });
+  const [newEquipment, setNewEquipment] = useState({ 
+    name: "", 
+    category: "", 
+    villeCentre: "", 
+    dateAdded: "", 
+    description: "", 
+    imageUrl: "" 
+  });
   const [editingEquipment, setEditingEquipment] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -19,7 +26,10 @@ const Equipments = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [categories, setCategories] = useState(["PC Portable", "PC Bureau", "Bureautique", "Imprimante"]);
-  const [centers, setCenters] = useState(["A", "B", "C"]);
+  const [centers] = useState([
+    "TINGHIR", "TEMARA", "ESSAOUIRA", "DAKHLA", 
+    "LAAYOUNE", "NADOR", "AIN_EL_AOUDA"
+  ]);
   const [newCategory, setNewCategory] = useState("");
   const [newCenter, setNewCenter] = useState("");
   const [showAddCategory, setShowAddCategory] = useState(false);
@@ -37,7 +47,20 @@ const Equipments = () => {
   const fetchEquipments = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(API_URL, {
+      const userCenter = localStorage.getItem("userVilleCentre");
+      const userRole = localStorage.getItem("userRole");
+      
+      let url;
+      if (userRole === "ADMIN") {
+        url = API_URL;
+      } else if (userRole === "RESPONSABLE") {
+        url = `${API_URL}/ville/${userCenter}`;
+      } else {
+        navigate("/unauthorized");
+        return;
+      }
+
+      const response = await fetch(url, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -48,7 +71,6 @@ const Equipments = () => {
       if (!response.ok) {
         if (response.status === 401) {
           localStorage.removeItem("token");
-          localStorage.removeItem("userId");
           navigate("/login");
           return;
         }
@@ -105,15 +127,14 @@ const Equipments = () => {
 
   const handleAddNewCenter = () => {
     if (newCenter.trim()) {
-      setCenters([...centers, newCenter]);
-      setNewEquipment({ ...newEquipment, center: newCenter });
+      setNewEquipment({ ...newEquipment, villeCentre: newCenter });
       setNewCenter("");
       setShowAddCenter(false);
     }
   };
 
   const handleAddEquipment = async () => {
-    if (!newEquipment.name || !newEquipment.category || !newEquipment.center) {
+    if (!newEquipment.name || !newEquipment.category || !newEquipment.villeCentre) {
       alert("Tous les champs sont obligatoires !");
       return;
     }
@@ -133,7 +154,7 @@ const Equipments = () => {
 
       if (response.ok) {
         fetchEquipments();
-        setNewEquipment({ name: "", category: "", center: "", dateAdded: "", description: "", imageUrl: "" });
+        setNewEquipment({ name: "", category: "", villeCentre: "", dateAdded: "", description: "", imageUrl: "" });
         setSelectedImage(null);
         setShowAddModal(false);
       } else {
@@ -148,7 +169,7 @@ const Equipments = () => {
   const handleUpdateEquipment = async () => {
     if (!editingEquipment) return;
 
-    if (!newEquipment.name || !newEquipment.category || !newEquipment.center) {
+    if (!newEquipment.name || !newEquipment.category || !newEquipment.villeCentre) {
       alert("Tous les champs sont obligatoires !");
       return;
     }
@@ -166,7 +187,7 @@ const Equipments = () => {
       if (response.ok) {
         fetchEquipments();
         setEditingEquipment(null);
-        setNewEquipment({ name: "", category: "", center: "", dateAdded: "", description: "", imageUrl: "" });
+        setNewEquipment({ name: "", category: "", villeCentre: "", dateAdded: "", description: "", imageUrl: "" });
         setShowEditModal(false);
       } else {
         const errorData = await response.json();
@@ -216,6 +237,7 @@ const Equipments = () => {
     localStorage.removeItem("userEmail");
     localStorage.removeItem("userNom");
     localStorage.removeItem("userPrenom");
+    localStorage.removeItem("userVilleCentre");
     navigate("/login");
   };
 
@@ -229,7 +251,7 @@ const Equipments = () => {
       : true;
 
     const matchesCenter = selectedCenter
-      ? equipment.center === selectedCenter
+      ? equipment.villeCentre === selectedCenter
       : true;
 
     return matchesSearch && matchesCategory && matchesCenter;
@@ -243,6 +265,11 @@ const Equipments = () => {
 
   const onChange = (page) => {
     setCurrentPage(page);
+  };
+
+  const formatVilleCentre = (ville) => {
+    if (!ville) return "";
+    return ville.charAt(0) + ville.slice(1).toLowerCase().replace(/_/g, " ");
   };
 
   return (
@@ -266,14 +293,14 @@ const Equipments = () => {
             <Link to="/GestionDemandes"><FaClipboardList /><span>Gestion des Demandes</span></Link>
           </li>
           <li className={location.pathname === '/LivraisonsRetours' ? 'active' : ''}>
-          <Link to="/LivraisonsRetours"><FaBoxOpen /><span>Livraisons/Retours</span></Link>
+            <Link to="/LivraisonsRetours"><FaBoxOpen /><span>Livraisons/Retours</span></Link>
           </li>
           <li className={location.pathname === '/HistoriqueDemandes' ? 'active' : ''}>
             <Link to="/HistoriqueDemandes"><FaHistory /><span>Historique des Demandes</span></Link>
           </li>
           <li className={location.pathname === '/HistoriqueEquipements' ? 'active' : ''}>
-             <Link to="/HistoriqueEquipements"><FaHistory /><span>Historique des Équipements</span></Link>
-            </li>
+            <Link to="/HistoriqueEquipements"><FaHistory /><span>Historique des Équipements</span></Link>
+          </li>
           <li className={location.pathname === '/Notifications' ? 'active' : ''}>
             <Link to="/Notifications"><FaBell /><span>Notifications</span></Link>
           </li>
@@ -324,21 +351,23 @@ const Equipments = () => {
               </select>
             </div>
 
-            <div className="filter-group">
-              <FaFilter className="filter-icon" />
-              <select
-                className="filter-select"
-                value={selectedCenter}
-                onChange={(e) => setSelectedCenter(e.target.value)}
-              >
-                <option value="">Tous les centres</option>
-                {centers.map((center, index) => (
-                  <option key={index} value={center}>
-                    {center}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {localStorage.getItem("userRole") === "ADMIN" && (
+              <div className="filter-group">
+                <FaFilter className="filter-icon" />
+                <select
+                  className="filter-select"
+                  value={selectedCenter}
+                  onChange={(e) => setSelectedCenter(e.target.value)}
+                >
+                  <option value="">Tous les centres</option>
+                  {centers.map((center, index) => (
+                    <option key={index} value={center}>
+                      {formatVilleCentre(center)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         </div>
 
@@ -353,7 +382,7 @@ const Equipments = () => {
               <div className="card-content">
                 <h3>{equipment.name}</h3>
                 <p><strong>Catégorie:</strong> {equipment.category}</p>
-                <p><strong>Centre:</strong> {equipment.center}</p>
+                <p><strong>Centre:</strong> {formatVilleCentre(equipment.villeCentre)}</p>
                 <p><strong>Date d'ajout:</strong> {new Date(equipment.dateAdded).toLocaleString()}</p>
               </div>
               <div className="card-actions">
@@ -459,8 +488,8 @@ const Equipments = () => {
                 </div>
               )}
               <select
-                name="center"
-                value={newEquipment.center}
+                name="villeCentre"
+                value={newEquipment.villeCentre}
                 onChange={(e) => {
                   handleInputChange(e);
                   if (e.target.value === "new") {
@@ -474,7 +503,7 @@ const Equipments = () => {
                 <option value="">Sélectionnez un centre</option>
                 {centers.map((center, index) => (
                   <option key={index} value={center}>
-                    {center}
+                    {formatVilleCentre(center)}
                   </option>
                 ))}
                 <option value="new">Ajouter un nouveau centre</option>
@@ -566,8 +595,8 @@ const Equipments = () => {
                 </div>
               )}
               <select
-                name="center"
-                value={newEquipment.center}
+                name="villeCentre"
+                value={newEquipment.villeCentre}
                 onChange={(e) => {
                   handleInputChange(e);
                   if (e.target.value === "new") {
@@ -581,7 +610,7 @@ const Equipments = () => {
                 <option value="">Sélectionnez un centre</option>
                 {centers.map((center, index) => (
                   <option key={index} value={center}>
-                    {center}
+                    {formatVilleCentre(center)}
                   </option>
                 ))}
                 <option value="new">Ajouter un nouveau centre</option>
@@ -617,7 +646,7 @@ const Equipments = () => {
                 <img src={selectedEquipment.imageUrl || "/images/pc.jpg"} alt="Équipement" style={{ width: "200px", height: "200px" }} />
                 <p><strong>Nom:</strong> {selectedEquipment.name}</p>
                 <p><strong>Catégorie:</strong> {selectedEquipment.category}</p>
-                <p><strong>Centre:</strong> {selectedEquipment.center}</p>
+                <p><strong>Centre:</strong> {formatVilleCentre(selectedEquipment.villeCentre)}</p>
                 <p><strong>Description:</strong> {selectedEquipment.description}</p>
                 <p><strong>Date d'ajout:</strong> {new Date(selectedEquipment.dateAdded).toLocaleString()}</p>
               </div>
@@ -630,3 +659,4 @@ const Equipments = () => {
 };
 
 export default Equipments;
+

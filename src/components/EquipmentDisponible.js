@@ -23,7 +23,6 @@ const EquipmentDisponible = () => {
   const [equipments, setEquipments] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedCenter, setSelectedCenter] = useState("");
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState(null);
@@ -41,13 +40,10 @@ const EquipmentDisponible = () => {
   const [itemsPerPage] = useState(12);
   const [activeSection, setActiveSection] = useState("personal");
   const [requestSuccess, setRequestSuccess] = useState(false);
-  const [urgentRequests, setUrgentRequests] = useState([]);
-  const [lateRequests, setLateRequests] = useState([]);
   const navigate = useNavigate();
   const location = useLocation();
 
   const [categories] = useState(["PC Portable", "PC Bureau", "Bureautique", "Imprimante"]);
-  const [centers] = useState(["A", "B", "C"]);
 
   useEffect(() => {
     const userId = localStorage.getItem("userId");
@@ -57,28 +53,30 @@ const EquipmentDisponible = () => {
     }
 
     fetchUserData(userId);
-    fetchUrgentRequests();
-    fetchLateRequests();
   }, [navigate]);
 
   const fetchUserData = async (userId) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/utilisateurs/${userId}`);
+      const response = await fetch(`http://localhost:8080/api/utilisateurs/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem("token")}`
+        }
+      });
       if (!response.ok) {
         throw new Error("Erreur lors du chargement des données utilisateur");
       }
       const data = await response.json();
       setUserData(data);
-      fetchEquipments();
+      fetchEquipments(data.villeCentre);
     } catch (error) {
       setError(error.message);
       setLoading(false);
     }
   };
 
-  const fetchEquipments = async () => {
+  const fetchEquipments = async (villeCentre) => {
     try {
-      const response = await fetch("http://localhost:8080/api/equipments", {
+      const response = await fetch(`http://localhost:8080/api/equipments/ville/${villeCentre}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -105,34 +103,6 @@ const EquipmentDisponible = () => {
     }
   };
 
-  const fetchUrgentRequests = async () => {
-    try {
-      const response = await fetch('http://localhost:8080/api/demandes/urgentes', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-        }
-      });
-      const data = await response.json();
-      setUrgentRequests(data);
-    } catch (error) {
-      console.error('Error fetching urgent requests:', error);
-    }
-  };
-
-  const fetchLateRequests = async () => {
-    try {
-      const response = await fetch('http://localhost:8080/api/demandes/en-retard', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-        }
-      });
-      const data = await response.json();
-      setLateRequests(data);
-    } catch (error) {
-      console.error('Error fetching late requests:', error);
-    }
-  };
-
   const toggleSection = (section) => {
     setActiveSection(activeSection === section ? null : section);
   };
@@ -149,6 +119,11 @@ const EquipmentDisponible = () => {
     });
   };
 
+  const formatVilleCentre = (ville) => {
+    if (!ville) return "";
+    return ville.charAt(0) + ville.slice(1).toLowerCase().replace(/_/g, " ");
+  };
+
   const filteredEquipments = equipments.filter((equipment) => {
     const matchesSearch =
       equipment.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -158,11 +133,7 @@ const EquipmentDisponible = () => {
       ? equipment.category === selectedCategory
       : true;
 
-    const matchesCenter = selectedCenter
-      ? equipment.center === selectedCenter
-      : true;
-
-    return matchesSearch && matchesCategory && matchesCenter;
+    return matchesSearch && matchesCategory;
   });
 
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -235,7 +206,7 @@ const EquipmentDisponible = () => {
           idEquipement: selectedEquipment.id,
           nomEquipement: selectedEquipment.name,
           categorieEquipement: selectedEquipment.category,
-          centreEquipement: selectedEquipment.center,
+          centreEquipement: selectedEquipment.villeCentre,
           dateDebut: requestForm.startDate,
           dateFin: requestForm.endDate,
           remarques: requestForm.remarks,
@@ -251,9 +222,7 @@ const EquipmentDisponible = () => {
       const data = await response.json();
       setRequestSuccess(true);
       alert(`Demande d'équipement soumise avec succès le ${formatDateTime(data.dateDemande)} !`);
-      fetchEquipments();
-      fetchUrgentRequests();
-      fetchLateRequests();
+      fetchEquipments(userData.villeCentre);
     } catch (error) {
       console.error("Erreur:", error);
       setError(error.message);
@@ -263,7 +232,16 @@ const EquipmentDisponible = () => {
     }
   };
 
- 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("userEmail");
+    localStorage.removeItem("userNom");
+    localStorage.removeItem("userPrenom");
+    localStorage.removeItem("userVilleCentre");
+    navigate("/login");
+  };
 
   if (loading && !showRequestModal && !showDetailsModal) {
     return (
@@ -331,7 +309,9 @@ const EquipmentDisponible = () => {
               <Link to="/account"><FaUser /><span>Compte</span></Link>
             </li>
             <li className="logout">
-              <Link to="/logout"><FaSignOutAlt /><span>Déconnexion</span></Link>
+              <button onClick={handleLogout} style={{ background: 'none', border: 'none', padding: '10px', width: '100%', textAlign: 'left' }}>
+                <FaSignOutAlt /><span>Déconnexion</span>
+              </button>
             </li>
           </ul>
         </div>
@@ -339,8 +319,9 @@ const EquipmentDisponible = () => {
 
       <main className={`content ${isBlurred ? "blur-background" : ""}`}>
         <h2>Équipements Disponibles</h2>
-
-      
+        <p className="center-info">
+          Vous visualisez les équipements disponibles pour le centre : <strong>{formatVilleCentre(userData?.villeCentre)}</strong>
+        </p>
 
         <div className="search-and-filters">
           <div className="search-bar">
@@ -369,22 +350,6 @@ const EquipmentDisponible = () => {
                 ))}
               </select>
             </div>
-
-            <div className="filter-group">
-              <FaFilter className="filter-icon" />
-              <select
-                className="filter-select"
-                onChange={(e) => setSelectedCenter(e.target.value)}
-                value={selectedCenter}
-              >
-                <option value="">Tous les centres</option>
-                {centers.map((center, index) => (
-                  <option key={index} value={center}>
-                    {center}
-                  </option>
-                ))}
-              </select>
-            </div>
           </div>
         </div>
 
@@ -395,7 +360,7 @@ const EquipmentDisponible = () => {
               <div className="card-content">
                 <h3>{equipment.name}</h3>
                 <p><strong>Catégorie:</strong> {equipment.category}</p>
-                <p><strong>Centre:</strong> {equipment.center}</p>
+                <p><strong>Centre:</strong> {formatVilleCentre(equipment.villeCentre)}</p>
                 <p><strong>Disponibilité:</strong> {equipment.status || "Disponible"}</p>
               </div>
               <div className="card-actions">
@@ -515,7 +480,7 @@ const EquipmentDisponible = () => {
                           <label>Centre</label>
                           <input
                             type="text"
-                            value={selectedEquipment?.center || ""}
+                            value={formatVilleCentre(selectedEquipment?.villeCentre) || ""}
                             readOnly
                           />
                         </div>
@@ -670,25 +635,12 @@ const EquipmentDisponible = () => {
                   </div>
                   <div className="detail-group">
                     <span className="detail-label">Centre:</span>
-                    <span className="detail-value">{selectedEquipment.center}</span>
+                    <span className="detail-value">{formatVilleCentre(selectedEquipment.villeCentre)}</span>
                   </div>
                   <div className="detail-group">
                     <span className="detail-label">Description:</span>
                     <span className="detail-value">{selectedEquipment.description || "Non spécifiée"}</span>
                   </div>
-                  {selectedEquipment.specifications && (
-                    <>
-                      <h4 className="specifications-title">Spécifications techniques:</h4>
-                      <div className="specifications-grid">
-                        {Object.entries(selectedEquipment.specifications).map(([key, value]) => (
-                          <div key={key} className="specification-item">
-                            <span className="spec-label">{key}:</span>
-                            <span className="spec-value">{value}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
                   <button 
                     className="request-button"
                     onClick={() => {
