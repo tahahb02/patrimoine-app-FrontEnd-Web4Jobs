@@ -67,20 +67,22 @@ const EquipmentDisponible = () => {
       }
       const data = await response.json();
       setUserData(data);
-      fetchEquipments(data.villeCentre);
+      fetchEquipmentsByCenter(data.villeCentre);
     } catch (error) {
       setError(error.message);
       setLoading(false);
     }
   };
 
-  const fetchEquipments = async (villeCentre) => {
+  const fetchEquipmentsByCenter = async (villeCentre) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/equipments/ville/${villeCentre}`, {
+      const response = await fetch(`http://localhost:8080/api/equipments`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token") || ''}`
+          "Authorization": `Bearer ${localStorage.getItem("token") || ''}`,
+          "X-User-Center": villeCentre,
+          "X-User-Role": "ADHERANT"
         }
       });
 
@@ -101,22 +103,6 @@ const EquipmentDisponible = () => {
       setError(error.message);
       setLoading(false);
     }
-  };
-
-  const toggleSection = (section) => {
-    setActiveSection(activeSection === section ? null : section);
-  };
-
-  const formatDateTime = (dateTime) => {
-    if (!dateTime) return "Non spécifié";
-    const date = new Date(dateTime);
-    return date.toLocaleString('fr-FR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
   };
 
   const formatVilleCentre = (ville) => {
@@ -221,8 +207,8 @@ const EquipmentDisponible = () => {
 
       const data = await response.json();
       setRequestSuccess(true);
-      alert(`Demande d'équipement soumise avec succès le ${formatDateTime(data.dateDemande)} !`);
-      fetchEquipments(userData.villeCentre);
+      alert(`Demande d'équipement soumise avec succès le ${new Date(data.dateDemande).toLocaleString()} !`);
+      fetchEquipmentsByCenter(userData.villeCentre);
     } catch (error) {
       console.error("Erreur:", error);
       setError(error.message);
@@ -420,7 +406,7 @@ const EquipmentDisponible = () => {
                     <div className="accordion-section">
                       <div 
                         className={`accordion-header ${activeSection === 'personal' ? 'active' : ''}`}
-                        onClick={() => toggleSection('personal')}
+                        onClick={() => setActiveSection('personal')}
                       >
                         <span><FaUser /> Informations personnelles</span>
                       </div>
@@ -455,7 +441,7 @@ const EquipmentDisponible = () => {
                     <div className="accordion-section">
                       <div 
                         className={`accordion-header ${activeSection === 'equipment' ? 'active' : ''}`}
-                        onClick={() => toggleSection('equipment')}
+                        onClick={() => setActiveSection('equipment')}
                       >
                         <span><FaInfoCircle /> Équipement demandé</span>
                       </div>
@@ -490,7 +476,7 @@ const EquipmentDisponible = () => {
                     <div className="accordion-section">
                       <div 
                         className={`accordion-header ${activeSection === 'request' ? 'active' : ''}`}
-                        onClick={() => toggleSection('request')}
+                        onClick={() => setActiveSection('request')}
                       >
                         <span><FaClock /> Période de demande</span>
                       </div>
@@ -531,7 +517,7 @@ const EquipmentDisponible = () => {
                     <div className="accordion-section">
                       <div 
                         className={`accordion-header ${activeSection === 'urgency' ? 'active' : ''}`}
-                        onClick={() => toggleSection('urgency')}
+                        onClick={() => setActiveSection('urgency')}
                       >
                         <span><FaExclamationTriangle /> Niveau d'urgence</span>
                       </div>
