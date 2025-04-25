@@ -1,16 +1,43 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt, FaHistory,FaBoxOpen   } from "react-icons/fa";
+import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt, FaHistory, FaBoxOpen } from "react-icons/fa";
 import "../styles/responsable.css";
 
 const ResponsableHome = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [userData, setUserData] = useState(null);
     const navigate = useNavigate();
     const location = useLocation();
 
+    useEffect(() => {
+        // Récupérer les données utilisateur depuis localStorage
+        const userNom = localStorage.getItem("userNom");
+        const userPrenom = localStorage.getItem("userPrenom");
+        const userVilleCentre = localStorage.getItem("userVilleCentre");
+        
+        if (userNom && userPrenom && userVilleCentre) {
+            setUserData({
+                nom: userNom,
+                prenom: userPrenom,
+                villeCentre: userVilleCentre
+            });
+        }
+    }, []);
+
     const handleLogout = () => {
-        localStorage.removeItem("userSession");
-        navigate("/", { replace: true });
+        localStorage.removeItem("token");
+        localStorage.removeItem("userId");
+        localStorage.removeItem("userRole");
+        localStorage.removeItem("userEmail");
+        localStorage.removeItem("userNom");
+        localStorage.removeItem("userPrenom");
+        localStorage.removeItem("userVilleCentre");
+        navigate("/login");
+    };
+
+    const formatVilleCentre = (ville) => {
+        if (!ville) return "";
+        return ville.charAt(0) + ville.slice(1).toLowerCase().replace(/_/g, " ");
     };
 
     return (
@@ -21,7 +48,7 @@ const ResponsableHome = () => {
                 </div>
                 <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
             </nav>
-\+
+
             <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
                 <ul className="sidebar-menu">
                     <li className={location.pathname === '/ResponsableHome' ? 'active' : ''}>
@@ -32,7 +59,7 @@ const ResponsableHome = () => {
                     </li>
                     <li className={location.pathname === '/GestionDemandes' ? 'active' : ''}>
                         <Link to="/GestionDemandes"><FaClipboardList /><span>Gestion des Demandes</span></Link>
-                    </li >
+                    </li>
                     <li className={location.pathname === '/LivraisonsRetours' ? 'active' : ''}>
                         <Link to="/LivraisonsRetours"><FaBoxOpen /><span>Livraisons/Retours</span></Link>
                     </li>
@@ -62,7 +89,10 @@ const ResponsableHome = () => {
             </aside>
 
             <main className="content">
-                <h2>Bienvenue, Responsable du Centre</h2>
+                <h2>
+                    Bienvenue, {userData?.prenom} {userData?.nom}<br />
+                    <span className="welcome-subtitle">Responsable du centre {formatVilleCentre(userData?.villeCentre)}</span>
+                </h2>
                 <div className="dashboard-cards">
                     <div className="card">
                         <h3>Équipements</h3>

@@ -1714,3 +1714,60 @@ margin-bottom: 15px;
 0% { transform: rotate(0deg); }
 100% { transform: rotate(360deg); }
 }
+
+
+/* Dans responsable.css et adherant.css */
+.welcome-container {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border-left: 4px solid #3498db;
+}
+
+.welcome-title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+  font-family: 'Montserrat', sans-serif;
+  position: relative;
+  display: inline-block;
+}
+
+.welcome-title::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 50px;
+  height: 3px;
+  background: linear-gradient(90deg, #3498db, #2ecc71);
+  border-radius: 3px;
+}
+
+.welcome-subtitle {
+  font-size: 1.3rem;
+  font-weight: 500;
+  color: #7f8c8d;
+  margin-top: 0.8rem;
+  display: block;
+  font-family: 'Open Sans', sans-serif;
+  letter-spacing: 0.5px;
+}
+
+.welcome-highlight {
+  color: #3498db;
+  font-weight: 600;
+}
+
+/* Animation subtile */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.welcome-container {
+  animation: fadeIn 0.6s ease-out forwards;
+}
