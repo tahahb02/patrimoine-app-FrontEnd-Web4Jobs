@@ -1,24 +1,12 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  FaBars,
-  FaTimes,
-  FaTachometerAlt,
-  FaClipboardList,
-  FaBell,
-  FaUser,
-  FaSignOutAlt,
-  FaEye,
-  FaCogs,
-  FaSort,
-  FaSortUp,
-  FaSortDown,
-  FaExclamationTriangle,
-  FaFilter,
-  FaCalendarAlt,
+  FaBars, FaTimes, FaTachometerAlt, FaClipboardList, FaBell,
+  FaUser, FaSignOutAlt, FaEye, FaCogs, FaSort, FaSortUp,
+  FaSortDown, FaExclamationTriangle, FaFilter, FaCalendarAlt,
   FaInfoCircle
 } from "react-icons/fa";
-import { Pagination, Spin, Alert } from "antd";
+import { Pagination, Spin, Alert, message } from "antd";
 import "../styles/adherant.css";
 
 const API_URL = "http://localhost:8080/api/demandes";
@@ -80,7 +68,7 @@ const SuiviDemandeAdherant = () => {
         throw new Error("Session invalide. Veuillez vous reconnecter.");
       }
 
-      const response = await fetch(`${API_URL}/utilisateur/${userId}/demandes`, {
+      const response = await fetch(`${API_URL}/by-user/${userId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -89,12 +77,13 @@ const SuiviDemandeAdherant = () => {
 
       if (!response.ok) {
         if (response.status === 401) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("userId");
+          message.error("Session expirée. Veuillez vous reconnecter.");
+          localStorage.clear();
           navigate("/login");
           return;
         }
-        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`Erreur ${response.status}: ${errorText}`);
       }
 
       const data = await response.json();
@@ -107,6 +96,7 @@ const SuiviDemandeAdherant = () => {
     } catch (err) {
       console.error("Erreur lors du chargement des demandes:", err);
       setError(err.message || "Erreur lors de la récupération des données");
+      message.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -519,4 +509,4 @@ const SuiviDemandeAdherant = () => {
   );
 };
 
-export default SuiviDemandeAdherant;
+export default SuiviDemandeAdherant;  
