@@ -48,6 +48,9 @@ const GestionDemandes = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const userVilleCentre = localStorage.getItem("userVilleCentre");
+  const userRole = localStorage.getItem("userRole");
+
   const urgencyOptions = [
     { value: "", label: "Tous les niveaux" },
     { value: "ELEVEE", label: "Urgent" },
@@ -78,17 +81,17 @@ const GestionDemandes = () => {
   const fetchDemandes = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`${API_URL}/en-attente`, {
+      const response = await fetch(`${API_URL}/en-attente/${userVilleCentre}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'X-User-Role': userRole,
+          'X-User-Center': userVilleCentre
         }
       });
 
       if (!response.ok) {
         if (response.status === 401) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("userId");
-          navigate("/login");
+          handleLogout();
           return;
         }
         throw new Error(`Erreur ${response.status}: ${response.statusText}`);
@@ -245,7 +248,9 @@ const GestionDemandes = () => {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'X-User-Role': userRole,
+          'X-User-Center': userVilleCentre
         },
         body: JSON.stringify({
           statut: actionChoisie,
@@ -275,6 +280,7 @@ const GestionDemandes = () => {
     localStorage.removeItem("userEmail");
     localStorage.removeItem("userNom");
     localStorage.removeItem("userPrenom");
+    localStorage.removeItem("userVilleCentre");
     navigate("/login");
   };
 
@@ -418,6 +424,7 @@ const GestionDemandes = () => {
       </div>
     );
   };
+
   return (
     <div className={`dashboard-container ${sidebarOpen ? "sidebar-expanded" : ""}`}>
       <nav className="navbar">
@@ -439,7 +446,7 @@ const GestionDemandes = () => {
             <Link to="/GestionDemandes"><FaClipboardList /><span>Gestion des Demandes</span></Link>
           </li>
           <li className={location.pathname === '/LivraisonsRetours' ? 'active' : ''}>
-          <Link to="/LivraisonsRetours"><FaBoxOpen /><span>Livraisons/Retours</span></Link>
+            <Link to="/LivraisonsRetours"><FaBoxOpen /><span>Livraisons/Retours</span></Link>
           </li>
           <li className={location.pathname === '/HistoriqueDemandes' ? 'active' : ''}>
             <Link to="/HistoriqueDemandes"><FaHistory /><span>Historique des Demandes</span></Link>
@@ -467,7 +474,7 @@ const GestionDemandes = () => {
       </aside>
 
       <main className="content">
-        <h2>Gestion des Demandes</h2>
+        <h2>Gestion des Demandes - Centre {userVilleCentre}</h2>
 
         <div className="stats-panels">
           <UrgencyCircle />

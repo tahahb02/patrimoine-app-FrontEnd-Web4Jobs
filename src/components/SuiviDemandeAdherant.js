@@ -14,7 +14,9 @@ import {
   FaSortUp,
   FaSortDown,
   FaExclamationTriangle,
-  FaFilter
+  FaFilter,
+  FaCalendarAlt,
+  FaInfoCircle
 } from "react-icons/fa";
 import { Pagination, Spin, Alert } from "antd";
 import "../styles/adherant.css";
@@ -49,7 +51,7 @@ const SuiviDemandeAdherant = () => {
   const statusOptions = [
     { value: "", label: "Tous les statuts" },
     { value: "EN_ATTENTE", label: "En attente" },
-    { value: "APPROUVEE", label: "Approuvée" },
+    { value: "ACCEPTEE", label: "Acceptée" },
     { value: "REJETEE", label: "Rejetée" },
     { value: "EN_COURS", label: "En cours" },
     { value: "TERMINEE", label: "Terminée" },
@@ -78,7 +80,7 @@ const SuiviDemandeAdherant = () => {
         throw new Error("Session invalide. Veuillez vous reconnecter.");
       }
 
-      const response = await fetch(`${API_URL}/utilisateur/${userId}`, {
+      const response = await fetch(`${API_URL}/utilisateur/${userId}/demandes`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -121,7 +123,7 @@ const SuiviDemandeAdherant = () => {
   };
 
   const formatDateTime = (dateTime) => {
-    if (!dateTime) return 'Non disponible';
+    if (!dateTime) return 'Non spécifié';
     try {
       const date = new Date(dateTime);
       return date.toLocaleString('fr-FR', {
@@ -132,7 +134,7 @@ const SuiviDemandeAdherant = () => {
         minute: '2-digit'
       });
     } catch (e) {
-      return 'Format invalide';
+      return 'Date invalide';
     }
   };
 
@@ -322,10 +324,13 @@ const SuiviDemandeAdherant = () => {
 
       <main className="content">
         <h2>Suivi des Demandes</h2>
+        <p className="page-description">
+          Visualisez l'état de vos demandes d'équipements et suivez leur progression
+        </p>
 
         <UrgencyStatsPanel />
 
-        <div className="search-and-filters">
+        <div className="filters-container">
           <div className="filter-group">
             <FaFilter className="filter-icon" />
             <select
@@ -361,28 +366,42 @@ const SuiviDemandeAdherant = () => {
           <div className="no-data-message">
             <p>Aucune demande trouvée.</p>
             <Link to="/EquipmentDisponible" className="new-request-link">
-              Faire une nouvelle demande
+              <FaCogs /> Faire une nouvelle demande
             </Link>
           </div>
         ) : (
           <>
-            <div className="table-container">
+            <div className="table-responsive">
               <table className="demandes-table">
                 <thead>
                   <tr>
                     <th>Équipement</th>
                     <th>Centre</th>
-                    <th>Statut</th>
-                    
+                    <th onClick={() => requestSort('statut')}>
+                      <div className="sortable-header">
+                        Statut
+                        <span className="sort-icon">
+                          {getSortIcon('statut')}
+                        </span>
+                      </div>
+                    </th>
+                    <th onClick={() => requestSort('urgence')}>
+                      <div className="sortable-header">
+                        Urgence
+                        <span className="sort-icon">
+                          {getSortIcon('urgence')}
+                        </span>
+                      </div>
+                    </th>
                     <th onClick={() => requestSort('dateDemande')}>
                       <div className="sortable-header">
-                        Date Demande
+                        <FaCalendarAlt /> Date
                         <span className="sort-icon">
                           {getSortIcon('dateDemande')}
                         </span>
                       </div>
                     </th>
-                    <th>Détails</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -395,15 +414,19 @@ const SuiviDemandeAdherant = () => {
                           {demande.statut || 'EN_ATTENTE'}
                         </span>
                       </td>
-                      
-                      <td className="date-cell">{formatDateTime(demande.dateDemande)}</td>
+                      <td>
+                        <span className={getUrgencyBadgeClass(demande.urgence)}>
+                          {demande.urgence || 'NORMALE'}
+                        </span>
+                      </td>
+                      <td>{formatDateTime(demande.dateDemande)}</td>
                       <td>
                         <button
                           className="details-button"
                           onClick={() => handleDetails(demande)}
-                          aria-label="Voir détails"
+                          title="Voir détails"
                         >
-                          <FaEye />
+                          <FaEye /> Détails
                         </button>
                       </td>
                     </tr>
@@ -431,55 +454,61 @@ const SuiviDemandeAdherant = () => {
               <button className="modal-close" onClick={closeDetailsModal}>
                 &times;
               </button>
-              <h3>Détails de la demande</h3>
-              <div className="details-content">
-                <div className="detail-row">
-                  <span className="detail-label">Équipement :</span>
+              <h3>
+                <FaInfoCircle /> Détails de la demande
+              </h3>
+              <div className="details-grid">
+                <div className="detail-item">
+                  <span className="detail-label">Équipement:</span>
                   <span className="detail-value">{selectedDetails.nomEquipement || 'N/A'}</span>
                 </div>
-                <div className="detail-row">
-                  <span className="detail-label">Centre :</span>
+                <div className="detail-item">
+                  <span className="detail-label">ID Équipement:</span>
+                  <span className="detail-value">{selectedDetails.idEquipement || 'N/A'}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Centre:</span>
                   <span className="detail-value">{selectedDetails.centreEquipement || 'N/A'}</span>
                 </div>
-                <div className="detail-row">
-                  <span className="detail-label">Catégorie :</span>
+                <div className="detail-item">
+                  <span className="detail-label">Catégorie:</span>
                   <span className="detail-value">{selectedDetails.categorieEquipement || 'N/A'}</span>
                 </div>
-                <div className="detail-row">
-                  <span className="detail-label">Statut :</span>
+                <div className="detail-item">
+                  <span className="detail-label">Statut:</span>
                   <span className={`detail-value ${getStatusBadgeClass(selectedDetails.statut)}`}>
                     {selectedDetails.statut || 'EN_ATTENTE'}
                   </span>
                 </div>
-                <div className="detail-row">
-                  <span className="detail-label">Urgence :</span>
+                <div className="detail-item">
+                  <span className="detail-label">Urgence:</span>
                   <span className={`detail-value ${getUrgencyBadgeClass(selectedDetails.urgence)}`}>
                     {selectedDetails.urgence || 'NORMALE'}
                   </span>
                 </div>
-                <div className="detail-row">
-                  <span className="detail-label">Commentaire :</span>
-                  <span className="detail-value">{selectedDetails.commentaireResponsable || 'Aucun commentaire'}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Date de début :</span>
-                  <span className="detail-value">{formatDateTime(selectedDetails.dateDebut)}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Date de fin :</span>
-                  <span className="detail-value">{formatDateTime(selectedDetails.dateFin)}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Date de demande :</span>
+                <div className="detail-item">
+                  <span className="detail-label">Date de demande:</span>
                   <span className="detail-value">{formatDateTime(selectedDetails.dateDemande)}</span>
                 </div>
-                <div className="detail-row">
-                  <span className="detail-label">Date de réponse :</span>
-                  <span className="detail-value">{formatDateTime(selectedDetails.dateReponse)}</span>
+                <div className="detail-item">
+                  <span className="detail-label">Date de début:</span>
+                  <span className="detail-value">{formatDateTime(selectedDetails.dateDebut)}</span>
                 </div>
-                <div className="detail-row">
-                  <span className="detail-label">Remarques :</span>
+                <div className="detail-item">
+                  <span className="detail-label">Date de fin:</span>
+                  <span className="detail-value">{formatDateTime(selectedDetails.dateFin)}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Date de réponse:</span>
+                  <span className="detail-value">{formatDateTime(selectedDetails.dateReponse) || 'En attente'}</span>
+                </div>
+                <div className="detail-item full-width">
+                  <span className="detail-label">Remarques:</span>
                   <span className="detail-value">{selectedDetails.remarques || 'Aucune remarque'}</span>
+                </div>
+                <div className="detail-item full-width">
+                  <span className="detail-label">Commentaire responsable:</span>
+                  <span className="detail-value">{selectedDetails.commentaireResponsable || 'Aucun commentaire'}</span>
                 </div>
               </div>
             </div>

@@ -51,15 +51,15 @@ const EquipmentDisponible = () => {
       navigate("/login");
       return;
     }
-
     fetchUserData(userId);
   }, [navigate]);
 
   const fetchUserData = async (userId) => {
     try {
+      const token = localStorage.getItem("token");
       const response = await fetch(`http://localhost:8080/api/utilisateurs/${userId}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem("token")}`
+          'Authorization': `Bearer ${token}`
         }
       });
       if (!response.ok) {
@@ -76,13 +76,12 @@ const EquipmentDisponible = () => {
 
   const fetchEquipmentsByCenter = async (villeCentre) => {
     try {
+      const token = localStorage.getItem("token");
       const response = await fetch(`http://localhost:8080/api/equipments`, {
-        method: "GET",
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token") || ''}`,
-          "X-User-Center": villeCentre,
-          "X-User-Role": "ADHERANT"
+          'Authorization': `Bearer ${token}`,
+          'X-User-Center': villeCentre,
+          'X-User-Role': 'ADHERANT'
         }
       });
 
@@ -182,24 +181,32 @@ const EquipmentDisponible = () => {
   
     try {
       setLoading(true);
+      const token = localStorage.getItem("token");
+      const userRole = localStorage.getItem("userRole");
+
       const response = await fetch(`http://localhost:8080/api/demandes/soumettre/${userId}`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token") || ''}`
+          "Authorization": `Bearer ${token}`,
+          "X-User-Role": userRole
         },
         body: JSON.stringify({
           idEquipement: selectedEquipment.id,
           nomEquipement: selectedEquipment.name,
           categorieEquipement: selectedEquipment.category,
           centreEquipement: selectedEquipment.villeCentre,
+          villeCentre: userData.villeCentre,
+          prenom: userData.prenom,
+          nom: userData.nom,
+          numeroTelephone: userData.phone,
           dateDebut: requestForm.startDate,
           dateFin: requestForm.endDate,
           remarques: requestForm.remarks,
           urgence: requestForm.urgency
-        }),
+        })
       });
-  
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Erreur lors de la soumission");
@@ -207,7 +214,7 @@ const EquipmentDisponible = () => {
 
       const data = await response.json();
       setRequestSuccess(true);
-      alert(`Demande d'équipement soumise avec succès le ${new Date(data.dateDemande).toLocaleString()} !`);
+      alert(`Demande d'équipement soumise avec succès !`);
       fetchEquipmentsByCenter(userData.villeCentre);
     } catch (error) {
       console.error("Erreur:", error);
