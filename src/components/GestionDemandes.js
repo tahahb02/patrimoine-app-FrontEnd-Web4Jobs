@@ -20,7 +20,7 @@ import {
   FaFilter,
   FaBoxOpen
 } from "react-icons/fa";
-import { Pagination } from 'antd';
+import { Pagination, message } from 'antd';
 import "../styles/responsable.css";
 
 const API_URL = "http://localhost:8080/api/demandes";
@@ -101,6 +101,7 @@ const GestionDemandes = () => {
       setDemandes(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Erreur lors du chargement des demandes:", error);
+      message.error("Erreur lors du chargement des demandes");
     }
   };
 
@@ -196,8 +197,23 @@ const GestionDemandes = () => {
     const sortableDemandes = [...filteredDemandes];
     if (sortConfig.key) {
       sortableDemandes.sort((a, b) => {
-        const aValue = a[sortConfig.key];
-        const bValue = b[sortConfig.key];
+        // Tri spécial pour les dates
+        if (sortConfig.key.includes('date')) {
+          const aValue = new Date(a[sortConfig.key]);
+          const bValue = new Date(b[sortConfig.key]);
+          
+          if (aValue < bValue) {
+            return sortConfig.direction === 'asc' ? -1 : 1;
+          }
+          if (aValue > bValue) {
+            return sortConfig.direction === 'asc' ? 1 : -1;
+          }
+          return 0;
+        }
+        
+        // Tri standard pour les autres champs
+        const aValue = a[sortConfig.key]?.toString().toLowerCase() || '';
+        const bValue = b[sortConfig.key]?.toString().toLowerCase() || '';
         
         if (aValue < bValue) {
           return sortConfig.direction === 'asc' ? -1 : 1;
@@ -260,16 +276,16 @@ const GestionDemandes = () => {
       });
       
       if (response.ok) {
-        alert(`Demande ${actionChoisie.toLowerCase()} avec succès !`);
+        message.success(`Demande ${actionChoisie.toLowerCase()} avec succès !`);
         closeModal();
         fetchDemandes();
       } else {
         const errorData = await response.json();
-        alert(`Erreur lors de la mise à jour du statut: ${errorData.message}`);
+        message.error(`Erreur lors de la mise à jour du statut: ${errorData.message}`);
       }
     } catch (error) {
       console.error("Erreur lors de la mise à jour du statut:", error);
-      alert("Erreur réseau. Veuillez réessayer.");
+      message.error("Erreur réseau. Veuillez réessayer.");
     }
   };
 
@@ -546,72 +562,90 @@ const GestionDemandes = () => {
               </tr>
             </thead>
             <tbody>
-              {currentDemandes.map((demande) => (
-                <tr key={demande.id}>
-                  <td>{demande.nom}</td>
-                  <td>{demande.prenom}</td>
-                  <td>{demande.centreEquipement}</td>
-                  <td>{demande.nomEquipement}</td>
-                  <td>
-                    <span className={getStatusBadgeClass(demande.statut)}>
-                      {demande.statut}
-                    </span>
-                  </td>
-                  <td className="date-cell">
-                    <div className="date-with-indicator">
-                      {formatDateTime(demande.dateDemande)}
-                      {calculateDelayStatus(demande.dateDemande) !== 'no-delay' && (
-                        <span className={getDelayBadgeClass(demande.dateDemande)}>
-                          {calculateDelayStatus(demande.dateDemande) === 'very-late' 
-                            ? 'Très en retard' 
-                            : 'En retard'}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td>
-                    <span className={getUrgencyBadgeClass(demande.urgence)}>
-                      {demande.urgence}
-                    </span>
-                  </td>
-                  <td>
-                    <button
-                      className="accepter"
-                      onClick={() => handleAction(demande, "ACCEPTEE")}
-                    >
-                      Accepter
-                    </button>
-                    <button
-                      className="refuser"
-                      onClick={() => handleAction(demande, "REFUSEE")}
-                    >
-                      Refuser
-                    </button>
-                  </td>
-                  <td>
-                    <button
-                      className="details-button"
-                      onClick={() => handleDetails(demande)}
-                    >
-                      <FaEye />
-                    </button>
+              {demandes.length === 0 ? (
+                <tr>
+                  <td colSpan="9" className="no-data-message">
+                    <FaClipboardList style={{ marginRight: '10px' }} />
+                    Aucune demande en attente pour le centre {userVilleCentre}
                   </td>
                 </tr>
-              ))}
+              ) : currentDemandes.length > 0 ? (
+                currentDemandes.map((demande) => (
+                  <tr key={demande.id}>
+                    <td>{demande.nom}</td>
+                    <td>{demande.prenom}</td>
+                    <td>{demande.centreEquipement}</td>
+                    <td>{demande.nomEquipement}</td>
+                    <td>
+                      <span className={getStatusBadgeClass(demande.statut)}>
+                        {demande.statut}
+                      </span>
+                    </td>
+                    <td className="date-cell">
+                      <div className="date-with-indicator">
+                        {formatDateTime(demande.dateDemande)}
+                        {calculateDelayStatus(demande.dateDemande) !== 'no-delay' && (
+                          <span className={getDelayBadgeClass(demande.dateDemande)}>
+                            {calculateDelayStatus(demande.dateDemande) === 'very-late' 
+                              ? 'Très en retard' 
+                              : 'En retard'}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <span className={getUrgencyBadgeClass(demande.urgence)}>
+                        {demande.urgence}
+                      </span>
+                    </td>
+                    <td>
+                      <button
+                        className="accepter"
+                        onClick={() => handleAction(demande, "ACCEPTEE")}
+                      >
+                        Accepter
+                      </button>
+                      <button
+                        className="refuser"
+                        onClick={() => handleAction(demande, "REFUSEE")}
+                      >
+                        Refuser
+                      </button>
+                    </td>
+                    <td>
+                      <button
+                        className="details-button"
+                        onClick={() => handleDetails(demande)}
+                      >
+                        <FaEye />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="9" className="no-data-message">
+                    <FaSearch style={{ marginRight: '10px' }} />
+                    Aucune demande ne correspond à votre recherche
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
 
-        <div className="pagination-container">
-          <Pagination
-            current={currentPage}
-            total={sortedDemandes.length}
-            pageSize={itemsPerPage}
-            onChange={(page) => setCurrentPage(page)}
-            showSizeChanger={false}
-            showQuickJumper
-          />
-        </div>
+        {sortedDemandes.length > itemsPerPage && (
+          <div className="pagination-container">
+            <Pagination
+              current={currentPage}
+              total={sortedDemandes.length}
+              pageSize={itemsPerPage}
+              onChange={(page) => setCurrentPage(page)}
+              showSizeChanger={false}
+              showQuickJumper
+            />
+          </div>
+        )}
 
         {showModal && (
           <div className="modal-overlay">

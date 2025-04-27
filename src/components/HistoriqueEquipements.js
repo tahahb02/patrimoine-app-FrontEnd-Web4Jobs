@@ -3,12 +3,13 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList,
   FaBell, FaUser, FaSignOutAlt, FaSearch, FaHistory,
-  FaPhone, FaEnvelope, FaClock, FaSort, FaSortUp, FaSortDown,FaBoxOpen
+  FaPhone, FaEnvelope, FaClock, FaSort, FaSortUp, FaSortDown, FaBoxOpen
 } from 'react-icons/fa';
 import { Pagination } from 'antd';
 import '../styles/responsable.css';
 
 const API_URL = 'http://localhost:8080/api/equipments';
+const HISTORIQUE_URL = 'http://localhost:8080/api/historique-equipements';
 
 const HistoriqueEquipements = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -18,21 +19,28 @@ const HistoriqueEquipements = () => {
   const [historique, setHistorique] = useState(null);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(25);
+  const [itemsPerPage] = useState(10);
   const [sortConfig, setSortConfig] = useState({ key: 'dateAdded', direction: 'desc' });
+  const [userCenter, setUserCenter] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    fetchEquipments();
+    const center = localStorage.getItem('userVilleCentre');
+    if (center) {
+      setUserCenter(center);
+      fetchEquipments(center);
+    }
   }, []);
 
-  const fetchEquipments = async () => {
+  const fetchEquipments = async (villeCentre) => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(API_URL, {
+      const response = await fetch(`${API_URL}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'X-User-Center': villeCentre,
+          'X-User-Role': localStorage.getItem('userRole')
         }
       });
 
@@ -46,7 +54,9 @@ const HistoriqueEquipements = () => {
       }
 
       const data = await response.json();
-      setEquipments(data);
+      // Filtrer les équipements par centre côté client
+      const filteredData = data.filter(equip => equip.villeCentre === villeCentre);
+      setEquipments(filteredData);
     } catch (error) {
       console.error("Erreur lors du chargement des équipements:", error);
     }
@@ -56,9 +66,11 @@ const HistoriqueEquipements = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`${API_URL}/${equipmentId}/historique`, {
+      const response = await fetch(`${HISTORIQUE_URL}/${equipmentId}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'X-User-Center': userCenter,
+          'X-User-Role': localStorage.getItem('userRole')
         }
       });
 
@@ -80,19 +92,24 @@ const HistoriqueEquipements = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("userId");
     localStorage.removeItem("userRole");
+    localStorage.removeItem("userVilleCentre");
     navigate("/login");
   };
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleString('fr-FR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      return dateString;
+    }
   };
 
   const requestSort = (key) => {
@@ -110,7 +127,9 @@ const HistoriqueEquipements = () => {
 
   const filteredEquipments = useMemo(() => {
     return equipments.filter(equipment =>
-      equipment.name.toLowerCase().includes(searchTerm.toLowerCase())
+      equipment.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      equipment.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (equipment.villeCentre && equipment.villeCentre.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }, [equipments, searchTerm]);
 
@@ -118,8 +137,23 @@ const HistoriqueEquipements = () => {
     const sortableItems = [...filteredEquipments];
     if (sortConfig.key) {
       sortableItems.sort((a, b) => {
-        const aValue = new Date(a[sortConfig.key]);
-        const bValue = new Date(b[sortConfig.key]);
+        // Tri pour les dates
+        if (sortConfig.key === 'dateAdded') {
+          const aValue = new Date(a[sortConfig.key]);
+          const bValue = new Date(b[sortConfig.key]);
+          
+          if (aValue < bValue) {
+            return sortConfig.direction === 'asc' ? -1 : 1;
+          }
+          if (aValue > bValue) {
+            return sortConfig.direction === 'asc' ? 1 : -1;
+          }
+          return 0;
+        }
+        
+        // Tri standard pour les autres champs
+        const aValue = a[sortConfig.key]?.toString().toLowerCase() || '';
+        const bValue = b[sortConfig.key]?.toString().toLowerCase() || '';
         
         if (aValue < bValue) {
           return sortConfig.direction === 'asc' ? -1 : 1;
@@ -133,7 +167,7 @@ const HistoriqueEquipements = () => {
     return sortableItems;
   }, [filteredEquipments, sortConfig]);
 
-  // Pagination logic
+  // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentEquipments = sortedEquipments.slice(indexOfFirstItem, indexOfLastItem);
@@ -166,7 +200,7 @@ const HistoriqueEquipements = () => {
             <Link to="/GestionDemandes"><FaClipboardList /><span>Gestion des Demandes</span></Link>
           </li>
           <li className={location.pathname === '/LivraisonsRetours' ? 'active' : ''}>
-          <Link to="/LivraisonsRetours"><FaBoxOpen /><span>Livraisons/Retours</span></Link>
+            <Link to="/LivraisonsRetours"><FaBoxOpen /><span>Livraisons/Retours</span></Link>
           </li>
           <li className={location.pathname === '/HistoriqueDemandes' ? 'active' : ''}>
             <Link to="/HistoriqueDemandes"><FaHistory /><span>Historique des Demandes</span></Link>
@@ -195,13 +229,16 @@ const HistoriqueEquipements = () => {
 
       <main className="content">
         <h2>Historique d'Utilisation des Équipements</h2>
+        <p className="center-info">
+          Vous visualisez les équipements du centre : <strong>{userCenter}</strong>
+        </p>
 
         <div className="search-and-filters">
           <div className="search-bar">
             <FaSearch className="search-icon" />
             <input
               type="text"
-              placeholder="Rechercher par nom d'équipement..."
+              placeholder="Rechercher par nom, catégorie ou centre..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -212,9 +249,30 @@ const HistoriqueEquipements = () => {
           <table className="demandes-table">
             <thead>
               <tr>
-                <th>Nom</th>
-                <th>Catégorie</th>
-                <th>Centre</th>
+                <th onClick={() => requestSort('name')}>
+                  <div className="sortable-header">
+                    Nom
+                    <span className="sort-icon">
+                      {getSortIcon('name')}
+                    </span>
+                  </div>
+                </th>
+                <th onClick={() => requestSort('category')}>
+                  <div className="sortable-header">
+                    Catégorie
+                    <span className="sort-icon">
+                      {getSortIcon('category')}
+                    </span>
+                  </div>
+                </th>
+                <th onClick={() => requestSort('villeCentre')}>
+                  <div className="sortable-header">
+                    Centre
+                    <span className="sort-icon">
+                      {getSortIcon('villeCentre')}
+                    </span>
+                  </div>
+                </th>
                 <th onClick={() => requestSort('dateAdded')}>
                   <div className="sortable-header">
                     Date d'ajout
@@ -223,34 +281,41 @@ const HistoriqueEquipements = () => {
                     </span>
                   </div>
                 </th>
-                <th>Historique d'utilisation</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {currentEquipments.length > 0 ? (
+              {equipments.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="no-data-message">
+                    Aucun équipement enregistré dans ce centre
+                  </td>
+                </tr>
+              ) : currentEquipments.length > 0 ? (
                 currentEquipments.map((equipment) => (
                   <tr key={equipment.id}>
                     <td>{equipment.name}</td>
                     <td>{equipment.category}</td>
-                    <td>{equipment.center}</td>
+                    <td>{equipment.villeCentre || equipment.center}</td>
                     <td className="date-cell">{formatDate(equipment.dateAdded)}</td>
                     <td>
                       <button
-                        className="view-button"
+                        className={`view-button ${loading && selectedEquipment?.id === equipment.id ? 'loading' : ''}`}
                         onClick={() => {
                           setSelectedEquipment(equipment);
                           fetchHistorique(equipment.id);
                         }}
+                        disabled={loading && selectedEquipment?.id === equipment.id}
                       >
-                        <FaHistory /> Voir historique
+                        <FaHistory /> {loading && selectedEquipment?.id === equipment.id ? 'Chargement...' : 'Voir historique'}
                       </button>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" style={{ textAlign: 'center' }}>
-                    Aucun équipement trouvé
+                  <td colSpan="5" className="no-data-message">
+                    Aucun équipement ne correspond à votre recherche
                   </td>
                 </tr>
               )}
@@ -258,15 +323,17 @@ const HistoriqueEquipements = () => {
           </table>
         </div>
 
-        <div className="pagination-container">
-          <Pagination
-            current={currentPage}
-            total={sortedEquipments.length}
-            pageSize={itemsPerPage}
-            onChange={(page) => setCurrentPage(page)}
-            showSizeChanger={false}
-          />
-        </div>
+        {sortedEquipments.length > itemsPerPage && (
+          <div className="pagination-container">
+            <Pagination
+              current={currentPage}
+              total={sortedEquipments.length}
+              pageSize={itemsPerPage}
+              onChange={(page) => setCurrentPage(page)}
+              showSizeChanger={false}
+            />
+          </div>
+        )}
 
         {selectedEquipment && (
           <div className="modal-overlay">
@@ -277,7 +344,9 @@ const HistoriqueEquipements = () => {
               <h3>Historique d'utilisation: {selectedEquipment.name}</h3>
               
               {loading ? (
-                <p>Chargement de l'historique...</p>
+                <div className="loading-message">
+                  <p>Chargement de l'historique...</p>
+                </div>
               ) : historique ? (
                 <div className="details-content">
                   <div className="stats-container">

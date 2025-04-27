@@ -20,15 +20,20 @@ const LivraisonsRetours = () => {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [userCenter, setUserCenter] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    fetchLivraisons();
-    fetchRetours();
+    const center = localStorage.getItem('userVilleCentre');
+    if (center) {
+      setUserCenter(center);
+      fetchLivraisons(center);
+      fetchRetours(center);
+    }
   }, []);
 
-  const fetchLivraisons = async () => {
+  const fetchLivraisons = async (villeCentre) => {
     setLoading(prev => ({...prev, livraisons: true}));
     try {
       const token = localStorage.getItem("token");
@@ -37,9 +42,11 @@ const LivraisonsRetours = () => {
         return;
       }
       
-      const response = await fetch(`${API_URL}/livraisons-aujourdhui`, {
+      const response = await fetch(`${API_URL}/livraisons-aujourdhui/${villeCentre}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'X-User-Center': villeCentre,
+          'X-User-Role': localStorage.getItem('userRole')
         }
       });
 
@@ -62,7 +69,7 @@ const LivraisonsRetours = () => {
     }
   };
 
-  const fetchRetours = async () => {
+  const fetchRetours = async (villeCentre) => {
     setLoading(prev => ({...prev, retours: true}));
     try {
       const token = localStorage.getItem("token");
@@ -71,9 +78,11 @@ const LivraisonsRetours = () => {
         return;
       }
       
-      const response = await fetch(`${API_URL}/retours-aujourdhui`, {
+      const response = await fetch(`${API_URL}/retours-aujourdhui/${villeCentre}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'X-User-Center': villeCentre,
+          'X-User-Role': localStorage.getItem('userRole')
         }
       });
 
@@ -115,17 +124,20 @@ const LivraisonsRetours = () => {
   const handleValiderLivraison = async (id) => {
     try {
       const token = localStorage.getItem("token");
+      const villeCentre = localStorage.getItem('userVilleCentre');
+      
       const response = await fetch(`${API_URL}/${id}/valider-livraison`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
+          'X-User-Center': villeCentre,
           'Content-Type': 'application/json'
         }
       });
       
       if (response.ok) {
         message.success("Livraison validée avec succès");
-        fetchLivraisons();
+        fetchLivraisons(villeCentre);
       } else {
         const errorData = await response.json();
         message.error(errorData.message || "Erreur lors de la validation");
@@ -139,17 +151,20 @@ const LivraisonsRetours = () => {
   const handleValiderRetour = async (id) => {
     try {
       const token = localStorage.getItem("token");
+      const villeCentre = localStorage.getItem('userVilleCentre');
+      
       const response = await fetch(`${API_URL}/${id}/valider-retour`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
+          'X-User-Center': villeCentre,
           'Content-Type': 'application/json'
         }
       });
       
       if (response.ok) {
         message.success("Retour validé avec succès");
-        fetchRetours();
+        fetchRetours(villeCentre);
       } else {
         const errorData = await response.json();
         message.error(errorData.message || "Erreur lors de la validation");
@@ -167,6 +182,7 @@ const LivraisonsRetours = () => {
     localStorage.removeItem("userEmail");
     localStorage.removeItem("userNom");
     localStorage.removeItem("userPrenom");
+    localStorage.removeItem("userVilleCentre");
     navigate("/login");
   };
 
@@ -231,7 +247,7 @@ const LivraisonsRetours = () => {
             <FaBox /> Gestion des Livraisons et Retours
           </h2>
           <p className="page-description">
-            Gestion des équipements à livrer et à récupérer aujourd'hui
+            Gestion des équipements à livrer et à récupérer aujourd'hui pour le centre: <strong>{userCenter}</strong>
           </p>
         </div>
 
@@ -332,8 +348,8 @@ const LivraisonsRetours = () => {
                     <tr>
                       <td colSpan="6" className="no-data">
                         {activeTab === 'livraisons' 
-                          ? "Aucune livraison prévue aujourd'hui" 
-                          : "Aucun retour prévu aujourd'hui"}
+                          ? `Aucune livraison prévue aujourd'hui pour le centre ${userCenter}` 
+                          : `Aucun retour prévu aujourd'hui pour le centre ${userCenter}`}
                       </td>
                     </tr>
                   )}
