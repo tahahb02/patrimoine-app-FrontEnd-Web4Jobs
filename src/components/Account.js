@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaUser, FaEdit, FaSave, FaTimes, FaArrowLeft, FaCamera } from "react-icons/fa";
+import Swal from 'sweetalert2';
 import "../styles/Account.css";
-
 
 const Account = () => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     nom: "",
@@ -17,7 +16,6 @@ const Account = () => {
     city: ""
   });
   const [profileImage, setProfileImage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
@@ -49,7 +47,12 @@ const Account = () => {
           setProfileImage(`data:image/jpeg;base64,${data.profileImage}`);
         }
       } catch (err) {
-        setError(err.message);
+        await Swal.fire({
+          title: 'Erreur',
+          text: err.message,
+          icon: 'error',
+          confirmButtonText: 'OK'
+        });
       } finally {
         setLoading(false);
       }
@@ -69,8 +72,12 @@ const Account = () => {
 
     // Vérification de la taille (2MB max)
     if (file.size > 2_000_000) {
-      setError("La taille de l'image ne doit pas dépasser 2MB");
-      setTimeout(() => setError(null), 3000);
+      await Swal.fire({
+        title: 'Erreur',
+        text: 'La taille de l\'image ne doit pas dépasser 2MB',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
       return;
     }
 
@@ -105,15 +112,21 @@ const Account = () => {
       const updatedUser = await userResponse.json();
       setUserData(updatedUser);
       
-      setSuccessMessage("Photo mise à jour avec succès!");
+      await Swal.fire({
+        title: 'Succès',
+        text: 'Photo mise à jour avec succès!',
+        icon: 'success',
+        confirmButtonText: 'OK'
+      });
     } catch (err) {
-      setError(err.message);
+      await Swal.fire({
+        title: 'Erreur',
+        text: err.message,
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
     } finally {
       setLoading(false);
-      setTimeout(() => {
-        setSuccessMessage("");
-        setError(null);
-      }, 3000);
     }
   };
 
@@ -139,31 +152,54 @@ const Account = () => {
       const updatedUser = await response.json();
       setUserData(updatedUser);
       setIsEditing(false);
-      setSuccessMessage("Profil mis à jour avec succès!");
+      
+      await Swal.fire({
+        title: 'Succès',
+        text: 'Profil mis à jour avec succès!',
+        icon: 'success',
+        confirmButtonText: 'OK'
+      });
     } catch (err) {
-      setError(err.message);
-    } finally {
-      setTimeout(() => {
-        setSuccessMessage("");
-        setError(null);
-      }, 3000);
+      await Swal.fire({
+        title: 'Erreur',
+        text: err.message,
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
     }
   };
 
-  const handleCancelEdit = () => {
-    setIsEditing(false);
-    setFormData({
-      nom: userData.nom,
-      prenom: userData.prenom,
-      email: userData.email,
-      phone: userData.phone || "",
-      city: userData.city || ""
+  const handleCancelEdit = async () => {
+    const result = await Swal.fire({
+      title: 'Annuler les modifications',
+      text: 'Êtes-vous sûr de vouloir annuler les modifications non enregistrées ?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Oui, annuler',
+      cancelButtonText: 'Non, continuer'
     });
-    if (userData.profileImage) {
-      setProfileImage(`data:image/jpeg;base64,${userData.profileImage}`);
-    } else {
-      setProfileImage("");
+
+    if (result.isConfirmed) {
+      setIsEditing(false);
+      setFormData({
+        nom: userData.nom,
+        prenom: userData.prenom,
+        email: userData.email,
+        phone: userData.phone || "",
+        city: userData.city || ""
+      });
+      if (userData.profileImage) {
+        setProfileImage(`data:image/jpeg;base64,${userData.profileImage}`);
+      } else {
+        setProfileImage("");
+      }
     }
+  };
+
+  const handleEditClick = () => {
+    setIsEditing(true);
   };
 
   if (loading) return (
@@ -180,7 +216,7 @@ const Account = () => {
     </div>
   );
 
-  if (error) return (
+  if (!userData) return (
     <div className="dashboard-container">
       <nav className="navbar">
         <button onClick={() => navigate(-1)} className="back-button">
@@ -189,7 +225,7 @@ const Account = () => {
         <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
       </nav>
       <div className="content">
-        <div className="account-error">Erreur: {error}</div>
+        <div className="account-error">Impossible de charger les données utilisateur</div>
       </div>
     </div>
   );
@@ -236,7 +272,7 @@ const Account = () => {
             <h2>Mon Compte</h2>
             {!isEditing ? (
               <button 
-                onClick={() => setIsEditing(true)} 
+                onClick={handleEditClick} 
                 className="edit-button"
               >
                 <FaEdit /> Modifier
@@ -258,18 +294,6 @@ const Account = () => {
               </div>
             )}
           </div>
-
-          {successMessage && (
-            <div className="success-message">
-              {successMessage}
-            </div>
-          )}
-
-          {error && (
-            <div className="error-message">
-              {error}
-            </div>
-          )}
 
           {isEditing ? (
             <form className="account-form">
