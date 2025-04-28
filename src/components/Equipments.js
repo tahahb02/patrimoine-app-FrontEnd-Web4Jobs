@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt, FaPlus, FaEdit, FaTrash, FaSearch, FaHistory, FaFilter, FaBoxOpen } from "react-icons/fa";
 import { Pagination } from 'antd';
+import Swal from 'sweetalert2';
 import "../styles/responsable.css";
 
 const API_URL = "http://localhost:8080/api/equipments";
@@ -32,7 +33,7 @@ const Equipments = () => {
   const [selectedCategory, setSelectedCategory] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
-
+  const userVilleCentre = localStorage.getItem("userVilleCentre");
   useEffect(() => {
     fetchEquipments();
   }, []);
@@ -66,6 +67,12 @@ const Equipments = () => {
       setEquipments(data);
     } catch (error) {
       console.error("Erreur lors du chargement des équipements:", error);
+      Swal.fire({
+        title: 'Erreur',
+        text: 'Impossible de charger les équipements. Veuillez réessayer.',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
     }
   };
 
@@ -96,12 +103,28 @@ const Equipments = () => {
           const imageUrl = data.imageUrl;
           setSelectedImage(imageUrl);
           setNewEquipment({ ...newEquipment, imageUrl: imageUrl });
+          await Swal.fire({
+            title: 'Succès',
+            text: 'Image téléversée avec succès!',
+            icon: 'success',
+            confirmButtonText: 'OK'
+          });
         } else {
-          alert("Erreur lors du téléversement de l'image.");
+          await Swal.fire({
+            title: 'Erreur',
+            text: 'Erreur lors du téléversement de l\'image.',
+            icon: 'error',
+            confirmButtonText: 'OK'
+          });
         }
       } catch (error) {
         console.error("Erreur réseau:", error);
-        alert("Erreur réseau. Veuillez réessayer.");
+        await Swal.fire({
+          title: 'Erreur',
+          text: 'Erreur réseau. Veuillez réessayer.',
+          icon: 'error',
+          confirmButtonText: 'OK'
+        });
       }
     }
   };
@@ -112,12 +135,23 @@ const Equipments = () => {
       setNewEquipment({ ...newEquipment, category: newCategory });
       setNewCategory("");
       setShowAddCategory(false);
+      Swal.fire({
+        title: 'Succès',
+        text: 'Nouvelle catégorie ajoutée!',
+        icon: 'success',
+        confirmButtonText: 'OK'
+      });
     }
   };
 
   const handleAddEquipment = async () => {
     if (!newEquipment.name || !newEquipment.category) {
-      alert("Tous les champs sont obligatoires !");
+      await Swal.fire({
+        title: 'Champs manquants',
+        text: 'Tous les champs sont obligatoires !',
+        icon: 'warning',
+        confirmButtonText: 'OK'
+      });
       return;
     }
 
@@ -141,6 +175,12 @@ const Equipments = () => {
       });
 
       if (response.ok) {
+        await Swal.fire({
+          title: 'Succès',
+          text: 'Équipement ajouté avec succès!',
+          icon: 'success',
+          confirmButtonText: 'OK'
+        });
         fetchEquipments();
         setNewEquipment({ 
           name: "", 
@@ -154,10 +194,21 @@ const Equipments = () => {
         setShowAddModal(false);
       } else {
         const errorData = await response.json();
-        alert(`Erreur lors de l'ajout de l'équipement: ${errorData.message}`);
+        await Swal.fire({
+          title: 'Erreur',
+          text: errorData.message || 'Erreur lors de l\'ajout de l\'équipement',
+          icon: 'error',
+          confirmButtonText: 'OK'
+        });
       }
     } catch (error) {
       console.error("Erreur lors de l'ajout d'un équipement:", error);
+      await Swal.fire({
+        title: 'Erreur',
+        text: 'Erreur lors de l\'ajout de l\'équipement',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
     }
   };
 
@@ -165,7 +216,12 @@ const Equipments = () => {
     if (!editingEquipment) return;
 
     if (!newEquipment.name || !newEquipment.category) {
-      alert("Tous les champs sont obligatoires !");
+      await Swal.fire({
+        title: 'Champs manquants',
+        text: 'Tous les champs sont obligatoires !',
+        icon: 'warning',
+        confirmButtonText: 'OK'
+      });
       return;
     }
 
@@ -181,6 +237,12 @@ const Equipments = () => {
       });
 
       if (response.ok) {
+        await Swal.fire({
+          title: 'Succès',
+          text: 'Équipement modifié avec succès!',
+          icon: 'success',
+          confirmButtonText: 'OK'
+        });
         fetchEquipments();
         setEditingEquipment(null);
         setNewEquipment({ 
@@ -194,32 +256,68 @@ const Equipments = () => {
         setShowEditModal(false);
       } else {
         const errorData = await response.json();
-        alert(`Erreur lors de la modification de l'équipement: ${errorData.message}`);
+        await Swal.fire({
+          title: 'Erreur',
+          text: errorData.message || 'Erreur lors de la modification de l\'équipement',
+          icon: 'error',
+          confirmButtonText: 'OK'
+        });
       }
     } catch (error) {
       console.error("Erreur lors de la mise à jour de l'équipement:", error);
+      await Swal.fire({
+        title: 'Erreur',
+        text: 'Erreur lors de la modification de l\'équipement',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
     }
   };
 
   const handleDeleteEquipment = async (id) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cet équipement ?")) return;
+    const result = await Swal.fire({
+      title: 'Êtes-vous sûr?',
+      text: "Vous ne pourrez pas revenir en arrière!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Oui, supprimer!',
+      cancelButtonText: 'Annuler'
+    });
 
-    try {
-      const response = await fetch(`${API_URL}/delete/${id}`, { 
-        method: "DELETE",
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem("token")}`
+    if (result.isConfirmed) {
+      try {
+        const response = await fetch(`${API_URL}/delete/${id}`, { 
+          method: "DELETE",
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem("token")}`
+          }
+        });
+
+        if (response.ok) {
+          await Swal.fire(
+            'Supprimé!',
+            'L\'équipement a été supprimé.',
+            'success'
+          );
+          fetchEquipments();
+        } else {
+          const errorData = await response.json();
+          await Swal.fire(
+            'Erreur!',
+            errorData.message || 'Échec de la suppression',
+            'error'
+          );
         }
-      });
-
-      if (response.ok) {
-        fetchEquipments();
-      } else {
-        const errorData = await response.json();
-        alert(`Erreur lors de la suppression de l'équipement: ${errorData.message}`);
+      } catch (error) {
+        console.error("Erreur lors de la suppression de l'équipement:", error);
+        await Swal.fire(
+          'Erreur!',
+          'Erreur réseau. Veuillez réessayer.',
+          'error'
+        );
       }
-    } catch (error) {
-      console.error("Erreur lors de la suppression de l'équipement:", error);
     }
   };
 
@@ -234,14 +332,27 @@ const Equipments = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("userEmail");
-    localStorage.removeItem("userNom");
-    localStorage.removeItem("userPrenom");
-    localStorage.removeItem("userVilleCentre");
-    navigate("/login");
+    Swal.fire({
+      title: 'Déconnexion',
+      text: 'Êtes-vous sûr de vouloir vous déconnecter?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Oui, déconnecter',
+      cancelButtonText: 'Annuler'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("userId");
+        localStorage.removeItem("userRole");
+        localStorage.removeItem("userEmail");
+        localStorage.removeItem("userNom");
+        localStorage.removeItem("userPrenom");
+        localStorage.removeItem("userVilleCentre");
+        navigate("/login");
+      }
+    });
   };
 
   const filteredEquipments = equipments.filter((equipment) => {
@@ -264,6 +375,17 @@ const Equipments = () => {
 
   const onChange = (page) => {
     setCurrentPage(page);
+  };
+
+  const handleAddButtonClick = () => {
+    Swal.fire({
+      title: 'Ajouter un nouvel équipement',
+      text: 'Remplissez le formulaire pour ajouter un nouvel équipement',
+      icon: 'info',
+      confirmButtonText: 'Continuer'
+    }).then(() => {
+      setShowAddModal(true);
+    });
   };
 
   return (
@@ -315,7 +437,7 @@ const Equipments = () => {
       </aside>
 
       <main className="content">
-        <h2>Gestion des Équipements</h2>
+        <h2>Gestion des Équipements - Centre {userVilleCentre}</h2>
 
         <div className="search-and-filters">
           <div className="search-bar">
@@ -347,7 +469,7 @@ const Equipments = () => {
           </div>
         </div>
 
-        <button className="add-button" onClick={() => setShowAddModal(true)}>
+        <button className="add-button" onClick={handleAddButtonClick}>
           <FaPlus /> Ajouter un équipement
         </button>
 

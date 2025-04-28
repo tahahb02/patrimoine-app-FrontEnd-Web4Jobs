@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Pagination } from 'antd';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
 import {
   FaBars,
   FaTimes,
@@ -17,6 +19,7 @@ import {
   FaFilter
 } from "react-icons/fa";
 
+const MySwal = withReactContent(Swal);
 const API_URL = "http://localhost:8080/api/utilisateurs";
 
 const GererUtilisateurs = () => {
@@ -42,7 +45,6 @@ const GererUtilisateurs = () => {
   });
   const location = useLocation();
 
-  // Liste des villes centres disponibles
   const villesCentre = [
     "TINGHIR", "TEMARA", "ESSAOUIRA", 
     "DAKHLA", "LAAYOUNE", "NADOR", "AIN_EL_AOUDA"
@@ -55,12 +57,20 @@ const GererUtilisateurs = () => {
   const fetchUtilisateurs = async () => {
     try {
       const response = await fetch(API_URL);
-      if (!response.ok) throw new Error("Erreur lors de la récupération des utilisateurs");
+      if (!response.ok) {
+        throw new Error("Erreur lors de la récupération des utilisateurs");
+      }
       const data = await response.json();
       setUtilisateurs(data);
     } catch (error) {
       console.error("Erreur lors du chargement des utilisateurs:", error);
       setUtilisateurs([]);
+      MySwal.fire({
+        title: 'Erreur!',
+        text: 'Impossible de charger les utilisateurs. Veuillez réessayer plus tard.',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
     }
   };
 
@@ -105,7 +115,20 @@ const GererUtilisateurs = () => {
     if (utilisateur) {
       setFormData({ 
         ...utilisateur,
-        password: "" // Ne pas afficher le mot de passe crypté
+        password: ""
+      });
+      MySwal.fire({
+        title: 'Modifier Utilisateur',
+        html: (
+          <div>
+            <p>Vous allez modifier l'utilisateur: <strong>{utilisateur.prenom} {utilisateur.nom}</strong></p>
+          </div>
+        ),
+        icon: 'info',
+        showCancelButton: false,
+        confirmButtonText: 'Continuer'
+      }).then(() => {
+        setShowModal(true);
       });
     } else {
       setFormData({
@@ -118,8 +141,8 @@ const GererUtilisateurs = () => {
         villeCentre: "TINGHIR",
         role: "ADHERANT",
       });
+      setShowModal(true);
     }
-    setShowModal(true);
   };
 
   const closeModal = () => {
@@ -140,7 +163,6 @@ const GererUtilisateurs = () => {
         : API_URL;
       const method = selectedUtilisateur ? "PUT" : "POST";
       
-      // Ne pas envoyer le mot de passe vide pour les modifications
       const dataToSend = selectedUtilisateur && !formData.password
         ? { ...formData, password: undefined }
         : formData;
@@ -150,43 +172,90 @@ const GererUtilisateurs = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataToSend),
       });
+      
       if (response.ok) {
-        alert(
-          selectedUtilisateur
-            ? "Utilisateur modifié avec succès !"
-            : "Utilisateur ajouté avec succès !"
-        );
+        await MySwal.fire({
+          title: 'Succès!',
+          text: selectedUtilisateur
+            ? 'Utilisateur modifié avec succès!'
+            : 'Utilisateur ajouté avec succès!',
+          icon: 'success',
+          confirmButtonText: 'OK'
+        });
         closeModal();
         fetchUtilisateurs();
       } else {
         const errorData = await response.json();
-        alert(`Erreur: ${errorData.message || "Une erreur est survenue"}`);
+        await MySwal.fire({
+          title: 'Erreur!',
+          text: errorData.message || 'Une erreur est survenue',
+          icon: 'error',
+          confirmButtonText: 'OK'
+        });
       }
     } catch (error) {
       console.error("Erreur lors de la soumission du formulaire:", error);
-      alert("Erreur réseau. Veuillez réessayer.");
+      await MySwal.fire({
+        title: 'Erreur!',
+        text: 'Erreur réseau. Veuillez réessayer.',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur ?")) {
+    const result = await MySwal.fire({
+      title: 'Êtes-vous sûr?',
+      text: "Vous ne pourrez pas revenir en arrière!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Oui, supprimer!',
+      cancelButtonText: 'Annuler'
+    });
+
+    if (result.isConfirmed) {
       try {
         const response = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
         if (response.ok) {
-          alert("Utilisateur supprimé avec succès !");
+          await MySwal.fire(
+            'Supprimé!',
+            'L\'utilisateur a été supprimé.',
+            'success'
+          );
           fetchUtilisateurs();
         } else {
           const errorData = await response.json();
-          alert(`Erreur: ${errorData.message}`);
+          await MySwal.fire(
+            'Erreur!',
+            errorData.message || 'Échec de la suppression',
+            'error'
+          );
         }
       } catch (error) {
         console.error("Erreur lors de la suppression:", error);
-        alert("Erreur réseau. Veuillez réessayer.");
+        await MySwal.fire(
+          'Erreur!',
+          'Erreur réseau. Veuillez réessayer.',
+          'error'
+        );
       }
     }
   };
 
-  // Fonction pour formater l'affichage de la ville centre
+  const handleAddClick = () => {
+    MySwal.fire({
+      title: 'Ajouter un nouvel utilisateur',
+      text: 'Remplissez le formulaire pour créer un nouvel utilisateur',
+      icon: 'info',
+      confirmButtonText: 'Continuer'
+    }).then(() => {
+      handleOpenModal();
+    });
+  };
+
   const formatVilleCentre = (ville) => {
     if (!ville) return "";
     return ville.charAt(0) + ville.slice(1).toLowerCase().replace("_", " ");
@@ -194,7 +263,6 @@ const GererUtilisateurs = () => {
 
   return (
     <div className={`dashboard-container ${sidebarOpen ? "sidebar-expanded" : ""}`}>
-      {/* Navbar */}
       <nav className="navbar">
         <div className="menu-icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
           {sidebarOpen ? <FaTimes /> : <FaBars />}
@@ -202,7 +270,6 @@ const GererUtilisateurs = () => {
         <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
       </nav>
 
-      {/* Sidebar */}
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <ul className="sidebar-menu">
           <li className={location.pathname === '/AdminHome' ? 'active' : ''}>
@@ -226,11 +293,9 @@ const GererUtilisateurs = () => {
         </div>
       </aside>
 
-      {/* Contenu principal */}
       <main className="content">
         <h2>Gérer les Utilisateurs</h2>
 
-        {/* Barre de recherche et filtres */}
         <div className="search-and-filters">
           <div className="search-bar">
             <FaSearch className="search-icon" />
@@ -273,12 +338,11 @@ const GererUtilisateurs = () => {
             </select>
           </div>
           
-          <button className="add-button" onClick={() => handleOpenModal()}>
+          <button className="add-button" onClick={handleAddClick}>
             <span>+</span> Ajouter un Utilisateur
           </button>
         </div>
 
-        {/* Tableau des utilisateurs */}
         <div className="table-container">
           <table className="utilisateurs-table">
             <thead>
@@ -389,7 +453,6 @@ const GererUtilisateurs = () => {
           </table>
         </div>
                                                                                         
-        {/* Pagination */}
         {filteredUtilisateurs.length > 0 && (
           <div className="pagination-container">
             <Pagination
@@ -404,7 +467,6 @@ const GererUtilisateurs = () => {
           </div>
         )}
 
-        {/* Modal pour ajouter/modifier un utilisateur */}
         {showModal && (
           <>
             <div className="modal-backdrop"></div>
