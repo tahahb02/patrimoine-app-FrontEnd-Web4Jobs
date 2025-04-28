@@ -24,6 +24,7 @@ const HistoriqueEquipements = () => {
   const [userCenter, setUserCenter] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
+  const userVilleCentre = localStorage.getItem("userVilleCentre");
 
   useEffect(() => {
     const center = localStorage.getItem('userVilleCentre');
@@ -228,7 +229,7 @@ const HistoriqueEquipements = () => {
       </aside>
 
       <main className="content">
-        <h2>Historique d'Utilisation des Équipements</h2>
+        <h2>Historique d'Utilisation des Équipements - Centre {userVilleCentre}</h2>
         <p className="center-info">
           Vous visualisez les équipements du centre : <strong>{userCenter}</strong>
         </p>

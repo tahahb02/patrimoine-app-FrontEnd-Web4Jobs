@@ -42,7 +42,7 @@ const HistoriqueDemandes = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-
+  const userVilleCentre = localStorage.getItem("userVilleCentre");
   const statusOptions = [
     { value: "", label: "Tous les statuts" },
     { value: "ACCEPTEE", label: "Acceptées" },
@@ -234,9 +234,7 @@ const HistoriqueDemandes = () => {
           <span className="stat-label">Refusées</span>
         </div>
       </div>
-      <div className="center-info">
-        Centre: <strong>{userCenter}</strong>
-      </div>
+      
     </div>
   );
 
@@ -289,7 +287,7 @@ const HistoriqueDemandes = () => {
       </aside>
 
       <main className="content">
-        <h2>Historique des Demandes</h2>
+        <h2>Historique des Demandes - Centre {userVilleCentre}</h2>
 
         <StatusStatsPanel />
 

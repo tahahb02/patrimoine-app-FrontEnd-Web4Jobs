@@ -24,6 +24,7 @@ const LivraisonsRetours = () => {
   const [userCenter, setUserCenter] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
+  const userVilleCentre = localStorage.getItem("userVilleCentre");
 
   useEffect(() => {
     const center = localStorage.getItem('userVilleCentre');
@@ -336,7 +337,7 @@ const LivraisonsRetours = () => {
       <main className="content">
         <div className="page-header">
           <h2>
-            <FaBox /> Gestion des Livraisons et Retours
+            <FaBox /> Gestion des Livraisons et Retours - Centre {userVilleCentre}
           </h2>
           <p className="page-description">
             Gestion des équipements à livrer et à récupérer aujourd'hui pour le centre: <strong>{userCenter}</strong>
