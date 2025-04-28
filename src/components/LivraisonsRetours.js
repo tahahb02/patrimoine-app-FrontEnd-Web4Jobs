@@ -4,7 +4,8 @@ import {
   FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt,
   FaSearch, FaEye, FaHistory, FaBoxOpen, FaBox, FaCheckCircle, FaArrowLeft
 } from 'react-icons/fa';
-import { Pagination, message } from 'antd';
+import { Pagination } from 'antd';
+import Swal from 'sweetalert2';
 import '../styles/responsable.css';
 
 const API_URL = 'http://localhost:8080/api/demandes';
@@ -52,6 +53,12 @@ const LivraisonsRetours = () => {
 
       if (!response.ok) {
         if (response.status === 401) {
+          await Swal.fire({
+            title: 'Session expirée',
+            text: 'Votre session a expiré. Veuillez vous reconnecter.',
+            icon: 'warning',
+            confirmButtonText: 'OK'
+          });
           localStorage.removeItem("token");
           navigate("/login");
           return;
@@ -63,7 +70,12 @@ const LivraisonsRetours = () => {
       setLivraisons(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Erreur lors du chargement des livraisons:", error);
-      message.error("Erreur lors du chargement des livraisons");
+      await Swal.fire({
+        title: 'Erreur',
+        text: 'Une erreur est survenue lors du chargement des livraisons',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
     } finally {
       setLoading(prev => ({...prev, livraisons: false}));
     }
@@ -88,6 +100,12 @@ const LivraisonsRetours = () => {
 
       if (!response.ok) {
         if (response.status === 401) {
+          await Swal.fire({
+            title: 'Session expirée',
+            text: 'Votre session a expiré. Veuillez vous reconnecter.',
+            icon: 'warning',
+            confirmButtonText: 'OK'
+          });
           localStorage.removeItem("token");
           navigate("/login");
           return;
@@ -99,7 +117,12 @@ const LivraisonsRetours = () => {
       setRetours(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Erreur lors du chargement des retours:", error);
-      message.error("Erreur lors du chargement des retours");
+      await Swal.fire({
+        title: 'Erreur',
+        text: 'Une erreur est survenue lors du chargement des retours',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
     } finally {
       setLoading(prev => ({...prev, retours: false}));
     }
@@ -122,6 +145,19 @@ const LivraisonsRetours = () => {
   };
 
   const handleValiderLivraison = async (id) => {
+    const result = await Swal.fire({
+      title: 'Confirmer la validation',
+      text: 'Êtes-vous sûr de vouloir valider cette livraison ?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Oui, valider',
+      cancelButtonText: 'Annuler'
+    });
+
+    if (!result.isConfirmed) return;
+
     try {
       const token = localStorage.getItem("token");
       const villeCentre = localStorage.getItem('userVilleCentre');
@@ -136,19 +172,47 @@ const LivraisonsRetours = () => {
       });
       
       if (response.ok) {
-        message.success("Livraison validée avec succès");
+        await Swal.fire({
+          title: 'Succès',
+          text: 'Livraison validée avec succès',
+          icon: 'success',
+          confirmButtonText: 'OK'
+        });
         fetchLivraisons(villeCentre);
       } else {
         const errorData = await response.json();
-        message.error(errorData.message || "Erreur lors de la validation");
+        await Swal.fire({
+          title: 'Erreur',
+          text: errorData.message || "Erreur lors de la validation",
+          icon: 'error',
+          confirmButtonText: 'OK'
+        });
       }
     } catch (error) {
       console.error("Erreur:", error);
-      message.error("Une erreur est survenue");
+      await Swal.fire({
+        title: 'Erreur',
+        text: 'Une erreur est survenue',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
     }
   };
 
   const handleValiderRetour = async (id) => {
+    const result = await Swal.fire({
+      title: 'Confirmer la validation',
+      text: 'Êtes-vous sûr de vouloir valider ce retour ?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Oui, valider',
+      cancelButtonText: 'Annuler'
+    });
+
+    if (!result.isConfirmed) return;
+
     try {
       const token = localStorage.getItem("token");
       const villeCentre = localStorage.getItem('userVilleCentre');
@@ -163,27 +227,55 @@ const LivraisonsRetours = () => {
       });
       
       if (response.ok) {
-        message.success("Retour validé avec succès");
+        await Swal.fire({
+          title: 'Succès',
+          text: 'Retour validé avec succès',
+          icon: 'success',
+          confirmButtonText: 'OK'
+        });
         fetchRetours(villeCentre);
       } else {
         const errorData = await response.json();
-        message.error(errorData.message || "Erreur lors de la validation");
+        await Swal.fire({
+          title: 'Erreur',
+          text: errorData.message || "Erreur lors de la validation",
+          icon: 'error',
+          confirmButtonText: 'OK'
+        });
       }
     } catch (error) {
       console.error("Erreur:", error);
-      message.error("Une erreur est survenue");
+      await Swal.fire({
+        title: 'Erreur',
+        text: 'Une erreur est survenue',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("userEmail");
-    localStorage.removeItem("userNom");
-    localStorage.removeItem("userPrenom");
-    localStorage.removeItem("userVilleCentre");
-    navigate("/login");
+  const handleLogout = async () => {
+    const result = await Swal.fire({
+      title: 'Déconnexion',
+      text: 'Êtes-vous sûr de vouloir vous déconnecter ?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Oui, déconnecter',
+      cancelButtonText: 'Annuler'
+    });
+
+    if (result.isConfirmed) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("userId");
+      localStorage.removeItem("userRole");
+      localStorage.removeItem("userEmail");
+      localStorage.removeItem("userNom");
+      localStorage.removeItem("userPrenom");
+      localStorage.removeItem("userVilleCentre");
+      navigate("/login");
+    }
   };
 
   const currentData = activeTab === 'livraisons' ? livraisons : retours;

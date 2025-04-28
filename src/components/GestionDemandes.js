@@ -20,7 +20,8 @@ import {
   FaFilter,
   FaBoxOpen
 } from "react-icons/fa";
-import { Pagination, message } from 'antd';
+import { Pagination } from 'antd';
+import Swal from 'sweetalert2';
 import "../styles/responsable.css";
 
 const API_URL = "http://localhost:8080/api/demandes";
@@ -101,7 +102,12 @@ const GestionDemandes = () => {
       setDemandes(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Erreur lors du chargement des demandes:", error);
-      message.error("Erreur lors du chargement des demandes");
+      Swal.fire({
+        title: 'Erreur',
+        text: 'Erreur lors du chargement des demandes',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
     }
   };
 
@@ -197,7 +203,6 @@ const GestionDemandes = () => {
     const sortableDemandes = [...filteredDemandes];
     if (sortConfig.key) {
       sortableDemandes.sort((a, b) => {
-        // Tri spécial pour les dates
         if (sortConfig.key.includes('date')) {
           const aValue = new Date(a[sortConfig.key]);
           const bValue = new Date(b[sortConfig.key]);
@@ -211,7 +216,6 @@ const GestionDemandes = () => {
           return 0;
         }
         
-        // Tri standard pour les autres champs
         const aValue = a[sortConfig.key]?.toString().toLowerCase() || '';
         const bValue = b[sortConfig.key]?.toString().toLowerCase() || '';
         
@@ -231,11 +235,24 @@ const GestionDemandes = () => {
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentDemandes = sortedDemandes.slice(indexOfFirstItem, indexOfLastItem);
 
-  const handleAction = (demande, action) => {
-    setSelectedDemande(demande);
-    setActionChoisie(action);
-    setShowModal(true);
-    document.body.style.overflow = 'hidden';
+  const handleAction = async (demande, action) => {
+    const result = await Swal.fire({
+      title: `Confirmer ${action === "ACCEPTEE" ? "l'acceptation" : "le refus"}`,
+      text: `Êtes-vous sûr de vouloir ${action === "ACCEPTEE" ? "accepter" : "refuser"} cette demande ?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: `Oui, ${action === "ACCEPTEE" ? "accepter" : "refuser"}`,
+      cancelButtonText: 'Annuler'
+    });
+
+    if (result.isConfirmed) {
+      setSelectedDemande(demande);
+      setActionChoisie(action);
+      setShowModal(true);
+      document.body.style.overflow = 'hidden';
+    }
   };
 
   const closeModal = () => {
@@ -258,6 +275,16 @@ const GestionDemandes = () => {
   };
 
   const mettreAJourStatut = async () => {
+    if (!commentaire) {
+      await Swal.fire({
+        title: 'Commentaire requis',
+        text: 'Veuillez ajouter un commentaire avant de continuer',
+        icon: 'warning',
+        confirmButtonText: 'OK'
+      });
+      return;
+    }
+
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(`${API_URL}/${selectedDemande.id}/statut`, {
@@ -276,28 +303,56 @@ const GestionDemandes = () => {
       });
       
       if (response.ok) {
-        message.success(`Demande ${actionChoisie.toLowerCase()} avec succès !`);
+        await Swal.fire({
+          title: 'Succès',
+          text: `Demande ${actionChoisie.toLowerCase()} avec succès !`,
+          icon: 'success',
+          confirmButtonText: 'OK'
+        });
         closeModal();
         fetchDemandes();
       } else {
         const errorData = await response.json();
-        message.error(`Erreur lors de la mise à jour du statut: ${errorData.message}`);
+        await Swal.fire({
+          title: 'Erreur',
+          text: `Erreur lors de la mise à jour du statut: ${errorData.message}`,
+          icon: 'error',
+          confirmButtonText: 'OK'
+        });
       }
     } catch (error) {
       console.error("Erreur lors de la mise à jour du statut:", error);
-      message.error("Erreur réseau. Veuillez réessayer.");
+      await Swal.fire({
+        title: 'Erreur',
+        text: 'Erreur réseau. Veuillez réessayer.',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("userEmail");
-    localStorage.removeItem("userNom");
-    localStorage.removeItem("userPrenom");
-    localStorage.removeItem("userVilleCentre");
-    navigate("/login");
+  const handleLogout = async () => {
+    const result = await Swal.fire({
+      title: 'Déconnexion',
+      text: 'Êtes-vous sûr de vouloir vous déconnecter?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Oui, déconnecter',
+      cancelButtonText: 'Annuler'
+    });
+
+    if (result.isConfirmed) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("userId");
+      localStorage.removeItem("userRole");
+      localStorage.removeItem("userEmail");
+      localStorage.removeItem("userNom");
+      localStorage.removeItem("userPrenom");
+      localStorage.removeItem("userVilleCentre");
+      navigate("/login");
+    }
   };
 
   const getStatusBadgeClass = (statut) => {
