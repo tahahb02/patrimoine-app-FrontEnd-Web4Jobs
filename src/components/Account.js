@@ -294,7 +294,8 @@ const Account = () => {
               </div>
             )}
           </div>
-
+            
+            
           {isEditing ? (
             <form className="account-form">
               <div className="form-group">

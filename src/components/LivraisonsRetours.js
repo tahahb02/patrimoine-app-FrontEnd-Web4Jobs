@@ -39,6 +39,8 @@ const LivraisonsRetours = () => {
     setLoading(prev => ({...prev, livraisons: true}));
     try {
       const token = localStorage.getItem("token");
+      const userRole = localStorage.getItem("userRole");
+      
       if (!token) {
         navigate("/login");
         return;
@@ -48,7 +50,7 @@ const LivraisonsRetours = () => {
         headers: {
           'Authorization': `Bearer ${token}`,
           'X-User-Center': villeCentre,
-          'X-User-Role': localStorage.getItem('userRole')
+          'X-User-Role': userRole
         }
       });
 
@@ -86,6 +88,8 @@ const LivraisonsRetours = () => {
     setLoading(prev => ({...prev, retours: true}));
     try {
       const token = localStorage.getItem("token");
+      const userRole = localStorage.getItem("userRole");
+      
       if (!token) {
         navigate("/login");
         return;
@@ -95,7 +99,7 @@ const LivraisonsRetours = () => {
         headers: {
           'Authorization': `Bearer ${token}`,
           'X-User-Center': villeCentre,
-          'X-User-Role': localStorage.getItem('userRole')
+          'X-User-Role': userRole
         }
       });
 
@@ -162,12 +166,14 @@ const LivraisonsRetours = () => {
     try {
       const token = localStorage.getItem("token");
       const villeCentre = localStorage.getItem('userVilleCentre');
+      const userRole = localStorage.getItem('userRole');
       
       const response = await fetch(`${API_URL}/${id}/valider-livraison`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'X-User-Center': villeCentre,
+          'X-User-Role': userRole,
           'Content-Type': 'application/json'
         }
       });
@@ -217,12 +223,14 @@ const LivraisonsRetours = () => {
     try {
       const token = localStorage.getItem("token");
       const villeCentre = localStorage.getItem('userVilleCentre');
+      const userRole = localStorage.getItem('userRole');
       
       const response = await fetch(`${API_URL}/${id}/valider-retour`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'X-User-Center': villeCentre,
+          'X-User-Role': userRole,
           'Content-Type': 'application/json'
         }
       });
