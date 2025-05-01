@@ -16,6 +16,11 @@ import HistoriqueEquipements from './components/HistoriqueEquipements';
 import LivraisonsRetours from './components/LivraisonsRetours';
 import TechnicienHome from './components/TechnicienHome';
 import FormulaireFeedback from './components/FormulaireFeedback';
+import ResponsablePatrimoineHome from './components/ResponsablePatrimoineHome';
+import EquipmentsRP from './components/EquipmentsRP';
+import ValidationEquipementRP from './components/ValidationEquipementRP';
+import HistoriqueDemandesRP from './components/HistoriqueDemandesRP';
+import HistoriqueEquipementsRP from './components/HistoriqueEquipementsRP';
 
 function App() {
     return (
@@ -37,6 +42,11 @@ function App() {
                 <Route path="/LivraisonsRetours" element={<LivraisonsRetours />} />
                 <Route path="/TechnicienHome" element={<TechnicienHome />} />
                 <Route path="/FormulaireFeedback" element={<FormulaireFeedback />} />
+                <Route path="/ResponsablePatrimoineHome" element={<ResponsablePatrimoineHome />} />
+                <Route path="/EquipmentsRP" element={<EquipmentsRP />} />
+                <Route path="/ValidationEquipementRP" element={<ValidationEquipementRP />} />
+                <Route path="/HistoriqueDemandesRP" element={<HistoriqueDemandesRP />} />
+                <Route path="/HistoriqueEquipementsRP" element={<HistoriqueEquipementsRP />} />
             </Routes>
         </Router>
     );
