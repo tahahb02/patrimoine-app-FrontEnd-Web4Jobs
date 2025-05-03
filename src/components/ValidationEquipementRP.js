@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { 
   FaBars, FaCheckCircle, FaTimesCircle, FaSearch, 
-  FaFilter, FaBuilding, FaSpinner, FaUser ,FaInfoCircle
+  FaFilter, FaBuilding, FaSpinner, FaUser, FaInfoCircle,
+  FaTachometerAlt, FaClipboardList, FaBoxOpen, FaHistory, FaChartLine, FaCogs,FaTimes,FaSignOutAlt
 } from "react-icons/fa";
 import { Pagination, Modal, message } from "antd";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
+import Swal from 'sweetalert2'; // Ajout de l'import Swal
+
 import "../styles/responsable.css";
+
 
 const ValidationEquipementRP = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -17,6 +21,7 @@ const ValidationEquipementRP = () => {
     const [centers, setCenters] = useState([]);
     const [selectedEquipment, setSelectedEquipment] = useState(null);
     const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
+    const location = useLocation();
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -33,12 +38,18 @@ const ValidationEquipementRP = () => {
                     'Authorization': `Bearer ${token}`
                 }
             });
+            
+            if (!response.ok) {
+                throw new Error("Erreur lors de la récupération des équipements");
+            }
+            
             const data = await response.json();
-            setPendingEquipments(data);
+            setPendingEquipments(Array.isArray(data) ? data : []);
             setLoading(false);
         } catch (error) {
             console.error("Error fetching pending equipments:", error);
             message.error("Erreur lors du chargement des équipements en attente");
+            setPendingEquipments([]);
             setLoading(false);
         }
     };
@@ -51,10 +62,16 @@ const ValidationEquipementRP = () => {
                     'Authorization': `Bearer ${token}`
                 }
             });
+            
+            if (!response.ok) {
+                throw new Error("Erreur lors de la récupération des centres");
+            }
+            
             const data = await response.json();
-            setCenters(data);
+            setCenters(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error("Error fetching centers:", error);
+            setCenters([]);
         }
     };
 
@@ -103,67 +120,98 @@ const ValidationEquipementRP = () => {
     };
 
     const handleLogout = () => {
-        localStorage.clear();
-        navigate("/login");
+        Swal.fire({
+            title: 'Déconnexion',
+            text: 'Êtes-vous sûr de vouloir vous déconnecter?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Oui, déconnecter',
+            cancelButtonText: 'Annuler'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                localStorage.removeItem("token");
+                localStorage.removeItem("userId");
+                localStorage.removeItem("userRole");
+                localStorage.removeItem("userEmail");
+                localStorage.removeItem("userNom");
+                localStorage.removeItem("userPrenom");
+                localStorage.removeItem("userVilleCentre");
+                navigate("/login");
+            }
+        });
     };
 
-    const filteredEquipments = selectedCenter === "all" 
-        ? pendingEquipments 
-        : pendingEquipments.filter(equip => equip.villeCentre === selectedCenter);
+    // Garantir que filteredEquipments est toujours un tableau
+    const filteredEquipments = (selectedCenter === "all" 
+        ? Array.isArray(pendingEquipments) ? pendingEquipments : []
+        : Array.isArray(pendingEquipments) 
+            ? pendingEquipments.filter(equip => equip.villeCentre === selectedCenter) 
+            : []
+    );
 
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentItems = filteredEquipments.slice(indexOfFirstItem, indexOfLastItem);
 
     return (
-        <div className="dashboard-container">
-            {/* Sidebar */}
-            <div className={`sidebar ${sidebarOpen ? "open" : ""}`}>
+        <div className={`dashboard-container ${sidebarOpen ? "sidebar-expanded" : ""}`}>
+            <nav className="navbar">
+                <div className="menu-icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
+                    {sidebarOpen ? <FaTimes /> : <FaBars />}
+                </div>
+                <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
+            </nav>
+
+            <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
                 <ul className="sidebar-menu">
-                    <li>
-                        <a href="/responsable-home">
-                            <FaBuilding />
-                            <span>Tableau de bord</span>
-                        </a>
+                    <li className={location.pathname === '/ResponsablePatrimoineHome' ? 'active' : ''}>
+                        <Link to="/ResponsablePatrimoineHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
                     </li>
-                    <li className="active">
-                        <a href="/validation-equipements">
-                            <FaCheckCircle />
-                            <span>Validation Équipements</span>
-                        </a>
+                    <li className={location.pathname === '/EquipmentsRP' ? 'active' : ''}>
+                        <Link to="/EquipmentsRP"><FaCogs /><span>Gestion des Équipements</span></Link>
                     </li>
-                    <li>
-                        <a href="/historique-equipements">
-                            <FaInfoCircle />
-                            <span>Historique Équipements</span>
-                        </a>
+                    <li className={location.pathname === '/ValidationEquipementRP' ? 'active' : ''}>
+                        <Link to="/ValidationEquipementRP"><FaCheckCircle /><span>Validation Équipements</span></Link>
+                    </li>
+                    <li className={location.pathname === '/GestionDemandesRP' ? 'active' : ''}>
+                        <Link to="/GestionDemandesRP"><FaClipboardList /><span>Gestion des Demandes</span></Link>
+                    </li>
+                    <li className={location.pathname === '/LivraisonsRetoursRP' ? 'active' : ''}>
+                        <Link to="/LivraisonsRetoursRP"><FaBoxOpen /><span>Livraisons/Retours</span></Link>
+                    </li>
+                    <li className={location.pathname === '/HistoriqueDemandesRP' ? 'active' : ''}>
+                        <Link to="/HistoriqueDemandesRP"><FaHistory /><span>Historique des Demandes</span></Link>
+                    </li>
+                    <li className={location.pathname === '/HistoriqueEquipementsRP' ? 'active' : ''}>
+                        <Link to="/HistoriqueEquipementsRP"><FaHistory /><span>Historique des Équipements</span></Link>
+                    </li>
+                    <li className={location.pathname === '/CentresRP' ? 'active' : ''}>
+                        <Link to="/CentresRP"><FaBuilding /><span>Gestion des Centres</span></Link>
+                    </li>
+                    <li className={location.pathname === '/AnalyticsRP' ? 'active' : ''}>
+                        <Link to="/AnalyticsRP"><FaChartLine /><span>Analytics</span></Link>
                     </li>
                 </ul>
+
                 <div className="sidebar-bottom">
                     <ul>
-                        <li className="logout" onClick={handleLogout}>
-                            <a>
-                                <FaUser />
-                                <span>Déconnexion</span>
-                            </a>
+                        <li className={location.pathname === '/accountRP' ? 'active' : ''}>
+                            <Link to="/accountRP"><FaUser /><span>Compte</span></Link>
+                        </li>
+                        <li className="logout">
+                            <button onClick={handleLogout} style={{ background: 'none', border: 'none', padding: '10px', width: '100%', textAlign: 'left' }}>
+                                <FaSignOutAlt /><span>Déconnexion</span>
+                            </button>
                         </li>
                     </ul>
                 </div>
-            </div>
+            </aside>
 
-            {/* Navbar */}
-            <nav className="navbar">
-                <FaBars 
-                    className="menu-icon" 
-                    onClick={() => setSidebarOpen(!sidebarOpen)} 
-                />
-                <img src="/logo.png" alt="Logo" className="navbar-logo" />
-            </nav>
-
-            {/* Main Content */}
-            <main className={`content ${sidebarOpen ? "sidebar-expanded" : ""}`}>
+            <main className="content">
                 <div className="welcome-container">
-                    <h1 className="welcome-title">Validation des Équipements</h1>
+                    <h1>Validation des Équipements</h1>
                     <span className="welcome-subtitle">
                         Équipements ajoutés par les responsables de centre en attente de validation
                     </span>
@@ -178,8 +226,8 @@ const ValidationEquipementRP = () => {
                             onChange={(e) => setSelectedCenter(e.target.value)}
                         >
                             <option value="all">Tous les centres</option>
-                            {centers.map(center => (
-                                <option key={center} value={center}>{center}</option>
+                            {centers.map((center, index) => (
+                                <option key={index} value={center}>{center}</option>
                             ))}
                         </select>
                     </div>
@@ -253,7 +301,6 @@ const ValidationEquipementRP = () => {
                 )}
             </main>
 
-            {/* Modal de détails */}
             <Modal
                 title={`Détails de l'équipement - ${selectedEquipment?.name}`}
                 visible={isDetailModalVisible}
