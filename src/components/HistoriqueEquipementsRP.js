@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { 
   FaBars, FaTimes, FaHistory, FaSearch, FaFilter, 
-  FaBuilding, FaCogs, FaUser, FaClock, FaPhone, FaEnvelope
+  FaUser, FaBuilding, FaCog, FaClock, FaCheckCircle, FaTimesCircle,
+  FaTachometerAlt, FaChartLine, FaSignOutAlt, FaBoxOpen, FaPhone, FaEnvelope
 } from "react-icons/fa";
-import { Pagination, Select, Modal } from "antd";
-import { useNavigate, useLocation } from "react-router-dom";
+import { Pagination, Select, Modal, message } from "antd"; // Ajout de message ici
+import { useNavigate, useLocation, Link } from "react-router-dom";
+import Swal from 'sweetalert2';
 import "../styles/responsable.css";
 
 const { Option } = Select;
@@ -15,15 +17,15 @@ const HistoriqueEquipementsRP = () => {
     const [filteredEquipments, setFilteredEquipments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(8);
+    const [itemsPerPage] = useState(10);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedCenter, setSelectedCenter] = useState("all");
     const [selectedEquipment, setSelectedEquipment] = useState(null);
     const [historique, setHistorique] = useState(null);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [centers, setCenters] = useState([]);
-    const navigate = useNavigate();
     const location = useLocation();
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetchEquipments();
@@ -43,11 +45,17 @@ const HistoriqueEquipementsRP = () => {
                     'Authorization': `Bearer ${token}`
                 }
             });
+            
+            if (!response.ok) {
+                throw new Error("Erreur lors de la récupération des équipements");
+            }
+            
             const data = await response.json();
-            setEquipments(data);
+            setEquipments(Array.isArray(data) ? data : []);
             setLoading(false);
         } catch (error) {
             console.error("Error fetching equipments:", error);
+            message.error("Erreur lors du chargement des équipements");
             setLoading(false);
         }
     };
@@ -60,10 +68,17 @@ const HistoriqueEquipementsRP = () => {
                     'Authorization': `Bearer ${token}`
                 }
             });
+            
+            if (!response.ok) {
+                throw new Error("Erreur lors de la récupération des centres");
+            }
+            
             const data = await response.json();
-            setCenters(data);
+            setCenters(Array.isArray(data) ? data : ['TEMARA', 'RABAT', 'CASABLANCA', 'TINGHIR', 'ESSAOUIRA', 'DAKHLA', 'LAAYOUNE', 'NADOR', 'AIN_EL_AOUDA']);
         } catch (error) {
             console.error("Error fetching centers:", error);
+            message.error("Erreur lors du chargement des centres");
+            setCenters(['TEMARA', 'RABAT', 'CASABLANCA', 'TINGHIR', 'ESSAOUIRA', 'DAKHLA', 'LAAYOUNE', 'NADOR', 'AIN_EL_AOUDA']);
         }
     };
 
@@ -75,22 +90,28 @@ const HistoriqueEquipementsRP = () => {
                     'Authorization': `Bearer ${token}`
                 }
             });
+            
+            if (!response.ok) {
+                throw new Error("Erreur lors de la récupération de l'historique");
+            }
+            
             const data = await response.json();
             setHistorique(data);
             setIsModalVisible(true);
         } catch (error) {
             console.error("Error fetching historique:", error);
+            message.error("Erreur lors du chargement de l'historique");
             setHistorique(null);
         }
     };
 
     const filterEquipments = () => {
-        let filtered = [...equipments];
+        let filtered = Array.isArray(equipments) ? [...equipments] : [];
 
         if (searchTerm) {
             filtered = filtered.filter(equip => 
-                equip.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                equip.category.toLowerCase().includes(searchTerm.toLowerCase())
+                equip.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                equip.category?.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
 
@@ -109,8 +130,27 @@ const HistoriqueEquipementsRP = () => {
     };
 
     const handleLogout = () => {
-        localStorage.clear();
-        navigate("/login");
+        Swal.fire({
+            title: 'Déconnexion',
+            text: 'Êtes-vous sûr de vouloir vous déconnecter?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Oui, déconnecter',
+            cancelButtonText: 'Annuler'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                localStorage.removeItem("token");
+                localStorage.removeItem("userId");
+                localStorage.removeItem("userRole");
+                localStorage.removeItem("userEmail");
+                localStorage.removeItem("userNom");
+                localStorage.removeItem("userPrenom");
+                localStorage.removeItem("userVilleCentre");
+                navigate("/login");
+            }
+        });
     };
 
     const indexOfLastItem = currentPage * itemsPerPage;
@@ -118,59 +158,61 @@ const HistoriqueEquipementsRP = () => {
     const currentItems = filteredEquipments.slice(indexOfFirstItem, indexOfLastItem);
 
     return (
-        <div className="dashboard-container">
-            {/* Sidebar */}
-            <div className={`sidebar ${sidebarOpen ? "open" : ""}`}>
+        <div className={`dashboard-container ${sidebarOpen ? "sidebar-expanded" : ""}`}>
+            <nav className="navbar">
+                <div className="menu-icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
+                    {sidebarOpen ? <FaTimes /> : <FaBars />}
+                </div>
+                <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
+            </nav>
+
+            <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
                 <ul className="sidebar-menu">
-                    <li>
-                        <a href="/responsable-home">
-                            <FaBuilding />
-                            <span>Tableau de bord</span>
-                        </a>
+                    <li className={location.pathname === '/ResponsablePatrimoineHome' ? 'active' : ''}>
+                        <Link to="/ResponsablePatrimoineHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
                     </li>
-                    <li className="active">
-                        <a href="/historique-equipements">
-                            <FaHistory />
-                            <span>Historique Équipements</span>
-                        </a>
+                    <li className={location.pathname === '/EquipmentsRP' ? 'active' : ''}>
+                        <Link to="/EquipmentsRP"><FaCog /><span>Gestion des Équipements</span></Link>
                     </li>
-                    <li>
-                        <a href="/gestion-demandes">
-                            <FaCogs />
-                            <span>Gestion Demandes</span>
-                        </a>
+                    <li className={location.pathname === '/ValidationEquipementRP' ? 'active' : ''}>
+                        <Link to="/ValidationEquipementRP"><FaCheckCircle /><span>Validation Équipements</span></Link>
+                    </li>
+                    <li className={location.pathname === '/HistoriqueDemandesRP' ? 'active' : ''}>
+                        <Link to="/HistoriqueDemandesRP"><FaHistory /><span>Historique des Demandes</span></Link>
+                    </li>
+                    <li className={location.pathname === '/HistoriqueEquipementsRP' ? 'active' : ''}>
+                        <Link to="/HistoriqueEquipementsRP"><FaHistory /><span>Historique des Équipements</span></Link>
+                    </li>
+                    <li className={location.pathname === '/CentresRP' ? 'active' : ''}>
+                        <Link to="/CentresRP"><FaBuilding /><span>Gestion des Centres</span></Link>
+                    </li>
+                    <li className={location.pathname === '/AnalyticsRP' ? 'active' : ''}>
+                        <Link to="/AnalyticsRP"><FaChartLine /><span>Analytics</span></Link>
                     </li>
                 </ul>
+
                 <div className="sidebar-bottom">
                     <ul>
-                        <li className="logout" onClick={handleLogout}>
-                            <a>
-                                <FaUser />
-                                <span>Déconnexion</span>
-                            </a>
+                        <li className={location.pathname === '/accountRP' ? 'active' : ''}>
+                            <Link to="/accountRP"><FaUser /><span>Compte</span></Link>
+                        </li>
+                        <li className="logout">
+                            <button onClick={handleLogout} style={{ background: 'none', border: 'none', padding: '10px', width: '100%', textAlign: 'left' }}>
+                                <FaSignOutAlt /><span>Déconnexion</span>
+                            </button>
                         </li>
                     </ul>
                 </div>
-            </div>
+            </aside>
 
-            {/* Navbar */}
-            <nav className="navbar">
-                <FaBars 
-                    className="menu-icon" 
-                    onClick={() => setSidebarOpen(!sidebarOpen)} 
-                />
-                <img src="/logo.png" alt="Logo" className="navbar-logo" />
-            </nav>
-
-            {/* Main Content */}
-            <main className={`content ${sidebarOpen ? "sidebar-expanded" : ""}`}>
+            <main className="content">
                 <div className="welcome-container">
-                    <h1 className="welcome-title">Historique d'Utilisation des Équipements</h1>
+                    <h1>Historique des Équipements</h1>
                     <span className="welcome-subtitle">
                         Consultez l'historique d'utilisation de tous les équipements
                     </span>
                 </div>
-                
+
                 <div className="search-and-filters">
                     <div className="search-bar">
                         <FaSearch className="search-icon" />
@@ -182,18 +224,20 @@ const HistoriqueEquipementsRP = () => {
                         />
                     </div>
 
-                    <div className="filter-group">
-                        <FaFilter className="filter-icon" />
-                        <Select
-                            className="filter-select"
-                            value={selectedCenter}
-                            onChange={(value) => setSelectedCenter(value)}
-                        >
-                            <Option value="all">Tous les centres</Option>
-                            {centers.map(center => (
-                                <Option key={center} value={center}>{center}</Option>
-                            ))}
-                        </Select>
+                    <div className="filters-container">
+                        <div className="filter-group">
+                            <FaFilter className="filter-icon" />
+                            <Select
+                                className="filter-select"
+                                value={selectedCenter}
+                                onChange={(value) => setSelectedCenter(value)}
+                            >
+                                <Option value="all">Tous les centres</Option>
+                                {centers.map((center, index) => (
+                                    <Option key={index} value={center}>{center}</Option>
+                                ))}
+                            </Select>
+                        </div>
                     </div>
                 </div>
 
@@ -204,33 +248,57 @@ const HistoriqueEquipementsRP = () => {
                     </div>
                 ) : (
                     <>
-                        <div className="equipment-grid">
-                            {currentItems.length > 0 ? (
-                                currentItems.map(equipment => (
-                                    <div key={equipment.id} className="equipment-card">
-                                        <div className="card-content">
-                                            <h3>{equipment.name}</h3>
-                                            <p><strong>Catégorie:</strong> {equipment.category}</p>
-                                            <p><strong>Centre:</strong> {equipment.villeCentre}</p>
-                                            <p><strong>Date ajout:</strong> {new Date(equipment.dateAdded).toLocaleDateString()}</p>
-                                            
-                                            <button 
-                                                className="view-button"
-                                                onClick={() => {
-                                                    setSelectedEquipment(equipment);
-                                                    fetchHistorique(equipment.id);
-                                                }}
-                                            >
-                                                <FaHistory /> Voir l'historique
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="no-data">
-                                    <p>Aucun équipement trouvé</p>
-                                </div>
-                            )}
+                        <div className="table-container">
+                            <table className="demandes-table">
+                                <thead>
+                                    <tr>
+                                        <th>Équipement</th>
+                                        <th>Catégorie</th>
+                                        <th>Centre</th>
+                                        <th>Date d'ajout</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {currentItems.length > 0 ? (
+                                        currentItems.map(equipment => (
+                                            <tr key={equipment.id}>
+                                                <td>
+                                                    <div className="equipment-info">
+                                                        <FaBoxOpen className="equipment-icon" />
+                                                        <span>{equipment.name}</span>
+                                                    </div>
+                                                </td>
+                                                <td>{equipment.category}</td>
+                                                <td>
+                                                    <div className="center-info">
+                                                        <FaBuilding className="center-icon" />
+                                                        <span>{equipment.villeCentre}</span>
+                                                    </div>
+                                                </td>
+                                                <td>{new Date(equipment.dateAdded).toLocaleDateString()}</td>
+                                                <td>
+                                                    <button 
+                                                        className="view-button"
+                                                        onClick={() => {
+                                                            setSelectedEquipment(equipment);
+                                                            fetchHistorique(equipment.id);
+                                                        }}
+                                                    >
+                                                        <FaHistory /> Voir l'historique
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan="5" className="no-data">
+                                                Aucun équipement trouvé
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
 
                         {filteredEquipments.length > itemsPerPage && (
