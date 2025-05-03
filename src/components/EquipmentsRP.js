@@ -34,6 +34,8 @@ const EquipmentsRP = () => {
     const [centers, setCenters] = useState([]);
     const [newCategory, setNewCategory] = useState("");
     const [showAddCategory, setShowAddCategory] = useState(false);
+    const [newCenter, setNewCenter] = useState("");
+    const [showAddCenter, setShowAddCenter] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("");
     const [selectedCenter, setSelectedCenter] = useState("");
@@ -117,16 +119,23 @@ const EquipmentsRP = () => {
             }
             
             const data = await response.json();
-            setCenters(Array.isArray(data) ? data : ['TEMARA', 'RABAT', 'CASABLANCA']);
+            setCenters(Array.isArray(data) ? data : [
+                'TINGHIR', 'TEMARA', 'ESSAOUIRA', 'DAKHLA', 
+                'LAAYOUNE', 'NADOR', 'AIN_EL_AOUDA'
+            ]);
         } catch (error) {
             console.error("Error fetching centers:", error);
-            setCenters(['TEMARA', 'RABAT', 'CASABLANCA']);
+            setCenters([
+                'TINGHIR', 'TEMARA', 'ESSAOUIRA', 'DAKHLA', 
+                'LAAYOUNE', 'NADOR', 'AIN_EL_AOUDA'
+            ]);
         }
     };
 
     const formatVilleCentre = (ville) => {
         if (!ville) return "";
-        return ville.charAt(0) + ville.slice(1).toLowerCase().replace(/_/g, " ");
+        const formatted = ville.replace(/_/g, " ");
+        return formatted.charAt(0) + formatted.slice(1).toLowerCase();
     };
 
     const handleInputChange = (e) => {
@@ -186,6 +195,21 @@ const EquipmentsRP = () => {
             Swal.fire({
                 title: 'Succès',
                 text: 'Nouvelle catégorie ajoutée!',
+                icon: 'success',
+                confirmButtonText: 'OK'
+            });
+        }
+    };
+
+    const handleAddNewCenter = () => {
+        if (newCenter.trim()) {
+            setCenters([...centers, newCenter]);
+            setNewEquipment({ ...newEquipment, villeCentre: newCenter });
+            setNewCenter("");
+            setShowAddCenter(false);
+            Swal.fire({
+                title: 'Succès',
+                text: 'Nouveau centre ajouté!',
                 icon: 'success',
                 confirmButtonText: 'OK'
             });
@@ -252,65 +276,66 @@ const EquipmentsRP = () => {
     };
 
     const handleUpdateEquipment = async () => {
-        if (!editingEquipment) return;
+    if (!editingEquipment) return;
 
-        if (!newEquipment.name || !newEquipment.category || !newEquipment.villeCentre) {
+    if (!newEquipment.name || !newEquipment.category || !newEquipment.villeCentre) {
+        await Swal.fire({
+            title: 'Champs manquants',
+            text: 'Tous les champs sont obligatoires !',
+            icon: 'warning',
+            confirmButtonText: 'OK'
+        });
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`http://localhost:8080/api/rp/equipments/update/${editingEquipment.id}`, {
+            method: "PUT",
+            headers: { 
+                "Content-Type": "application/json",
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(newEquipment),
+        });
+
+        if (response.ok) {
             await Swal.fire({
-                title: 'Champs manquants',
-                text: 'Tous les champs sont obligatoires !',
-                icon: 'warning',
+                title: 'Succès',
+                text: 'Équipement modifié avec succès!',
+                icon: 'success',
                 confirmButtonText: 'OK'
             });
-            return;
-        }
-
-        try {
-            const response = await fetch(`${API_URL}/update/${editingEquipment.id}`, {
-                method: "PUT",
-                headers: { 
-                    "Content-Type": "application/json",
-                    'Authorization': `Bearer ${localStorage.getItem("token")}`
-                },
-                body: JSON.stringify(newEquipment),
+            fetchEquipments();
+            setEditingEquipment(null);
+            setNewEquipment({ 
+                name: "", 
+                category: "", 
+                villeCentre: "", 
+                description: "", 
+                imageUrl: "",
+                validated: false
             });
-
-            if (response.ok) {
-                await Swal.fire({
-                    title: 'Succès',
-                    text: 'Équipement modifié avec succès!',
-                    icon: 'success',
-                    confirmButtonText: 'OK'
-                });
-                fetchEquipments();
-                setEditingEquipment(null);
-                setNewEquipment({ 
-                    name: "", 
-                    category: "", 
-                    villeCentre: "", 
-                    description: "", 
-                    imageUrl: "",
-                    validated: false
-                });
-                setShowEditModal(false);
-            } else {
-                const errorData = await response.json();
-                await Swal.fire({
-                    title: 'Erreur',
-                    text: errorData.message || 'Erreur lors de la modification de l\'équipement',
-                    icon: 'error',
-                    confirmButtonText: 'OK'
-                });
-            }
-        } catch (error) {
-            console.error("Erreur lors de la mise à jour de l'équipement:", error);
+            setShowEditModal(false);
+        } else {
+            const errorData = await response.json();
             await Swal.fire({
                 title: 'Erreur',
-                text: 'Erreur lors de la modification de l\'équipement',
+                text: errorData.message || 'Erreur lors de la modification de l\'équipement',
                 icon: 'error',
                 confirmButtonText: 'OK'
             });
         }
-    };
+    } catch (error) {
+        console.error("Erreur lors de la mise à jour de l'équipement:", error);
+        await Swal.fire({
+            title: 'Erreur',
+            text: 'Erreur lors de la modification de l\'équipement',
+            icon: 'error',
+            confirmButtonText: 'OK'
+        });
+    }
+};
 
     const handleDeleteEquipment = async (id) => {
         const result = await Swal.fire({
@@ -326,10 +351,11 @@ const EquipmentsRP = () => {
 
         if (result.isConfirmed) {
             try {
+                const token = localStorage.getItem("token");
                 const response = await fetch(`${API_URL}/delete/${id}`, { 
                     method: "DELETE",
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem("token")}`
+                        'Authorization': `Bearer ${token}`
                     }
                 });
 
@@ -678,7 +704,14 @@ const EquipmentsRP = () => {
                             <select
                                 name="villeCentre"
                                 value={newEquipment.villeCentre}
-                                onChange={handleInputChange}
+                                onChange={(e) => {
+                                    handleInputChange(e);
+                                    if (e.target.value === "new") {
+                                        setShowAddCenter(true);
+                                    } else {
+                                        setShowAddCenter(false);
+                                    }
+                                }}
                                 required
                             >
                                 <option value="">Sélectionnez un centre</option>
@@ -687,7 +720,21 @@ const EquipmentsRP = () => {
                                         {formatVilleCentre(center)}
                                     </option>
                                 ))}
+                                <option value="new">Ajouter un nouveau centre</option>
                             </select>
+                            {showAddCenter && (
+                                <div className="add-new-item">
+                                    <input
+                                        type="text"
+                                        placeholder="Entrez le nom du nouveau centre"
+                                        value={newCenter}
+                                        onChange={(e) => setNewCenter(e.target.value)}
+                                    />
+                                    <button type="button" onClick={handleAddNewCenter}>
+                                        <FaPlus /> Ajouter
+                                    </button>
+                                </div>
+                            )}
                             <div className="form-group">
                                 <label>
                                     <input
@@ -775,7 +822,14 @@ const EquipmentsRP = () => {
                             <select
                                 name="villeCentre"
                                 value={newEquipment.villeCentre}
-                                onChange={handleInputChange}
+                                onChange={(e) => {
+                                    handleInputChange(e);
+                                    if (e.target.value === "new") {
+                                        setShowAddCenter(true);
+                                    } else {
+                                        setShowAddCenter(false);
+                                    }
+                                }}
                                 required
                             >
                                 <option value="">Sélectionnez un centre</option>
@@ -784,7 +838,21 @@ const EquipmentsRP = () => {
                                         {formatVilleCentre(center)}
                                     </option>
                                 ))}
+                                <option value="new">Ajouter un nouveau centre</option>
                             </select>
+                            {showAddCenter && (
+                                <div className="add-new-item">
+                                    <input
+                                        type="text"
+                                        placeholder="Entrez le nom du nouveau centre"
+                                        value={newCenter}
+                                        onChange={(e) => setNewCenter(e.target.value)}
+                                    />
+                                    <button type="button" onClick={handleAddNewCenter}>
+                                        <FaPlus /> Ajouter
+                                    </button>
+                                </div>
+                            )}
                             <div className="form-group">
                                 <label>
                                     <input
