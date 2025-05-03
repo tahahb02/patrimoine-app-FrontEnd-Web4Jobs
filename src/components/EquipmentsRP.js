@@ -487,12 +487,6 @@ const EquipmentsRP = () => {
                     <li className={location.pathname === '/ValidationEquipementRP' ? 'active' : ''}>
                         <Link to="/ValidationEquipementRP"><FaCheckCircle /><span>Validation Équipements</span></Link>
                     </li>
-                    <li className={location.pathname === '/GestionDemandesRP' ? 'active' : ''}>
-                        <Link to="/GestionDemandesRP"><FaClipboardList /><span>Gestion des Demandes</span></Link>
-                    </li>
-                    <li className={location.pathname === '/LivraisonsRetoursRP' ? 'active' : ''}>
-                        <Link to="/LivraisonsRetoursRP"><FaBoxOpen /><span>Livraisons/Retours</span></Link>
-                    </li>
                     <li className={location.pathname === '/HistoriqueDemandesRP' ? 'active' : ''}>
                         <Link to="/HistoriqueDemandesRP"><FaHistory /><span>Historique des Demandes</span></Link>
                     </li>

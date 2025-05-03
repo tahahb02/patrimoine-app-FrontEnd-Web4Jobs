@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { 
-  FaBars, FaClipboardList, FaSearch, FaFilter, 
-  FaUser, FaBuilding, FaCogs, FaClock, FaCheckCircle, FaTimesCircle
+  FaBars, FaTimes, FaClipboardList, FaSearch, FaFilter, 
+  FaUser, FaBuilding, FaCog, FaClock, FaCheckCircle, FaTimesCircle,
+  FaTachometerAlt, FaHistory, FaChartLine, FaSignOutAlt, FaBoxOpen
 } from "react-icons/fa";
 import { Pagination, Select, DatePicker, message } from "antd"; 
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
+import Swal from 'sweetalert2';
 import "../styles/responsable.css";
 
 const { Option } = Select;
@@ -22,6 +24,7 @@ const HistoriqueDemandesRP = () => {
     const [selectedStatus, setSelectedStatus] = useState("all");
     const [dateRange, setDateRange] = useState([]);
     const [centers, setCenters] = useState([]);
+    const location = useLocation();
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -42,8 +45,13 @@ const HistoriqueDemandesRP = () => {
                     'Authorization': `Bearer ${token}`
                 }
             });
+            
+            if (!response.ok) {
+                throw new Error("Erreur lors de la récupération des demandes");
+            }
+            
             const data = await response.json();
-            setDemandes(data);
+            setDemandes(Array.isArray(data) ? data : []);
             setLoading(false);
         } catch (error) {
             console.error("Error fetching demandes:", error);
@@ -60,21 +68,27 @@ const HistoriqueDemandesRP = () => {
                     'Authorization': `Bearer ${token}`
                 }
             });
+            
+            if (!response.ok) {
+                throw new Error("Erreur lors de la récupération des centres");
+            }
+            
             const data = await response.json();
-            setCenters(data);
+            setCenters(Array.isArray(data) ? data : ['TEMARA', 'RABAT', 'CASABLANCA', 'TINGHIR', 'ESSAOUIRA', 'DAKHLA', 'LAAYOUNE', 'NADOR', 'AIN_EL_AOUDA']);
         } catch (error) {
             console.error("Error fetching centers:", error);
+            setCenters(['TEMARA', 'RABAT', 'CASABLANCA', 'TINGHIR', 'ESSAOUIRA', 'DAKHLA', 'LAAYOUNE', 'NADOR', 'AIN_EL_AOUDA']);
         }
     };
 
     const filterDemandes = () => {
-        let filtered = [...demandes];
+        let filtered = Array.isArray(demandes) ? [...demandes] : [];
 
         if (searchTerm) {
             filtered = filtered.filter(demande => 
-                demande.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                demande.prenom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                demande.nomEquipement.toLowerCase().includes(searchTerm.toLowerCase())
+                demande.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                demande.prenom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                demande.nomEquipement?.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
 
@@ -86,7 +100,7 @@ const HistoriqueDemandesRP = () => {
             filtered = filtered.filter(demande => demande.statut === selectedStatus);
         }
 
-        if (dateRange.length === 2) {
+        if (dateRange?.length === 2) {
             const startDate = new Date(dateRange[0]);
             const endDate = new Date(dateRange[1]);
             
@@ -106,7 +120,7 @@ const HistoriqueDemandesRP = () => {
             case "REFUSEE":
                 return <span className="status-badge rejected"><FaTimesCircle /> Refusée</span>;
             case "EN_ATTENTE":
-                return <span className="status-badge en-attente">En attente</span>;
+                return <span className="status-badge en-attente"><FaClock /> En attente</span>;
             default:
                 return <span className="status-badge">{statut}</span>;
         }
@@ -127,8 +141,27 @@ const HistoriqueDemandesRP = () => {
     };
 
     const handleLogout = () => {
-        localStorage.clear();
-        navigate("/login");
+        Swal.fire({
+            title: 'Déconnexion',
+            text: 'Êtes-vous sûr de vouloir vous déconnecter?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Oui, déconnecter',
+            cancelButtonText: 'Annuler'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                localStorage.removeItem("token");
+                localStorage.removeItem("userId");
+                localStorage.removeItem("userRole");
+                localStorage.removeItem("userEmail");
+                localStorage.removeItem("userNom");
+                localStorage.removeItem("userPrenom");
+                localStorage.removeItem("userVilleCentre");
+                navigate("/login");
+            }
+        });
     };
 
     const indexOfLastItem = currentPage * itemsPerPage;
@@ -136,59 +169,62 @@ const HistoriqueDemandesRP = () => {
     const currentItems = filteredDemandes.slice(indexOfFirstItem, indexOfLastItem);
 
     return (
-        <div className="dashboard-container">
-            {/* Sidebar */}
-            <div className={`sidebar ${sidebarOpen ? "open" : ""}`}>
+        <div className={`dashboard-container ${sidebarOpen ? "sidebar-expanded" : ""}`}>
+            <nav className="navbar">
+                <div className="menu-icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
+                    {sidebarOpen ? <FaTimes /> : <FaBars />}
+                </div>
+                <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
+            </nav>
+
+            <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
                 <ul className="sidebar-menu">
-                    <li>
-                        <a href="/responsable-home">
-                            <FaBuilding />
-                            <span>Tableau de bord</span>
-                        </a>
+                    <li className={location.pathname === '/ResponsablePatrimoineHome' ? 'active' : ''}>
+                        <Link to="/ResponsablePatrimoineHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
                     </li>
-                    <li>
-                        <a href="/historique-equipements">
-                            <FaClipboardList />
-                            <span>Historique Équipements</span>
-                        </a>
+                    <li className={location.pathname === '/EquipmentsRP' ? 'active' : ''}>
+                        <Link to="/EquipmentsRP"><FaCog /><span>Gestion des Équipements</span></Link>
                     </li>
-                    <li className="active">
-                        <a href="/historique-demandes">
-                            <FaCogs />
-                            <span>Historique Demandes</span>
-                        </a>
+                    <li className={location.pathname === '/ValidationEquipementRP' ? 'active' : ''}>
+                        <Link to="/ValidationEquipementRP"><FaCheckCircle /><span>Validation Équipements</span></Link>
+                    </li>
+                
+                    <li className={location.pathname === '/HistoriqueDemandesRP' ? 'active' : ''}>
+                        <Link to="/HistoriqueDemandesRP"><FaHistory /><span>Historique des Demandes</span></Link>
+                    </li>
+                    <li className={location.pathname === '/HistoriqueEquipementsRP' ? 'active' : ''}>
+                        <Link to="/HistoriqueEquipementsRP"><FaHistory /><span>Historique des Équipements</span></Link>
+                    </li>
+                    <li className={location.pathname === '/CentresRP' ? 'active' : ''}>
+                        <Link to="/CentresRP"><FaBuilding /><span>Gestion des Centres</span></Link>
+                    </li>
+                    <li className={location.pathname === '/AnalyticsRP' ? 'active' : ''}>
+                        <Link to="/AnalyticsRP"><FaChartLine /><span>Analytics</span></Link>
                     </li>
                 </ul>
+
                 <div className="sidebar-bottom">
                     <ul>
-                        <li className="logout" onClick={handleLogout}>
-                            <a>
-                                <FaUser />
-                                <span>Déconnexion</span>
-                            </a>
+                        <li className={location.pathname === '/accountRP' ? 'active' : ''}>
+                            <Link to="/accountRP"><FaUser /><span>Compte</span></Link>
+                        </li>
+                        <li className="logout">
+                            <button onClick={handleLogout} style={{ background: 'none', border: 'none', padding: '10px', width: '100%', textAlign: 'left' }}>
+                                <FaSignOutAlt /><span>Déconnexion</span>
+                            </button>
                         </li>
                     </ul>
                 </div>
-            </div>
+            </aside>
 
-            {/* Navbar */}
-            <nav className="navbar">
-                <FaBars 
-                    className="menu-icon" 
-                    onClick={() => setSidebarOpen(!sidebarOpen)} 
-                />
-                <img src="/logo.png" alt="Logo" className="navbar-logo" />
-            </nav>
-
-            {/* Main Content */}
-            <main className={`content ${sidebarOpen ? "sidebar-expanded" : ""}`}>
+            <main className="content">
                 <div className="welcome-container">
-                    <h1 className="welcome-title">Historique des Demandes</h1>
+                    <h1>Historique des Demandes</h1>
                     <span className="welcome-subtitle">
                         Consultez l'historique des demandes de tous les centres
                     </span>
                 </div>
-                
+
                 <div className="search-and-filters">
                     <div className="search-bar">
                         <FaSearch className="search-icon" />
@@ -200,40 +236,42 @@ const HistoriqueDemandesRP = () => {
                         />
                     </div>
 
-                    <div className="filter-group">
-                        <FaFilter className="filter-icon" />
-                        <Select
-                            className="filter-select"
-                            value={selectedCenter}
-                            onChange={(value) => setSelectedCenter(value)}
-                        >
-                            <Option value="all">Tous les centres</Option>
-                            {centers.map(center => (
-                                <Option key={center} value={center}>{center}</Option>
-                            ))}
-                        </Select>
-                    </div>
+                    <div className="filters-container">
+                        <div className="filter-group">
+                            <FaFilter className="filter-icon" />
+                            <Select
+                                className="filter-select"
+                                value={selectedCenter}
+                                onChange={(value) => setSelectedCenter(value)}
+                            >
+                                <Option value="all">Tous les centres</Option>
+                                {centers.map((center, index) => (
+                                    <Option key={index} value={center}>{center}</Option>
+                                ))}
+                            </Select>
+                        </div>
 
-                    <div className="filter-group">
-                        <FaFilter className="filter-icon" />
-                        <Select
-                            className="filter-select"
-                            value={selectedStatus}
-                            onChange={(value) => setSelectedStatus(value)}
-                        >
-                            <Option value="all">Tous les statuts</Option>
-                            <Option value="ACCEPTEE">Acceptées</Option>
-                            <Option value="REFUSEE">Refusées</Option>
-                            <Option value="EN_ATTENTE">En attente</Option>
-                        </Select>
-                    </div>
+                        <div className="filter-group">
+                            <FaFilter className="filter-icon" />
+                            <Select
+                                className="filter-select"
+                                value={selectedStatus}
+                                onChange={(value) => setSelectedStatus(value)}
+                            >
+                                <Option value="all">Tous les statuts</Option>
+                                <Option value="ACCEPTEE">Acceptées</Option>
+                                <Option value="REFUSEE">Refusées</Option>
+                                <Option value="EN_ATTENTE">En attente</Option>
+                            </Select>
+                        </div>
 
-                    <div className="filter-group">
-                        <FaFilter className="filter-icon" />
-                        <RangePicker 
-                            onChange={(dates) => setDateRange(dates)}
-                            className="date-picker"
-                        />
+                        <div className="filter-group">
+                            <FaFilter className="filter-icon" />
+                            <RangePicker 
+                                onChange={(dates) => setDateRange(dates)}
+                                className="date-picker"
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -269,7 +307,7 @@ const HistoriqueDemandesRP = () => {
                                                 </td>
                                                 <td>
                                                     <div className="equipment-info">
-                                                        <FaCogs className="equipment-icon" />
+                                                        <FaCog className="equipment-icon" />
                                                         <span>{demande.nomEquipement}</span>
                                                     </div>
                                                 </td>
