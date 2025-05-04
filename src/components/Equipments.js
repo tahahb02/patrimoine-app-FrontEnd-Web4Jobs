@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt, FaPlus, FaEdit, FaTrash, FaSearch, FaHistory, FaFilter, FaBoxOpen } from "react-icons/fa";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { 
+  FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, 
+  FaBell, FaUser, FaSignOutAlt, FaPlus, FaEdit, FaTrash, 
+  FaSearch, FaHistory, FaFilter, FaBoxOpen, FaInfoCircle 
+} from "react-icons/fa";
 import { Pagination } from 'antd';
 import Swal from 'sweetalert2';
 import "../styles/responsable.css";
@@ -14,7 +18,6 @@ const Equipments = () => {
     name: "", 
     category: "", 
     villeCentre: localStorage.getItem("userVilleCentre") || "TEMARA", 
-    dateAdded: "", 
     description: "", 
     imageUrl: "" 
   });
@@ -33,18 +36,18 @@ const Equipments = () => {
   const [selectedCategory, setSelectedCategory] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
-  const userVilleCentre = localStorage.getItem("userVilleCentre");
+
   useEffect(() => {
-    fetchEquipments();
+    fetchValidatedEquipments();
   }, []);
 
-  const fetchEquipments = async () => {
+  const fetchValidatedEquipments = async () => {
     try {
       const token = localStorage.getItem("token");
       const userCenter = localStorage.getItem("userVilleCentre");
       const userRole = localStorage.getItem("userRole");
       
-      const response = await fetch(API_URL, {
+      const response = await fetch(`${API_URL}/validated`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -73,6 +76,28 @@ const Equipments = () => {
         icon: 'error',
         confirmButtonText: 'OK'
       });
+    }
+  };
+
+  const fetchMyEquipments = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const userEmail = localStorage.getItem("userEmail");
+      
+      const response = await fetch(`${API_URL}/my-equipments`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': `Bearer ${token}`,
+          'X-User-Email': userEmail
+        }
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Erreur lors du chargement de mes équipements:", error);
+      return [];
     }
   };
 
@@ -109,22 +134,9 @@ const Equipments = () => {
             icon: 'success',
             confirmButtonText: 'OK'
           });
-        } else {
-          await Swal.fire({
-            title: 'Erreur',
-            text: 'Erreur lors du téléversement de l\'image.',
-            icon: 'error',
-            confirmButtonText: 'OK'
-          });
         }
       } catch (error) {
         console.error("Erreur réseau:", error);
-        await Swal.fire({
-          title: 'Erreur',
-          text: 'Erreur réseau. Veuillez réessayer.',
-          icon: 'error',
-          confirmButtonText: 'OK'
-        });
       }
     }
   };
@@ -155,83 +167,61 @@ const Equipments = () => {
       return;
     }
 
-    const userCenter = localStorage.getItem("userVilleCentre") || "TEMARA";
-    const currentDate = new Date().toISOString();
-    const equipmentWithDate = { 
-      ...newEquipment, 
-      dateAdded: currentDate,
-      villeCentre: userCenter
-    };
-
     try {
+      const token = localStorage.getItem("token");
+      const userEmail = localStorage.getItem("userEmail");
+      const userName = `${localStorage.getItem("userNom")} ${localStorage.getItem("userPrenom")}`;
+
       const response = await fetch(`${API_URL}/add`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          'Authorization': `Bearer ${localStorage.getItem("token")}`,
-          'X-User-Center': userCenter
+          'Authorization': `Bearer ${token}`,
+          'X-User-Center': localStorage.getItem("userVilleCentre"),
+          'X-User-Email': userEmail,
+          'X-User-Name': userName
         },
-        body: JSON.stringify(equipmentWithDate),
+        body: JSON.stringify(newEquipment),
       });
 
       if (response.ok) {
         await Swal.fire({
           title: 'Succès',
-          text: 'Équipement ajouté avec succès!',
+          text: 'Équipement ajouté avec succès! En attente de validation.',
           icon: 'success',
           confirmButtonText: 'OK'
         });
-        fetchEquipments();
+        fetchValidatedEquipments();
         setNewEquipment({ 
           name: "", 
           category: "", 
-          villeCentre: userCenter, 
-          dateAdded: "", 
+          villeCentre: localStorage.getItem("userVilleCentre") || "TEMARA", 
           description: "", 
           imageUrl: "" 
         });
         setSelectedImage(null);
         setShowAddModal(false);
-      } else {
-        const errorData = await response.json();
-        await Swal.fire({
-          title: 'Erreur',
-          text: errorData.message || 'Erreur lors de l\'ajout de l\'équipement',
-          icon: 'error',
-          confirmButtonText: 'OK'
-        });
       }
     } catch (error) {
       console.error("Erreur lors de l'ajout d'un équipement:", error);
-      await Swal.fire({
-        title: 'Erreur',
-        text: 'Erreur lors de l\'ajout de l\'équipement',
-        icon: 'error',
-        confirmButtonText: 'OK'
-      });
     }
   };
 
   const handleUpdateEquipment = async () => {
     if (!editingEquipment) return;
 
-    if (!newEquipment.name || !newEquipment.category) {
-      await Swal.fire({
-        title: 'Champs manquants',
-        text: 'Tous les champs sont obligatoires !',
-        icon: 'warning',
-        confirmButtonText: 'OK'
-      });
-      return;
-    }
-
     try {
+      const token = localStorage.getItem("token");
+      const userEmail = localStorage.getItem("userEmail");
+      const userRole = localStorage.getItem("userRole");
+
       const response = await fetch(`${API_URL}/update/${editingEquipment.id}`, {
         method: "PUT",
         headers: { 
           "Content-Type": "application/json",
-          'Authorization': `Bearer ${localStorage.getItem("token")}`,
-          'X-User-Center': localStorage.getItem("userVilleCentre") || "TEMARA"
+          'Authorization': `Bearer ${token}`,
+          'X-User-Email': userEmail,
+          'X-User-Role': userRole
         },
         body: JSON.stringify(newEquipment),
       });
@@ -243,34 +233,11 @@ const Equipments = () => {
           icon: 'success',
           confirmButtonText: 'OK'
         });
-        fetchEquipments();
-        setEditingEquipment(null);
-        setNewEquipment({ 
-          name: "", 
-          category: "", 
-          villeCentre: localStorage.getItem("userVilleCentre") || "TEMARA", 
-          dateAdded: "", 
-          description: "", 
-          imageUrl: "" 
-        });
+        fetchValidatedEquipments();
         setShowEditModal(false);
-      } else {
-        const errorData = await response.json();
-        await Swal.fire({
-          title: 'Erreur',
-          text: errorData.message || 'Erreur lors de la modification de l\'équipement',
-          icon: 'error',
-          confirmButtonText: 'OK'
-        });
       }
     } catch (error) {
       console.error("Erreur lors de la mise à jour de l'équipement:", error);
-      await Swal.fire({
-        title: 'Erreur',
-        text: 'Erreur lors de la modification de l\'équipement',
-        icon: 'error',
-        confirmButtonText: 'OK'
-      });
     }
   };
 
@@ -288,35 +255,25 @@ const Equipments = () => {
 
     if (result.isConfirmed) {
       try {
+        const token = localStorage.getItem("token");
+        const userEmail = localStorage.getItem("userEmail");
+        const userRole = localStorage.getItem("userRole");
+
         const response = await fetch(`${API_URL}/delete/${id}`, { 
           method: "DELETE",
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem("token")}`
+            'Authorization': `Bearer ${token}`,
+            'X-User-Email': userEmail,
+            'X-User-Role': userRole
           }
         });
 
         if (response.ok) {
-          await Swal.fire(
-            'Supprimé!',
-            'L\'équipement a été supprimé.',
-            'success'
-          );
-          fetchEquipments();
-        } else {
-          const errorData = await response.json();
-          await Swal.fire(
-            'Erreur!',
-            errorData.message || 'Échec de la suppression',
-            'error'
-          );
+          await Swal.fire('Supprimé!', 'L\'équipement a été supprimé.', 'success');
+          fetchValidatedEquipments();
         }
       } catch (error) {
         console.error("Erreur lors de la suppression de l'équipement:", error);
-        await Swal.fire(
-          'Erreur!',
-          'Erreur réseau. Veuillez réessayer.',
-          'error'
-        );
       }
     }
   };
@@ -324,11 +281,6 @@ const Equipments = () => {
   const handleViewDetails = (equipment) => {
     setSelectedEquipment(equipment);
     setShowDetailsModal(true);
-  };
-
-  const handleCloseDetailsModal = () => {
-    setShowDetailsModal(false);
-    setSelectedEquipment(null);
   };
 
   const handleLogout = () => {
@@ -343,50 +295,22 @@ const Equipments = () => {
       cancelButtonText: 'Annuler'
     }).then((result) => {
       if (result.isConfirmed) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("userId");
-        localStorage.removeItem("userRole");
-        localStorage.removeItem("userEmail");
-        localStorage.removeItem("userNom");
-        localStorage.removeItem("userPrenom");
-        localStorage.removeItem("userVilleCentre");
+        localStorage.clear();
         navigate("/login");
       }
     });
   };
 
   const filteredEquipments = equipments.filter((equipment) => {
-    const matchesSearch =
-      equipment.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      equipment.description.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesCategory = selectedCategory
-      ? equipment.category === selectedCategory
-      : true;
-
+    const matchesSearch = equipment.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         equipment.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory ? equipment.category === selectedCategory : true;
     return matchesSearch && matchesCategory;
   });
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentEquipments = filteredEquipments.slice(indexOfFirstItem, indexOfLastItem);
-
-  const showTotal = (total) => `Total ${total} équipements`;
-
-  const onChange = (page) => {
-    setCurrentPage(page);
-  };
-
-  const handleAddButtonClick = () => {
-    Swal.fire({
-      title: 'Ajouter un nouvel équipement',
-      text: 'Remplissez le formulaire pour ajouter un nouvel équipement',
-      icon: 'info',
-      confirmButtonText: 'Continuer'
-    }).then(() => {
-      setShowAddModal(true);
-    });
-  };
 
   return (
     <div className={`dashboard-container ${sidebarOpen ? "sidebar-expanded" : ""}`}>
@@ -437,7 +361,7 @@ const Equipments = () => {
       </aside>
 
       <main className="content">
-        <h2>Gestion des Équipements - Centre {userVilleCentre}</h2>
+        <h2>Gestion des Équipements - Centre {formatVilleCentre(localStorage.getItem("userVilleCentre"))}</h2>
 
         <div className="search-and-filters">
           <div className="search-bar">
@@ -460,16 +384,14 @@ const Equipments = () => {
               >
                 <option value="">Toutes les catégories</option>
                 {categories.map((category, index) => (
-                  <option key={index} value={category}>
-                    {category}
-                  </option>
+                  <option key={index} value={category}>{category}</option>
                 ))}
               </select>
             </div>
           </div>
         </div>
 
-        <button className="add-button" onClick={handleAddButtonClick}>
+        <button className="add-button" onClick={() => setShowAddModal(true)}>
           <FaPlus /> Ajouter un équipement
         </button>
 
@@ -485,7 +407,7 @@ const Equipments = () => {
               </div>
               <div className="card-actions">
                 <button className="view-button" onClick={() => handleViewDetails(equipment)}>
-                  View All
+                  <FaInfoCircle /> Détails
                 </button>
                 <button className="edit-button" onClick={() => {
                   setEditingEquipment(equipment);
@@ -502,21 +424,18 @@ const Equipments = () => {
           ))}
         </div>
 
-        <div className="pagination-container">
-          <Pagination
-            size="small"
-            current={currentPage}
-            total={filteredEquipments.length}
-            pageSize={itemsPerPage}
-            onChange={onChange}
-            showSizeChanger={false}
-            showQuickJumper
-            showTotal={showTotal}
-          />
-        </div>
+        {filteredEquipments.length > itemsPerPage && (
+          <div className="pagination-container">
+            <Pagination
+              current={currentPage}
+              total={filteredEquipments.length}
+              pageSize={itemsPerPage}
+              onChange={(page) => setCurrentPage(page)}
+              showSizeChanger={false}
+            />
+          </div>
+        )}
       </main>
-
-      {(showAddModal || showEditModal || showDetailsModal) && <div className="modal-backdrop"></div>}
 
       {showAddModal && (
         <div className="modal-overlay">
@@ -670,23 +589,24 @@ const Equipments = () => {
         </div>
       )}
 
-      {showDetailsModal && (
+      {showDetailsModal && selectedEquipment && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <button className="modal-close" onClick={handleCloseDetailsModal}>
+            <button className="modal-close" onClick={() => setShowDetailsModal(false)}>
               &times;
             </button>
             <h3>Détails de l'équipement</h3>
-            {selectedEquipment && (
-              <div>
-                <img src={selectedEquipment.imageUrl || "/images/pc.jpg"} alt="Équipement" style={{ width: "200px", height: "200px" }} />
+            <div className="details-container">
+              <img src={selectedEquipment.imageUrl || "/images/pc.jpg"} alt="Équipement" className="detail-image" />
+              <div className="details-info">
                 <p><strong>Nom:</strong> {selectedEquipment.name}</p>
                 <p><strong>Catégorie:</strong> {selectedEquipment.category}</p>
                 <p><strong>Centre:</strong> {formatVilleCentre(selectedEquipment.villeCentre)}</p>
-                <p><strong>Description:</strong> {selectedEquipment.description}</p>
+                <p><strong>Ajouté par:</strong> {selectedEquipment.addedByName || selectedEquipment.addedBy}</p>
                 <p><strong>Date d'ajout:</strong> {new Date(selectedEquipment.dateAdded).toLocaleString()}</p>
+                <p><strong>Description:</strong> {selectedEquipment.description || "Aucune description"}</p>
               </div>
-            )}
+            </div>
           </div>
         </div>
       )}
