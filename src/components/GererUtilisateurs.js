@@ -16,7 +16,8 @@ import {
   FaEdit,
   FaTrash,
   FaEye,
-  FaFilter
+  FaFilter,
+  FaBoxes
 } from "react-icons/fa";
 
 const MySwal = withReactContent(Swal);
@@ -281,6 +282,9 @@ const GererUtilisateurs = () => {
           <li className={location.pathname === '/GererAdherants' ? 'active' : ''}>
             <Link to="/GererAdherants"><FaUserCog /><span>Gérer les Adhérents</span></Link>
           </li>
+          <li className={location.pathname === '/GererPatrimoine' ? 'active' : ''}>
+            <Link to="/GererPatrimoine"><FaBoxes /><span>Gérer le Patrimoine</span></Link>
+          </li>
           <li className={location.pathname === '/Notifications' ? 'active' : ''}>
             <Link to="/Notifications"><FaBell /><span>Notifications</span></Link>
           </li>
@@ -319,6 +323,7 @@ const GererUtilisateurs = () => {
               <option value="RESPONSABLE">Responsable</option>
               <option value="DIRECTEUR">Directeur</option>
               <option value="ADMIN">Admin</option>
+              <option value="RESPONSABLE_PATRIMOINE">Responsable Patrimoine</option>
             </select>
           </div>
 
@@ -382,7 +387,11 @@ const GererUtilisateurs = () => {
                       <td>{utilisateur.phone}</td>
                       <td>{utilisateur.city}</td>
                       <td>{formatVilleCentre(utilisateur.villeCentre)}</td>
-                      <td>{utilisateur.role}</td>
+                      <td>
+                        {utilisateur.role === 'RESPONSABLE_PATRIMOINE' 
+                          ? 'Responsable Patrimoine' 
+                          : utilisateur.role}
+                      </td>
                       <td>
                         <div className="action-buttons">
                           <button
@@ -433,7 +442,11 @@ const GererUtilisateurs = () => {
                                 <p><strong>Téléphone:</strong> {utilisateur.phone}</p>
                                 <p><strong>Ville:</strong> {utilisateur.city}</p>
                                 <p><strong>Centre:</strong> {formatVilleCentre(utilisateur.villeCentre)}</p>
-                                <p><strong>Rôle:</strong> {utilisateur.role}</p>
+                                <p><strong>Rôle:</strong> 
+                                  {utilisateur.role === 'RESPONSABLE_PATRIMOINE' 
+                                    ? 'Responsable Patrimoine' 
+                                    : utilisateur.role}
+                                </p>
                               </div>
                             </div>
                           </div>
@@ -575,6 +588,7 @@ const GererUtilisateurs = () => {
                         <option value="RESPONSABLE">Responsable</option>
                         <option value="DIRECTEUR">Directeur</option>
                         <option value="ADMIN">Admin</option>
+                        <option value="RESPONSABLE_PATRIMOINE">Responsable Patrimoine</option>
                       </select>
                     </div>
                   </div>
