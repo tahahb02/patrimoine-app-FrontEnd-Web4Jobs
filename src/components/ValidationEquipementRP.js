@@ -3,9 +3,9 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
   FaBars, FaTimes, FaCheckCircle, FaTimesCircle, 
   FaSearch, FaFilter, FaUser, FaSignOutAlt, 
-  FaTachometerAlt, FaHistory, FaChartLine,FaBuilding, FaCogs, FaInfoCircle
+  FaTachometerAlt, FaHistory, FaChartLine, FaBuilding, FaCogs, FaInfoCircle
 } from "react-icons/fa";
-import { Pagination, Modal } from "antd";
+import { Pagination, Modal, Spin } from "antd";
 import Swal from 'sweetalert2';
 import "../styles/responsable.css";
 
@@ -18,58 +18,53 @@ const ValidationEquipementRP = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(8);
   const [selectedCenter, setSelectedCenter] = useState("all");
-  const [centers, setCenters] = useState([]);
   const [selectedEquipment, setSelectedEquipment] = useState(null);
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Liste statique des centres (chargement immédiat)
+  const centers = [
+    "TINGHIR",
+    "TEMARA",
+    "TCHAD",
+    "ESSAOUIRA",
+    "DAKHLA",
+    "LAAYOUNE",
+    "NADOR",
+    "AIN_EL_AOUDA"
+  ];
+
   useEffect(() => {
     fetchPendingEquipments();
-    fetchCenters();
   }, []);
 
   const fetchPendingEquipments = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("Token d'authentification manquant");
+      }
+
       const response = await fetch(`${API_URL}/equipments/pending`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
-      if (!response.ok) throw new Error("Erreur lors de la récupération");
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
       
       const data = await response.json();
       setPendingEquipments(data);
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Erreur fetchPendingEquipments:", error);
       Swal.fire('Erreur', 'Impossible de charger les équipements', 'error');
     } finally {
       setLoading(false);
     }
   };
-
-  const fetchCenters = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${API_URL}/centers`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      if (!response.ok) {
-        throw new Error("Erreur lors de la récupération des centres");
-      }
-      
-      const data = await response.json();
-      // S'assurer que data est un tableau
-      setCenters(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("Error fetching centers:", error);
-      setCenters([]); // Définir un tableau vide en cas d'erreur
-      Swal.fire('Erreur', 'Impossible de charger les centres', 'error');
-    }
-  };;
 
   const handleValidate = async (id) => {
     try {
@@ -82,6 +77,8 @@ const ValidationEquipementRP = () => {
       if (response.ok) {
         Swal.fire('Succès', 'Équipement validé', 'success');
         fetchPendingEquipments();
+      } else {
+        throw new Error(`Erreur HTTP: ${response.status}`);
       }
     } catch (error) {
       console.error("Error:", error);
@@ -100,6 +97,8 @@ const ValidationEquipementRP = () => {
       if (response.ok) {
         Swal.fire('Succès', 'Équipement rejeté', 'success');
         fetchPendingEquipments();
+      } else {
+        throw new Error(`Erreur HTTP: ${response.status}`);
       }
     } catch (error) {
       console.error("Error:", error);
@@ -126,15 +125,31 @@ const ValidationEquipementRP = () => {
   };
 
   const filteredEquipments = pendingEquipments.filter(equipment => {
-    const matchesSearch = equipment.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         equipment.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCenter = selectedCenter === "all" || equipment.villeCentre === selectedCenter;
+    const matchesSearch = equipment.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         equipment.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCenter = selectedCenter === "all" || 
+                         equipment.villeCentre?.toString() === selectedCenter.toString();
     return matchesSearch && matchesCenter;
   });
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredEquipments.slice(indexOfFirstItem, indexOfLastItem);
+
+  const renderCenterFilter = () => (
+    <select
+      className="filter-select"
+      value={selectedCenter}
+      onChange={(e) => setSelectedCenter(e.target.value)}
+    >
+      <option value="all">Tous les centres</option>
+      {centers.map((center, index) => (
+        <option key={index} value={center}>
+          {center}
+        </option>
+      ))}
+    </select>
+  );
 
   return (
     <div className={`dashboard-container ${sidebarOpen ? "sidebar-expanded" : ""}`}>
@@ -204,24 +219,13 @@ const ValidationEquipementRP = () => {
           </div>
           <div className="filter-group">
             <FaFilter className="filter-icon" />
-            <select
-  className="filter-select"
-  value={selectedCenter}
-  onChange={(e) => setSelectedCenter(e.target.value)}
->
-  <option value="all">Tous les centres</option>
-  {centers.map((center, index) => (
-    <option key={index} value={center}>
-      {center}
-    </option>
-  ))}
-</select>
+            {renderCenterFilter()}
           </div>
         </div>
 
         {loading ? (
           <div className="loading-indicator">
-            <div className="spinner"></div>
+            <Spin size="large" />
             <p>Chargement des équipements en attente...</p>
           </div>
         ) : (
