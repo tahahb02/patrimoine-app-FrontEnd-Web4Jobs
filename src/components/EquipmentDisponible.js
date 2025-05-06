@@ -91,19 +91,14 @@ const EquipmentDisponible = () => {
       }
 
       const data = await response.json();
-      const availableEquipments = Array.isArray(data) 
-        ? data.filter(equip => equip.status === "Disponible" || !equip.status)
-        : [];
-      
-      setEquipments(availableEquipments);
+      setEquipments(data); // Pas besoin de filtrer ici, le backend s'en charge
       setLoading(false);
     } catch (error) {
       console.error("Erreur lors du chargement des équipements:", error);
       setError(error.message);
       setLoading(false);
     }
-  };
-
+};
   const formatVilleCentre = (ville) => {
     if (!ville) return "";
     return ville.charAt(0) + ville.slice(1).toLowerCase().replace(/_/g, " ");
