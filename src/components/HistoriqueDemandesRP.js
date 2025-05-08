@@ -1,364 +1,515 @@
-import React, { useState, useEffect } from "react";
-import { 
-  FaBars, FaTimes, FaClipboardList, FaSearch, FaFilter, 
-  FaUser, FaBuilding, FaCog, FaClock, FaCheckCircle, FaTimesCircle,
-  FaTachometerAlt, FaHistory, FaChartLine, FaSignOutAlt, FaBoxOpen
-} from "react-icons/fa";
-import { Pagination, Select, DatePicker, message } from "antd"; 
-import { useNavigate, useLocation, Link } from "react-router-dom";
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import {
+  FaBars,
+  FaTimes,
+  FaTachometerAlt,
+  FaCogs,
+  FaClipboardList,
+  FaBell,
+  FaUser,
+  FaSignOutAlt,
+  FaSearch,
+  FaEye,
+  FaHistory,
+  FaClock,
+  FaSort,
+  FaSortUp,
+  FaSortDown,
+  FaFilter,
+  FaCheckCircle,
+  FaTimesCircle,
+  FaBoxOpen,
+  FaBuilding,
+  FaChartLine
+} from 'react-icons/fa';
+import { Pagination } from 'antd';
 import Swal from 'sweetalert2';
-import "../styles/responsable.css";
-
-const { Option } = Select;
-const { RangePicker } = DatePicker;
+import '../styles/responsable.css';
 
 const HistoriqueDemandesRP = () => {
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [demandes, setDemandes] = useState([]);
-    const [filteredDemandes, setFilteredDemandes] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(10);
-    const [searchTerm, setSearchTerm] = useState("");
-    const [selectedCenter, setSelectedCenter] = useState("all");
-    const [selectedStatus, setSelectedStatus] = useState("all");
-    const [dateRange, setDateRange] = useState([]);
-    const [centers, setCenters] = useState([]);
-    const location = useLocation();
-    const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [demandes, setDemandes] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedDetails, setSelectedDetails] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [sortConfig, setSortConfig] = useState({ key: 'dateDemande', direction: 'desc' });
+  const [acceptedCount, setAcceptedCount] = useState(0);
+  const [rejectedCount, setRejectedCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
-    useEffect(() => {
-        fetchDemandes();
-        fetchCenters();
-    }, []);
+  const API_URL = 'http://localhost:8080/api/demandes';
 
-    useEffect(() => {
-        filterDemandes();
-    }, [demandes, searchTerm, selectedCenter, selectedStatus, dateRange]);
+  const statusOptions = [
+    { value: "", label: "Tous les statuts" },
+    { value: "ACCEPTEE", label: "Acceptées" },
+    { value: "REFUSEE", label: "Refusées" },
+    { value: "EN_ATTENTE", label: "En attente" }
+  ];
 
-    const fetchDemandes = async () => {
-        setLoading(true);
-        try {
-            const token = localStorage.getItem("token");
-            const response = await fetch("http://localhost:8080/api/rp/demandes", {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            
-            if (!response.ok) {
-                throw new Error("Erreur lors de la récupération des demandes");
-            }
-            
-            const data = await response.json();
-            setDemandes(Array.isArray(data) ? data : []);
-            setLoading(false);
-        } catch (error) {
-            console.error("Error fetching demandes:", error);
-            message.error("Erreur lors du chargement des demandes");
-            setLoading(false);
+  useEffect(() => {
+    fetchHistoriqueDemandes();
+  }, []);
+
+  useEffect(() => {
+    countStatus();
+  }, [demandes]);
+
+  const fetchHistoriqueDemandes = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${API_URL}/rp/historique`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'X-User-Role': localStorage.getItem('userRole')
         }
-    };
+      });
 
-    const fetchCenters = async () => {
-        try {
-            const token = localStorage.getItem("token");
-            const response = await fetch("http://localhost:8080/api/rp/centers", {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            
-            if (!response.ok) {
-                throw new Error("Erreur lors de la récupération des centres");
-            }
-            
-            const data = await response.json();
-            setCenters(Array.isArray(data) ? data : ['TEMARA', 'RABAT', 'CASABLANCA', 'TINGHIR', 'ESSAOUIRA', 'DAKHLA', 'LAAYOUNE', 'NADOR', 'AIN_EL_AOUDA']);
-        } catch (error) {
-            console.error("Error fetching centers:", error);
-            setCenters(['TEMARA', 'RABAT', 'CASABLANCA', 'TINGHIR', 'ESSAOUIRA', 'DAKHLA', 'LAAYOUNE', 'NADOR', 'AIN_EL_AOUDA']);
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.removeItem("token");
+          navigate("/login");
+          return;
         }
-    };
+        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+      }
 
-    const filterDemandes = () => {
-        let filtered = Array.isArray(demandes) ? [...demandes] : [];
+      const data = await response.json();
+      setDemandes(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Erreur lors du chargement de l'historique:", error);
+      Swal.fire('Erreur', 'Impossible de charger l\'historique des demandes', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        if (searchTerm) {
-            filtered = filtered.filter(demande => 
-                demande.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                demande.prenom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                demande.nomEquipement?.toLowerCase().includes(searchTerm.toLowerCase())
-            );
+  const countStatus = () => {
+    const accepted = demandes.filter(d => d.statut === "ACCEPTEE").length;
+    const rejected = demandes.filter(d => d.statut === "REFUSEE").length;
+    setAcceptedCount(accepted);
+    setRejectedCount(rejected);
+  };
+
+  const formatDateTime = (dateTime) => {
+    if (!dateTime) return 'Non disponible';
+    try {
+      const date = new Date(dateTime);
+      return date.toLocaleString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      return dateTime;
+    }
+  };
+
+  const calculateResponseTime = (demande) => {
+    if (!demande.dateReponse) return 'Non répondu';
+    const start = new Date(demande.dateDemande);
+    const end = new Date(demande.dateReponse);
+    const diff = end - start;
+    
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    
+    return `${days > 0 ? days + 'j ' : ''}${hours}h ${minutes}m`;
+  };
+
+  const requestSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key) => {
+    if (sortConfig.key !== key) return <FaSort />;
+    return sortConfig.direction === 'asc' ? <FaSortUp /> : <FaSortDown />;
+  };
+
+  const filteredDemandes = useMemo(() => {
+    return demandes.filter(demande => {
+      const matchesStatus = !selectedStatus || demande.statut === selectedStatus;
+      const matchesSearch = 
+        (demande.nom?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (demande.prenom?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (demande.centreEquipement?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (demande.nomEquipement?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+      
+      return matchesStatus && matchesSearch;
+    });
+  }, [demandes, selectedStatus, searchTerm]);
+
+  const sortedDemandes = useMemo(() => {
+    const sortableDemandes = [...filteredDemandes];
+    if (sortConfig.key) {
+      sortableDemandes.sort((a, b) => {
+        if (sortConfig.key.includes('date')) {
+          const aValue = new Date(a[sortConfig.key]);
+          const bValue = new Date(b[sortConfig.key]);
+          return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
         }
-
-        if (selectedCenter !== "all") {
-            filtered = filtered.filter(demande => demande.centreEquipement === selectedCenter);
-        }
-
-        if (selectedStatus !== "all") {
-            filtered = filtered.filter(demande => demande.statut === selectedStatus);
-        }
-
-        if (dateRange?.length === 2) {
-            const startDate = new Date(dateRange[0]);
-            const endDate = new Date(dateRange[1]);
-            
-            filtered = filtered.filter(demande => {
-                const demandeDate = new Date(demande.dateDemande);
-                return demandeDate >= startDate && demandeDate <= endDate;
-            });
-        }
-
-        setFilteredDemandes(filtered);
-    };
-
-    const getStatusBadge = (statut) => {
-        switch(statut) {
-            case "ACCEPTEE":
-                return <span className="status-badge accepted"><FaCheckCircle /> Acceptée</span>;
-            case "REFUSEE":
-                return <span className="status-badge rejected"><FaTimesCircle /> Refusée</span>;
-            case "EN_ATTENTE":
-                return <span className="status-badge en-attente"><FaClock /> En attente</span>;
-            default:
-                return <span className="status-badge">{statut}</span>;
-        }
-    };
-
-    const calculateResponseTime = (dateDemande, dateReponse) => {
-        if (!dateReponse) return "Non répondu";
         
-        const start = new Date(dateDemande);
-        const end = new Date(dateReponse);
-        const diff = end - start;
+        const aValue = a[sortConfig.key]?.toString().toLowerCase() || '';
+        const bValue = b[sortConfig.key]?.toString().toLowerCase() || '';
         
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        
-        return `${days > 0 ? days + 'j ' : ''}${hours}h ${minutes}m`;
-    };
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+    return sortableDemandes;
+  }, [filteredDemandes, sortConfig]);
 
-    const handleLogout = () => {
-        Swal.fire({
-            title: 'Déconnexion',
-            text: 'Êtes-vous sûr de vouloir vous déconnecter?',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Oui, déconnecter',
-            cancelButtonText: 'Annuler'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                localStorage.removeItem("token");
-                localStorage.removeItem("userId");
-                localStorage.removeItem("userRole");
-                localStorage.removeItem("userEmail");
-                localStorage.removeItem("userNom");
-                localStorage.removeItem("userPrenom");
-                localStorage.removeItem("userVilleCentre");
-                navigate("/login");
-            }
-        });
-    };
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentDemandes = sortedDemandes.slice(indexOfFirstItem, indexOfLastItem);
 
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentItems = filteredDemandes.slice(indexOfFirstItem, indexOfLastItem);
+  const handleDetails = (demande) => {
+    setSelectedDetails(demande);
+    setShowDetailsModal(true);
+    document.body.style.overflow = 'hidden';
+  };
 
-    return (
-        <div className={`dashboard-container ${sidebarOpen ? "sidebar-expanded" : ""}`}>
-            <nav className="navbar">
-                <div className="menu-icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
-                    {sidebarOpen ? <FaTimes /> : <FaBars />}
-                </div>
-                <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
-            </nav>
+  const closeDetailsModal = () => {
+    setShowDetailsModal(false);
+    setSelectedDetails(null);
+    document.body.style.overflow = 'auto';
+  };
 
-            <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
-                <ul className="sidebar-menu">
-                    <li className={location.pathname === '/ResponsablePatrimoineHome' ? 'active' : ''}>
-                        <Link to="/ResponsablePatrimoineHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
-                    </li>
-                    <li className={location.pathname === '/EquipmentsRP' ? 'active' : ''}>
-                        <Link to="/EquipmentsRP"><FaCog /><span>Gestion des Équipements</span></Link>
-                    </li>
-                    <li className={location.pathname === '/ValidationEquipementRP' ? 'active' : ''}>
-                        <Link to="/ValidationEquipementRP"><FaCheckCircle /><span>Validation Équipements</span></Link>
-                    </li>
-                
-                    <li className={location.pathname === '/HistoriqueDemandesRP' ? 'active' : ''}>
-                        <Link to="/HistoriqueDemandesRP"><FaHistory /><span>Historique des Demandes</span></Link>
-                    </li>
-                    <li className={location.pathname === '/HistoriqueEquipementsRP' ? 'active' : ''}>
-                        <Link to="/HistoriqueEquipementsRP"><FaHistory /><span>Historique des Équipements</span></Link>
-                    </li>
-                    <li className={location.pathname === '/CentresRP' ? 'active' : ''}>
-                        <Link to="/CentresRP"><FaBuilding /><span>Gestion des Centres</span></Link>
-                    </li>
-                    <li className={location.pathname === '/AnalyticsRP' ? 'active' : ''}>
-                        <Link to="/AnalyticsRP"><FaChartLine /><span>Analytics</span></Link>
-                    </li>
-                </ul>
+  const handleLogout = () => {
+    Swal.fire({
+      title: 'Déconnexion',
+      text: 'Êtes-vous sûr de vouloir vous déconnecter?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Oui, déconnecter',
+      cancelButtonText: 'Annuler'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("userId");
+        localStorage.removeItem("userRole");
+        localStorage.removeItem("userEmail");
+        localStorage.removeItem("userNom");
+        localStorage.removeItem("userPrenom");
+        localStorage.removeItem("userVilleCentre");
+        navigate("/login");
+      }
+    });
+  };
 
-                <div className="sidebar-bottom">
-                    <ul>
-                        <li className={location.pathname === '/accountRP' ? 'active' : ''}>
-                            <Link to="/accountRP"><FaUser /><span>Compte</span></Link>
-                        </li>
-                        <li className="logout">
-                            <button onClick={handleLogout} style={{ background: 'none', border: 'none', padding: '10px', width: '100%', textAlign: 'left' }}>
-                                <FaSignOutAlt /><span>Déconnexion</span>
-                            </button>
-                        </li>
-                    </ul>
-                </div>
-            </aside>
+  const getStatusBadgeClass = (statut) => {
+    if (!statut) return 'status-badge';
+    const statutLower = statut.toLowerCase();
+    if (statutLower.includes('accept')) return 'status-badge acceptee';
+    if (statutLower.includes('refus')) return 'status-badge refusee';
+    if (statutLower.includes('attente')) return 'status-badge en-attente';
+    return 'status-badge';
+  };
 
-            <main className="content">
-                <div className="welcome-container">
-                    <h1>Historique des Demandes</h1>
-                    <span className="welcome-subtitle">
-                        Consultez l'historique des demandes de tous les centres
-                    </span>
-                </div>
+  const getResponseTimeClass = (demande) => {
+    if (!demande.statut) return '';
+    if (demande.statut === "ACCEPTEE") return 'fast';
+    if (demande.statut === "REFUSEE") return 'slow';
+    return '';
+  };
 
-                <div className="search-and-filters">
-                    <div className="search-bar">
-                        <FaSearch className="search-icon" />
-                        <input
-                            type="text"
-                            placeholder="Rechercher par nom, prénom ou équipement..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-
-                    <div className="filters-container">
-                        <div className="filter-group">
-                            <FaFilter className="filter-icon" />
-                            <Select
-                                className="filter-select"
-                                value={selectedCenter}
-                                onChange={(value) => setSelectedCenter(value)}
-                            >
-                                <Option value="all">Tous les centres</Option>
-                                {centers.map((center, index) => (
-                                    <Option key={index} value={center}>{center}</Option>
-                                ))}
-                            </Select>
-                        </div>
-
-                        <div className="filter-group">
-                            <FaFilter className="filter-icon" />
-                            <Select
-                                className="filter-select"
-                                value={selectedStatus}
-                                onChange={(value) => setSelectedStatus(value)}
-                            >
-                                <Option value="all">Tous les statuts</Option>
-                                <Option value="ACCEPTEE">Acceptées</Option>
-                                <Option value="REFUSEE">Refusées</Option>
-                                <Option value="EN_ATTENTE">En attente</Option>
-                            </Select>
-                        </div>
-
-                        <div className="filter-group">
-                            <FaFilter className="filter-icon" />
-                            <RangePicker 
-                                onChange={(dates) => setDateRange(dates)}
-                                className="date-picker"
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {loading ? (
-                    <div className="loading-indicator">
-                        <div className="spinner"></div>
-                        <p>Chargement en cours...</p>
-                    </div>
-                ) : (
-                    <>
-                        <div className="table-container">
-                            <table className="demandes-table">
-                                <thead>
-                                    <tr>
-                                        <th>Demandeur</th>
-                                        <th>Équipement</th>
-                                        <th>Centre</th>
-                                        <th>Statut</th>
-                                        <th>Date Demande</th>
-                                        <th>Date Réponse</th>
-                                        <th>Temps Réponse</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {currentItems.length > 0 ? (
-                                        currentItems.map(demande => (
-                                            <tr key={demande.id}>
-                                                <td>
-                                                    <div className="user-info">
-                                                        <FaUser className="user-icon" />
-                                                        <span>{demande.prenom} {demande.nom}</span>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <div className="equipment-info">
-                                                        <FaCog className="equipment-icon" />
-                                                        <span>{demande.nomEquipement}</span>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <div className="center-info">
-                                                        <FaBuilding className="center-icon" />
-                                                        <span>{demande.centreEquipement}</span>
-                                                    </div>
-                                                </td>
-                                                <td>{getStatusBadge(demande.statut)}</td>
-                                                <td>{new Date(demande.dateDemande).toLocaleString()}</td>
-                                                <td>
-                                                    {demande.dateReponse 
-                                                        ? new Date(demande.dateReponse).toLocaleString() 
-                                                        : "-"}
-                                                </td>
-                                                <td>
-                                                    <div className="response-time">
-                                                        <FaClock /> 
-                                                        {calculateResponseTime(demande.dateDemande, demande.dateReponse)}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td colSpan="7" className="no-data">
-                                                Aucune demande trouvée
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {filteredDemandes.length > itemsPerPage && (
-                            <div className="pagination-container">
-                                <Pagination
-                                    current={currentPage}
-                                    total={filteredDemandes.length}
-                                    pageSize={itemsPerPage}
-                                    onChange={(page) => setCurrentPage(page)}
-                                    showSizeChanger={false}
-                                />
-                            </div>
-                        )}
-                    </>
-                )}
-            </main>
+  const StatusStatsPanel = () => (
+    <div className="status-stats-panel">
+      <div className="status-stat accepted">
+        <FaCheckCircle className="stat-icon" />
+        <div className="stat-content">
+          <span className="stat-count">{acceptedCount}</span>
+          <span className="stat-label">Acceptées</span>
         </div>
-    );
+      </div>
+      <div className="status-stat rejected">
+        <FaTimesCircle className="stat-icon" />
+        <div className="stat-content">
+          <span className="stat-count">{rejectedCount}</span>
+          <span className="stat-label">Refusées</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className={`dashboard-container ${sidebarOpen ? 'sidebar-expanded' : ''}`}>
+      <nav className="navbar">
+        <div className="menu-icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
+          {sidebarOpen ? <FaTimes /> : <FaBars />}
+        </div>
+        <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
+      </nav>
+
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+        <ul className="sidebar-menu">
+          <li className={location.pathname === '/ResponsablePatrimoineHome' ? 'active' : ''}>
+            <Link to="/ResponsablePatrimoineHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
+          </li>
+          <li className={location.pathname === '/EquipmentsRP' ? 'active' : ''}>
+            <Link to="/EquipmentsRP"><FaCogs /><span>Gestion des Équipements</span></Link>
+          </li>
+          <li className={location.pathname === '/ValidationEquipementRP' ? 'active' : ''}>
+            <Link to="/ValidationEquipementRP"><FaCheckCircle /><span>Validation Équipements</span></Link>
+          </li>
+          <li className={location.pathname === '/HistoriqueDemandesRP' ? 'active' : ''}>
+            <Link to="/HistoriqueDemandesRP"><FaHistory /><span>Historique des Demandes</span></Link>
+          </li>
+          <li className={location.pathname === '/HistoriqueEquipementsRP' ? 'active' : ''}>
+            <Link to="/HistoriqueEquipementsRP"><FaHistory /><span>Historique des Équipements</span></Link>
+          </li>
+          <li className={location.pathname === '/CentresRP' ? 'active' : ''}>
+            <Link to="/CentresRP"><FaBuilding /><span>Gestion des Centres</span></Link>
+          </li>
+          <li className={location.pathname === '/AnalyticsRP' ? 'active' : ''}>
+            <Link to="/AnalyticsRP"><FaChartLine /><span>Analytics</span></Link>
+          </li>
+        </ul>
+
+        <div className="sidebar-bottom">
+          <ul>
+            <li className={location.pathname === '/accountRP' ? 'active' : ''}>
+              <Link to="/accountRP"><FaUser /><span>Compte</span></Link>
+            </li>
+            <li className="logout">
+              <button onClick={handleLogout}>
+                <FaSignOutAlt /><span>Déconnexion</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+      </aside>
+
+      <main className="content">
+        <h2>Historique des Demandes - Tous les centres</h2>
+
+        <StatusStatsPanel />
+
+        <div className="search-and-filters">
+          <div className="search-bar">
+            <FaSearch className="search-icon" />
+            <input
+              type="text"
+              placeholder="Rechercher par nom, prénom, centre ou équipement..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          <div className="filter-group">
+            <FaFilter className="filter-icon" />
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="filter-select"
+            >
+              {statusOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="loading-message">
+            <p>Chargement des demandes...</p>
+          </div>
+        ) : (
+          <>
+            <div className="table-container">
+              <table className="demandes-table">
+                <thead>
+                  <tr>
+                    <th onClick={() => requestSort('nom')}>
+                      <div className="sortable-header">
+                        Nom
+                        <span className="sort-icon">{getSortIcon('nom')}</span>
+                      </div>
+                    </th>
+                    <th onClick={() => requestSort('prenom')}>
+                      <div className="sortable-header">
+                        Prénom
+                        <span className="sort-icon">{getSortIcon('prenom')}</span>
+                      </div>
+                    </th>
+                    <th onClick={() => requestSort('centreEquipement')}>
+                      <div className="sortable-header">
+                        Centre
+                        <span className="sort-icon">{getSortIcon('centreEquipement')}</span>
+                      </div>
+                    </th>
+                    <th onClick={() => requestSort('nomEquipement')}>
+                      <div className="sortable-header">
+                        Équipement
+                        <span className="sort-icon">{getSortIcon('nomEquipement')}</span>
+                      </div>
+                    </th>
+                    <th onClick={() => requestSort('statut')}>
+                      <div className="sortable-header">
+                        Statut
+                        <span className="sort-icon">{getSortIcon('statut')}</span>
+                      </div>
+                    </th>
+                    <th onClick={() => requestSort('dateDemande')}>
+                      <div className="sortable-header">
+                        Date Demande
+                        <span className="sort-icon">{getSortIcon('dateDemande')}</span>
+                      </div>
+                    </th>
+                    <th onClick={() => requestSort('dateReponse')}>
+                      <div className="sortable-header">
+                        Date Réponse
+                        <span className="sort-icon">{getSortIcon('dateReponse')}</span>
+                      </div>
+                    </th>
+                    <th>Temps Réponse</th>
+                    <th>Détails</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {demandes.length === 0 ? (
+                    <tr>
+                      <td colSpan="9" className="no-data-message">
+                        Aucune demande enregistrée
+                      </td>
+                    </tr>
+                  ) : currentDemandes.length > 0 ? (
+                    currentDemandes.map((demande) => (
+                      <tr key={demande.id}>
+                        <td>{demande.nom}</td>
+                        <td>{demande.prenom}</td>
+                        <td>{demande.centreEquipement}</td>
+                        <td>{demande.nomEquipement}</td>
+                        <td>
+                          <span className={getStatusBadgeClass(demande.statut)}>
+                            {demande.statut}
+                          </span>
+                        </td>
+                        <td className="date-cell">{formatDateTime(demande.dateDemande)}</td>
+                        <td className="date-cell">{formatDateTime(demande.dateReponse)}</td>
+                        <td>
+                          <div className={`response-time ${getResponseTimeClass(demande)}`}>
+                            <FaClock /> {calculateResponseTime(demande)}
+                          </div>
+                        </td>
+                        <td>
+                          <button
+                            className="details-button"
+                            onClick={() => handleDetails(demande)}
+                          >
+                            <FaEye />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="9" className="no-data-message">
+                        Aucune demande ne correspond à votre recherche
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {sortedDemandes.length > itemsPerPage && (
+              <div className="pagination-container">
+                <Pagination
+                  current={currentPage}
+                  total={sortedDemandes.length}
+                  pageSize={itemsPerPage}
+                  onChange={(page) => setCurrentPage(page)}
+                  showSizeChanger={false}
+                />
+              </div>
+            )}
+          </>
+        )}
+
+        {showDetailsModal && selectedDetails && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <button className="modal-close" onClick={closeDetailsModal}>
+                &times;
+              </button>
+              <h3>Détails de la demande</h3>
+              <div className="details-content">
+                <div className="detail-row">
+                  <span className="detail-label">Nom:</span>
+                  <span className="detail-value">{selectedDetails.nom}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Prénom:</span>
+                  <span className="detail-value">{selectedDetails.prenom}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Téléphone:</span>
+                  <span className="detail-value">{selectedDetails.numeroTelephone}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Centre:</span>
+                  <span className="detail-value">{selectedDetails.centreEquipement}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Équipement:</span>
+                  <span className="detail-value">{selectedDetails.nomEquipement}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Catégorie:</span>
+                  <span className="detail-value">{selectedDetails.categorieEquipement}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Date de début:</span>
+                  <span className="detail-value">{formatDateTime(selectedDetails.dateDebut)}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Date de fin:</span>
+                  <span className="detail-value">{formatDateTime(selectedDetails.dateFin)}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Urgence:</span>
+                  <span className="detail-value">{selectedDetails.urgence}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Statut:</span>
+                  <span className={`detail-value ${getStatusBadgeClass(selectedDetails.statut)}`}>
+                    {selectedDetails.statut}
+                  </span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Commentaire:</span>
+                  <span className="detail-value">{selectedDetails.commentaireResponsable || 'Aucun commentaire'}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Remarques:</span>
+                  <span className="detail-value">{selectedDetails.remarques || 'Aucune remarque'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
 };
 
 export default HistoriqueDemandesRP;
