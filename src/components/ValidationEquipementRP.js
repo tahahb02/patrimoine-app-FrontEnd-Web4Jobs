@@ -5,7 +5,7 @@ import {
   FaSearch, FaFilter, FaUser, FaSignOutAlt, 
   FaTachometerAlt, FaHistory, FaChartLine, FaBuilding, FaCogs, FaInfoCircle
 } from "react-icons/fa";
-import { Pagination, Modal, Spin } from "antd";
+import { Pagination, Modal } from "antd";
 import Swal from 'sweetalert2';
 import "../styles/responsable.css";
 
@@ -24,7 +24,6 @@ const ValidationEquipementRP = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Liste statique des centres (chargement immédiat)
   const centers = [
     "TINGHIR",
     "TEMARA",
@@ -44,10 +43,6 @@ const ValidationEquipementRP = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      if (!token) {
-        throw new Error("Token d'authentification manquant");
-      }
-
       const response = await fetch(`${API_URL}/equipments/pending`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -59,7 +54,7 @@ const ValidationEquipementRP = () => {
       const data = await response.json();
       setPendingEquipments(data);
     } catch (error) {
-      console.error("Erreur fetchPendingEquipments:", error);
+      console.error("Erreur:", error);
       Swal.fire('Erreur', 'Impossible de charger les équipements', 'error');
     } finally {
       setLoading(false);
@@ -136,20 +131,11 @@ const ValidationEquipementRP = () => {
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredEquipments.slice(indexOfFirstItem, indexOfLastItem);
 
-  const renderCenterFilter = () => (
-    <select
-      className="filter-select"
-      value={selectedCenter}
-      onChange={(e) => setSelectedCenter(e.target.value)}
-    >
-      <option value="all">Tous les centres</option>
-      {centers.map((center, index) => (
-        <option key={index} value={center}>
-          {center}
-        </option>
-      ))}
-    </select>
-  );
+  const formatVilleCentre = (ville) => {
+    if (!ville) return "";
+    const formatted = ville.replace(/_/g, " ");
+    return formatted.charAt(0) + formatted.slice(1).toLowerCase();
+  };
 
   return (
     <div className={`dashboard-container ${sidebarOpen ? "sidebar-expanded" : ""}`}>
@@ -200,12 +186,10 @@ const ValidationEquipementRP = () => {
       </aside>
 
       <main className="content">
-        <div className="welcome-container">
-          <h1>Validation des Équipements</h1>
-          <span className="welcome-subtitle">
-            Équipements ajoutés par les responsables de centre en attente de validation
-          </span>
-        </div>
+        <h2>Validation des Équipements</h2>
+        <p className="center-info">
+          Équipements en attente de validation
+        </p>
 
         <div className="search-and-filters">
           <div className="search-bar">
@@ -217,15 +201,27 @@ const ValidationEquipementRP = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+
           <div className="filter-group">
             <FaFilter className="filter-icon" />
-            {renderCenterFilter()}
+            <select
+              className="filter-select"
+              value={selectedCenter}
+              onChange={(e) => setSelectedCenter(e.target.value)}
+            >
+              <option value="all">Tous les centres</option>
+              {centers.map((center, index) => (
+                <option key={index} value={center}>
+                  {formatVilleCentre(center)}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
         {loading ? (
           <div className="loading-indicator">
-            <Spin size="large" />
+            <div className="spinner"></div>
             <p>Chargement des équipements en attente...</p>
           </div>
         ) : (
@@ -233,42 +229,43 @@ const ValidationEquipementRP = () => {
             <div className="equipment-grid">
               {currentItems.length > 0 ? (
                 currentItems.map(equipment => (
-                  <div key={equipment.id} className="equipment-card">
-                    <img src={equipment.imageUrl || "/images/pc.jpg"} alt="Équipement" className="card-image" />
-                    <div className="card-content">
-                      <h3>{equipment.name}</h3>
-                      <p><strong>Catégorie:</strong> {equipment.category}</p>
-                      <p><strong>Centre:</strong> {equipment.villeCentre}</p>
-                      <p><strong>Ajouté par:</strong> {equipment.addedByName || equipment.addedBy}</p>
-                      <p><strong>Date ajout:</strong> {new Date(equipment.dateAdded).toLocaleDateString()}</p>
-                      
-                      <div className="card-actions">
-                        <button 
-                          className="details-button"
-                          onClick={() => {
-                            setSelectedEquipment(equipment);
-                            setIsDetailModalVisible(true);
-                          }}
-                        >
-                          <FaInfoCircle /> Détails
-                        </button>
-                        <div className="validation-buttons">
-                          <button 
-                            className="validate-button"
-                            onClick={() => handleValidate(equipment.id)}
-                          >
-                            <FaCheckCircle /> Valider
-                          </button>
-                          <button 
-                            className="reject-button"
-                            onClick={() => handleReject(equipment.id)}
-                          >
-                            <FaTimesCircle /> Rejeter
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  
+<div className="equipment-card">
+  <img src={equipment.imageUrl || "/images/pc.jpg"} alt="Équipement" className="card-image" />
+  <div className="card-content">
+    <h3>{equipment.name}</h3>
+    <p><strong>Catégorie:</strong> {equipment.category}</p>
+    <p><strong>Centre:</strong> {formatVilleCentre(equipment.villeCentre)}</p>
+    <p><strong>Ajouté par:</strong> {equipment.addedByName || equipment.addedBy}</p>
+    <p><strong>Date ajout:</strong> {new Date(equipment.dateAdded).toLocaleDateString()}</p>
+    
+    <div className="validation-actions">
+      <div className="approval-buttons">
+        <button 
+          className="validate-button"
+          onClick={() => handleValidate(equipment.id)}
+        >
+          <FaCheckCircle /> Valider
+        </button>
+        <button 
+          className="reject-button"
+          onClick={() => handleReject(equipment.id)}
+        >
+          <FaTimesCircle /> Rejeter
+        </button>
+      </div>
+      <button 
+        className="details-button"
+        onClick={() => {
+          setSelectedEquipment(equipment);
+          setIsDetailModalVisible(true);
+        }}
+      >
+        <FaInfoCircle /> Détails
+      </button>
+    </div>
+  </div>
+</div>
                 ))
               ) : (
                 <div className="no-data">
@@ -293,7 +290,7 @@ const ValidationEquipementRP = () => {
       </main>
 
       <Modal
-        title={`Détails de l'équipement - ${selectedEquipment?.name}`}
+        title={`Détails de l'équipement - ${selectedEquipment?.name || ''}`}
         visible={isDetailModalVisible}
         onCancel={() => setIsDetailModalVisible(false)}
         footer={null}
@@ -317,7 +314,7 @@ const ValidationEquipementRP = () => {
               </div>
               <div className="detail-row">
                 <span className="detail-label">Centre:</span>
-                <span className="detail-value">{selectedEquipment.villeCentre}</span>
+                <span className="detail-value">{formatVilleCentre(selectedEquipment.villeCentre)}</span>
               </div>
               <div className="detail-row">
                 <span className="detail-label">Ajouté par:</span>
