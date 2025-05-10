@@ -6,7 +6,7 @@ import {
   FaSort, FaSortUp, FaSortDown, FaFilter, FaBuilding,
   FaChartLine, FaBoxOpen, FaPhone, FaEnvelope, FaCheckCircle
 } from 'react-icons/fa';
-import { Pagination, Select, Modal } from 'antd';
+import { Pagination, Select, Modal, Table, Statistic, Card, Row, Col } from 'antd';
 import Swal from 'sweetalert2';
 import '../styles/responsable.css';
 
@@ -28,8 +28,8 @@ const HistoriqueEquipementsRP = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const API_URL = 'http://localhost:8080/api/rp/equipments/all';
-  const HISTORIQUE_URL = 'http://localhost:8080/api/rp/historique-equipements';
+  const API_URL = 'http://localhost:8080/api/equipments';
+  const HISTORIQUE_URL = 'http://localhost:8080/api/historique-equipements';
   const CENTERS_URL = 'http://localhost:8080/api/rp/centers';
 
   useEffect(() => {
@@ -44,7 +44,7 @@ const HistoriqueEquipementsRP = () => {
       const response = await fetch(API_URL, {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'X-User-Role': localStorage.getItem('userRole') || ''
+          'X-User-Role': localStorage.getItem('userRole') || 'RESPONSABLE_PATRIMOINE'
         }
       });
 
@@ -88,7 +88,8 @@ const HistoriqueEquipementsRP = () => {
       const token = localStorage.getItem("token");
       const response = await fetch(`${HISTORIQUE_URL}/${equipmentId}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'X-User-Role': localStorage.getItem('userRole') || 'RESPONSABLE_PATRIMOINE'
         }
       });
 
@@ -204,12 +205,85 @@ const HistoriqueEquipementsRP = () => {
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentEquipments = sortedEquipments.slice(indexOfFirstItem, indexOfLastItem);
 
-  const calculateTotalHeures = () => {
-    if (!historique || !historique.utilisations) return 0;
-    return historique.utilisations.reduce((total, utilisation) => {
-      return total + (utilisation.heuresUtilisation || 0);
-    }, 0);
-  };
+  const columns = [
+    {
+      title: 'Nom',
+      dataIndex: 'name',
+      key: 'name',
+      sorter: (a, b) => a.name.localeCompare(b.name),
+      render: (text) => <strong>{text}</strong>
+    },
+    {
+      title: 'Catégorie',
+      dataIndex: 'category',
+      key: 'category',
+      sorter: (a, b) => a.category.localeCompare(b.category)
+    },
+    {
+      title: 'Centre',
+      dataIndex: 'villeCentre',
+      key: 'villeCentre',
+      sorter: (a, b) => (a.villeCentre || '').localeCompare(b.villeCentre || '')
+    },
+    {
+      title: 'Date d\'ajout',
+      dataIndex: 'dateAdded',
+      key: 'dateAdded',
+      render: (text) => formatDate(text),
+      sorter: (a, b) => new Date(a.dateAdded) - new Date(b.dateAdded)
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_, record) => (
+        <button
+          className="view-button"
+          onClick={() => {
+            setSelectedEquipment(record);
+            fetchHistorique(record.id);
+          }}
+        >
+          <FaEye /> Voir historique
+        </button>
+      )
+    }
+  ];
+
+  const historiqueColumns = [
+    {
+      title: 'Nom',
+      dataIndex: 'nom',
+      key: 'nom'
+    },
+    {
+      title: 'Prénom',
+      dataIndex: 'prenom',
+      key: 'prenom'
+    },
+    {
+      title: 'Email',
+      dataIndex: 'email',
+      key: 'email',
+      render: (email) => <a href={`mailto:${email}`}><FaEnvelope /> {email}</a>
+    },
+    {
+      title: 'Téléphone',
+      dataIndex: 'telephone',
+      key: 'telephone',
+      render: (tel) => <a href={`tel:${tel}`}><FaPhone /> {tel}</a>
+    },
+    {
+      title: 'Centre',
+      dataIndex: 'villeCentre',
+      key: 'villeCentre'
+    },
+    {
+      title: 'Heures utilisation',
+      dataIndex: 'heuresUtilisation',
+      key: 'heuresUtilisation',
+      render: (heures) => <><FaClock /> {heures} heures</>
+    }
+  ];
 
   return (
     <div className={`dashboard-container ${sidebarOpen ? 'sidebar-expanded' : ''}`}>
@@ -295,73 +369,13 @@ const HistoriqueEquipementsRP = () => {
         ) : (
           <>
             <div className="table-container">
-              <table className="demandes-table">
-                <thead>
-                  <tr>
-                    <th onClick={() => requestSort('name')}>
-                      <div className="sortable-header">
-                        Nom
-                        <span className="sort-icon">{getSortIcon('name')}</span>
-                      </div>
-                    </th>
-                    <th onClick={() => requestSort('category')}>
-                      <div className="sortable-header">
-                        Catégorie
-                        <span className="sort-icon">{getSortIcon('category')}</span>
-                      </div>
-                    </th>
-                    <th onClick={() => requestSort('villeCentre')}>
-                      <div className="sortable-header">
-                        Centre
-                        <span className="sort-icon">{getSortIcon('villeCentre')}</span>
-                      </div>
-                    </th>
-                    <th onClick={() => requestSort('dateAdded')}>
-                      <div className="sortable-header">
-                        Date d'ajout
-                        <span className="sort-icon">{getSortIcon('dateAdded')}</span>
-                      </div>
-                    </th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {equipments.length === 0 ? (
-                    <tr>
-                      <td colSpan="5" className="no-data-message">
-                        Aucun équipement enregistré
-                      </td>
-                    </tr>
-                  ) : currentEquipments.length > 0 ? (
-                    currentEquipments.map((equipment) => (
-                      <tr key={equipment.id}>
-                        <td>{equipment.name}</td>
-                        <td>{equipment.category}</td>
-                        <td>{equipment.villeCentre}</td>
-                        <td className="date-cell">{formatDate(equipment.dateAdded)}</td>
-                        <td>
-                          <button
-                            className={`view-button ${loading && selectedEquipment?.id === equipment.id ? 'loading' : ''}`}
-                            onClick={() => {
-                              setSelectedEquipment(equipment);
-                              fetchHistorique(equipment.id);
-                            }}
-                            disabled={loading && selectedEquipment?.id === equipment.id}
-                          >
-                            <FaHistory /> {loading && selectedEquipment?.id === equipment.id ? 'Chargement...' : 'Voir historique'}
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="5" className="no-data-message">
-                        Aucun équipement ne correspond à votre recherche
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+              <Table
+                columns={columns}
+                dataSource={currentEquipments}
+                rowKey="id"
+                pagination={false}
+                locale={{ emptyText: 'Aucun équipement trouvé' }}
+              />
             </div>
 
             {sortedEquipments.length > itemsPerPage && (
@@ -391,61 +405,43 @@ const HistoriqueEquipementsRP = () => {
             </div>
           ) : historique ? (
             <div className="details-content">
-              <div className="stats-container">
-                <div className="stat-card">
-                  <h4>Total d'utilisations</h4>
-                  <p>{historique.totalUtilisations || 0}</p>
-                </div>
-                <div className="stat-card">
-                  <h4>Total heures d'utilisation</h4>
-                  <p>{calculateTotalHeures()} heures</p>
-                </div>
-                <div className="stat-card">
-                  <h4>Centre</h4>
-                  <p>{selectedEquipment?.villeCentre || 'N/A'}</p>
-                </div>
-              </div>
+              <Row gutter={16} className="stats-container">
+                <Col span={8}>
+                  <Card>
+                    <Statistic
+                      title="Total d'utilisations"
+                      value={historique.totalUtilisations || 0}
+                    />
+                  </Card>
+                </Col>
+                <Col span={8}>
+                  <Card>
+                    <Statistic
+                      title="Total heures d'utilisation"
+                      value={historique.totalHeures || 0}
+                      suffix="heures"
+                    />
+                  </Card>
+                </Col>
+                <Col span={8}>
+                  <Card>
+                    <Statistic
+                      title="Centre"
+                      value={historique.villeCentre || 'N/A'}
+                    />
+                  </Card>
+                </Col>
+              </Row>
 
-              {historique.utilisations && historique.utilisations.length > 0 ? (
-                <div className="historique-table-container">
-                  <table className="historique-table">
-                    <thead>
-                      <tr>
-                        <th>Nom</th>
-                        <th>Prénom</th>
-                        <th>Email</th>
-                        <th>Téléphone</th>
-                        <th>Heures d'utilisation</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {historique.utilisations.map((utilisation, index) => (
-                        <tr key={index}>
-                          <td>{utilisation.nom}</td>
-                          <td>{utilisation.prenom}</td>
-                          <td>
-                            <a href={`mailto:${utilisation.email}`}>
-                              <FaEnvelope /> {utilisation.email}
-                            </a>
-                          </td>
-                          <td>
-                            <a href={`tel:${utilisation.telephone}`}>
-                              <FaPhone /> {utilisation.telephone}
-                            </a>
-                          </td>
-                          <td>
-                            <FaClock /> {utilisation.heuresUtilisation || 0} heures
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="no-history-message">
-                  <p>Aucune utilisation enregistrée pour cet équipement.</p>
-                </div>
-              )}
+              <div className="historique-table-container">
+                <Table
+                  columns={historiqueColumns}
+                  dataSource={historique.utilisations || []}
+                  rowKey={(record, index) => index}
+                  pagination={false}
+                  locale={{ emptyText: 'Aucune utilisation enregistrée' }}
+                />
+              </div>
             </div>
           ) : (
             <div className="no-history-message">

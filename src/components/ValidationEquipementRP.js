@@ -230,42 +230,42 @@ const ValidationEquipementRP = () => {
               {currentItems.length > 0 ? (
                 currentItems.map(equipment => (
                   
-<div className="equipment-card">
-  <img src={equipment.imageUrl || "/images/pc.jpg"} alt="Équipement" className="card-image" />
-  <div className="card-content">
-    <h3>{equipment.name}</h3>
-    <p><strong>Catégorie:</strong> {equipment.category}</p>
-    <p><strong>Centre:</strong> {formatVilleCentre(equipment.villeCentre)}</p>
-    <p><strong>Ajouté par:</strong> {equipment.addedByName || equipment.addedBy}</p>
-    <p><strong>Date ajout:</strong> {new Date(equipment.dateAdded).toLocaleDateString()}</p>
-    
-    <div className="validation-actions">
-      <div className="approval-buttons">
-        <button 
-          className="validate-button"
-          onClick={() => handleValidate(equipment.id)}
-        >
-          <FaCheckCircle /> Valider
-        </button>
-        <button 
-          className="reject-button"
-          onClick={() => handleReject(equipment.id)}
-        >
-          <FaTimesCircle /> Rejeter
-        </button>
-      </div>
-      <button 
-        className="details-button"
-        onClick={() => {
-          setSelectedEquipment(equipment);
-          setIsDetailModalVisible(true);
-        }}
-      >
-        <FaInfoCircle /> Détails
-      </button>
-    </div>
-  </div>
-</div>
+            <div className="equipment-card">
+              <img src={equipment.imageUrl || "/images/pc.jpg"} alt="Équipement" className="card-image" />
+              <div className="card-content">
+                <h3>{equipment.name}</h3>
+                <p><strong>Catégorie:</strong> {equipment.category}</p>
+                <p><strong>Centre:</strong> {formatVilleCentre(equipment.villeCentre)}</p>
+                <p><strong>Ajouté par:</strong> {equipment.addedByName || equipment.addedBy}</p>
+                <p><strong>Date ajout:</strong> {new Date(equipment.dateAdded).toLocaleDateString()}</p>
+                
+                <div className="validation-actions">
+                  <div className="approval-buttons">
+                    <button 
+                      className="validate-button"
+                      onClick={() => handleValidate(equipment.id)}
+                    >
+                      <FaCheckCircle /> Valider
+                    </button>
+                    <button 
+                      className="reject-button"
+                      onClick={() => handleReject(equipment.id)}
+                    >
+                      <FaTimesCircle /> Rejeter
+                    </button>
+                  </div>
+                  <button 
+                    className="details-button"
+                    onClick={() => {
+                      setSelectedEquipment(equipment);
+                      setIsDetailModalVisible(true);
+                    }}
+                  >
+                    <FaInfoCircle /> Détails
+                  </button>
+                </div>
+              </div>
+            </div>
                 ))
               ) : (
                 <div className="no-data">
