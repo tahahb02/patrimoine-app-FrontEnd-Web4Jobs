@@ -9,8 +9,6 @@ import { Pagination } from 'antd';
 import Swal from 'sweetalert2';
 import "../styles/responsable.css";
 
-const API_URL = "http://localhost:8080/api/equipments/responsable/all";
-
 const EquipmentsRP = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [equipments, setEquipments] = useState([]);
@@ -54,7 +52,7 @@ const EquipmentsRP = () => {
             const token = localStorage.getItem("token");
             const userRole = localStorage.getItem("userRole");
             
-            const response = await fetch("http://localhost:8080/api/rp/equipments/all", {
+            const response = await fetch("http://localhost:8080/api/equipments/responsable/all", {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
@@ -241,11 +239,19 @@ const EquipmentsRP = () => {
         }
 
         try {
-            const response = await fetch(`${API_URL}/add`, {
+            const token = localStorage.getItem("token");
+            const userEmail = localStorage.getItem("userEmail");
+            const userName = localStorage.getItem("userNom") + " " + localStorage.getItem("userPrenom");
+            const userCenter = localStorage.getItem("userVilleCentre");
+
+            const response = await fetch("http://localhost:8080/api/equipments/add", {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json",
-                    'Authorization': `Bearer ${localStorage.getItem("token")}`
+                    'Authorization': `Bearer ${token}`,
+                    'X-User-Email': userEmail,
+                    'X-User-Name': userName,
+                    'X-User-Center': userCenter
                 },
                 body: JSON.stringify(newEquipment),
             });
@@ -289,66 +295,71 @@ const EquipmentsRP = () => {
     };
 
     const handleUpdateEquipment = async () => {
-    if (!editingEquipment) return;
+        if (!editingEquipment) return;
 
-    if (!newEquipment.name || !newEquipment.category || !newEquipment.villeCentre) {
-        await Swal.fire({
-            title: 'Champs manquants',
-            text: 'Tous les champs sont obligatoires !',
-            icon: 'warning',
-            confirmButtonText: 'OK'
-        });
-        return;
-    }
-
-    try {
-        const token = localStorage.getItem("token");
-        const response = await fetch(`http://localhost:8080/api/rp/equipments/update/${editingEquipment.id}`, {
-            method: "PUT",
-            headers: { 
-                "Content-Type": "application/json",
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(newEquipment),
-        });
-
-        if (response.ok) {
+        if (!newEquipment.name || !newEquipment.category || !newEquipment.villeCentre) {
             await Swal.fire({
-                title: 'Succès',
-                text: 'Équipement modifié avec succès!',
-                icon: 'success',
+                title: 'Champs manquants',
+                text: 'Tous les champs sont obligatoires !',
+                icon: 'warning',
                 confirmButtonText: 'OK'
             });
-            fetchEquipments();
-            setEditingEquipment(null);
-            setNewEquipment({ 
-                name: "", 
-                category: "", 
-                villeCentre: "", 
-                description: "", 
-                imageUrl: "",
-                validated: false
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem("token");
+            const userEmail = localStorage.getItem("userEmail");
+            const userRole = localStorage.getItem("userRole");
+
+            const response = await fetch(`http://localhost:8080/api/equipments/update/${editingEquipment.id}`, {
+                method: "PUT",
+                headers: { 
+                    "Content-Type": "application/json",
+                    'Authorization': `Bearer ${token}`,
+                    'X-User-Email': userEmail,
+                    'X-User-Role': userRole
+                },
+                body: JSON.stringify(newEquipment),
             });
-            setShowEditModal(false);
-        } else {
-            const errorData = await response.json();
+
+            if (response.ok) {
+                await Swal.fire({
+                    title: 'Succès',
+                    text: 'Équipement modifié avec succès!',
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                });
+                fetchEquipments();
+                setEditingEquipment(null);
+                setNewEquipment({ 
+                    name: "", 
+                    category: "", 
+                    villeCentre: "", 
+                    description: "", 
+                    imageUrl: "",
+                    validated: false
+                });
+                setShowEditModal(false);
+            } else {
+                const errorData = await response.json();
+                await Swal.fire({
+                    title: 'Erreur',
+                    text: errorData.message || 'Erreur lors de la modification de l\'équipement',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            }
+        } catch (error) {
+            console.error("Erreur lors de la mise à jour de l'équipement:", error);
             await Swal.fire({
                 title: 'Erreur',
-                text: errorData.message || 'Erreur lors de la modification de l\'équipement',
+                text: 'Erreur lors de la modification de l\'équipement',
                 icon: 'error',
                 confirmButtonText: 'OK'
             });
         }
-    } catch (error) {
-        console.error("Erreur lors de la mise à jour de l'équipement:", error);
-        await Swal.fire({
-            title: 'Erreur',
-            text: 'Erreur lors de la modification de l\'équipement',
-            icon: 'error',
-            confirmButtonText: 'OK'
-        });
-    }
-};
+    };
 
     const handleDeleteEquipment = async (id) => {
         const result = await Swal.fire({
@@ -365,10 +376,15 @@ const EquipmentsRP = () => {
         if (result.isConfirmed) {
             try {
                 const token = localStorage.getItem("token");
-                const response = await fetch(`${API_URL}/delete/${id}`, { 
+                const userEmail = localStorage.getItem("userEmail");
+                const userRole = localStorage.getItem("userRole");
+
+                const response = await fetch(`http://localhost:8080/api/equipments/delete/${id}`, { 
                     method: "DELETE",
                     headers: {
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${token}`,
+                        'X-User-Email': userEmail,
+                        'X-User-Role': userRole
                     }
                 });
 
@@ -445,7 +461,6 @@ const EquipmentsRP = () => {
             ? equipment.villeCentre === selectedCenter
             : true;
 
-        // Modification principale ici: on ajoute la condition equipment.validated
         return matchesSearch && matchesCategory && matchesCenter && equipment.validated;
     }) : [];
 
