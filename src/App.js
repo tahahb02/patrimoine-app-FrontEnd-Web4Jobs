@@ -14,13 +14,17 @@ import Account from './components/Account';
 import HistoriqueDemandes from './components/HistoriqueDemandes';
 import HistoriqueEquipements from './components/HistoriqueEquipements';
 import LivraisonsRetours from './components/LivraisonsRetours';
-import TechnicienHome from './components/TechnicienHome';
 import FormulaireFeedback from './components/FormulaireFeedback';
 import ResponsablePatrimoineHome from './components/ResponsablePatrimoineHome';
 import EquipmentsRP from './components/EquipmentsRP';
 import ValidationEquipementRP from './components/ValidationEquipementRP';
 import HistoriqueDemandesRP from './components/HistoriqueDemandesRP';
 import HistoriqueEquipementsRP from './components/HistoriqueEquipementsRP';
+import TechnicienHome from './components/TechnicienHome';
+import DiagnostiqueEquipements from './components/DiagnostiqueEquipements';
+import EquipementReparation from './components/EquipementReparation';
+import HistoriqueReparations from './components/HistoriqueReparations';
+import NotificationsTechnicien from './components/NotificationsTechnicien';
 
 function App() {
     return (
@@ -40,13 +44,21 @@ function App() {
                 <Route path="/HistoriqueDemandes" element={<HistoriqueDemandes />} />
                 <Route path="/HistoriqueEquipements" element={<HistoriqueEquipements />} />
                 <Route path="/LivraisonsRetours" element={<LivraisonsRetours />} />
-                <Route path="/TechnicienHome" element={<TechnicienHome />} />
                 <Route path="/FormulaireFeedback" element={<FormulaireFeedback />} />
                 <Route path="/ResponsablePatrimoineHome" element={<ResponsablePatrimoineHome />} />
                 <Route path="/EquipmentsRP" element={<EquipmentsRP />} />
                 <Route path="/ValidationEquipementRP" element={<ValidationEquipementRP />} />
                 <Route path="/HistoriqueDemandesRP" element={<HistoriqueDemandesRP />} />
                 <Route path="/HistoriqueEquipementsRP" element={<HistoriqueEquipementsRP />} />
+                <Route path="/TechnicienHome" element={<TechnicienHome />} />
+                <Route path="/DiagnostiqueEquipements" element={<DiagnostiqueEquipements />} />
+                <Route path="/EquipementReparation" element={<EquipementReparation />} />
+                <Route path="/HistoriqueReparations" element={<HistoriqueReparations />} />
+                <Route path="/NotificationsTechnicien" element={<NotificationsTechnicien />} />
+                
+
+
+
             </Routes>
         </Router>
     );
