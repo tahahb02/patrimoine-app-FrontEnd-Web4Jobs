@@ -285,7 +285,7 @@ const HistoriqueDemandesRP = () => {
         <div className="sidebar-bottom">
           <ul>
             <li className={location.pathname === '/accountRP' ? 'active' : ''}>
-              <Link to="/accountRP"><FaUser /><span>Compte</span></Link>
+              <Link to="/Account"><FaUser /><span>Compte</span></Link>
             </li>
             <li className="logout">
               <button onClick={handleLogout}>
