@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
   FaBars, FaTimes, FaCogs, FaClipboardList, FaBell, FaUser, 
   FaSignOutAlt, FaPlus, FaEdit, FaTrash, FaSearch, FaFilter, 
-  FaCheckCircle, FaBuilding, FaChartLine, FaHistory,FaTachometerAlt, FaBoxOpen 
+  FaCheckCircle, FaBuilding, FaChartLine, FaHistory, FaTachometerAlt, FaBoxOpen 
 } from "react-icons/fa";
 import { Pagination } from 'antd';
 import Swal from 'sweetalert2';
@@ -28,8 +28,11 @@ const EquipmentsRP = () => {
     const [itemsPerPage] = useState(12);
     const [showAddModal, setShowAddModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
-    const [categories, setCategories] = useState([]);
-    const [centers, setCenters] = useState([]);
+    const [categories, setCategories] = useState(["PC Portable", "PC Bureau", "Bureautique", "Imprimante"]);
+    const [centers, setCenters] = useState([
+        "TINGHIR", "TEMARA", "TCHAD", "ESSAOUIRA", 
+        "DAKHLA", "LAAYOUNE", "NADOR", "AIN_EL_AOUDA"
+    ]);
     const [newCategory, setNewCategory] = useState("");
     const [showAddCategory, setShowAddCategory] = useState(false);
     const [newCenter, setNewCenter] = useState("");
@@ -43,106 +46,49 @@ const EquipmentsRP = () => {
 
     useEffect(() => {
         fetchEquipments();
-        fetchCategories();
-        fetchCenters();
     }, []);
 
-    const fetchEquipments = async () => {
-        try {
-            const token = localStorage.getItem("token");
-            const userRole = localStorage.getItem("userRole");
-            
-            const response = await fetch("http://localhost:8080/api/equipments/responsable/all", {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    'Authorization': `Bearer ${token}`,
-                    'X-User-Role': userRole
-                }
-            });
-    
-            if (!response.ok) {
-                if (response.status === 401) {
-                    localStorage.removeItem("token");
-                    navigate("/login");
-                    return;
-                }
-                if (response.status === 403) {
-                    await Swal.fire({
-                        title: 'Accès refusé',
-                        text: 'Vous n\'avez pas les permissions nécessaires',
-                        icon: 'error',
-                        confirmButtonText: 'OK'
-                    });
-                    navigate("/login");
-                    return;
-                }
-                throw new Error(`Erreur HTTP: ${response.status}`);
-            }
-    
-            const data = await response.json();
-            setEquipments(Array.isArray(data) ? data : []);
-            setLoading(false);
-        } catch (error) {
-            console.error("Erreur lors du chargement des équipements:", error);
-            Swal.fire({
-                title: 'Erreur',
-                text: 'Impossible de charger les équipements. Veuillez réessayer.',
-                icon: 'error',
-                confirmButtonText: 'OK'
-            });
-            setLoading(false);
-        }
-    };
+ const fetchEquipments = async () => {
+  setLoading(true);
+  try {
+    const token = localStorage.getItem("token");
+    const userRole = localStorage.getItem("userRole");
+    const userCenter = localStorage.getItem("userVilleCentre");
 
-    const fetchCategories = async () => {
-        try {
-            const token = localStorage.getItem("token");
-            const response = await fetch("http://localhost:8080/api/rp/categories", {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            
-            if (!response.ok) {
-                throw new Error(`Erreur HTTP: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            setCategories(Array.isArray(data) ? data : ['PC Portable', 'PC Bureau', 'Bureautique', 'Imprimante']);
-        } catch (error) {
-            console.error("Error fetching categories:", error);
-            setCategories(['PC Portable', 'PC Bureau', 'Bureautique', 'Imprimante']);
-        }
-    };
+    const response = await fetch("http://localhost:8080/api/equipments/validated", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+        "X-User-Role": userRole,
+        "X-User-Center": userCenter
+      }
+    });
 
-    const fetchCenters = async () => {
-        try {
-            const token = localStorage.getItem("token");
-            const response = await fetch("http://localhost:8080/api/rp/centers", {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            
-            if (!response.ok) {
-                throw new Error(`Erreur HTTP: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            setCenters(Array.isArray(data) ? data : [
-                'TINGHIR', 'TEMARA','TCHAD', 'ESSAOUIRA', 'DAKHLA', 
-                'LAAYOUNE', 'NADOR', 'AIN_EL_AOUDA'
-            ]);
-        } catch (error) {
-            console.error("Error fetching centers:", error);
-            setCenters([
-                'TINGHIR', 'TEMARA','TCHAD', 'ESSAOUIRA', 'DAKHLA', 
-                'LAAYOUNE', 'NADOR', 'AIN_EL_AOUDA'
-            ]);
-        }
-    };
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);
+    }
 
+    const data = await response.json();
+    // Vérification de la structure des données
+    if (!Array.isArray(data)) {
+      console.warn("Structure de données inattendue:", data);
+      throw new Error("Format de données incorrect");
+    }
+
+    setEquipments(data);
+  } catch (error) {
+    console.error("Erreur de récupération:", error);
+    Swal.fire({
+      title: 'Erreur',
+      text: error.message || 'Échec de la récupération des équipements',
+      icon: 'error'
+    });
+  } finally {
+    setLoading(false);
+  }
+};
     const formatVilleCentre = (ville) => {
         if (!ville) return "";
         const formatted = ville.replace(/_/g, " ");
@@ -228,72 +174,83 @@ const EquipmentsRP = () => {
     };
 
     const handleAddEquipment = async () => {
-        if (!newEquipment.name || !newEquipment.category || !newEquipment.villeCentre) {
+    if (!newEquipment.name || !newEquipment.category || !newEquipment.villeCentre) {
+        await Swal.fire({
+            title: 'Champs manquants',
+            text: 'Tous les champs sont obligatoires !',
+            icon: 'warning',
+            confirmButtonText: 'OK'
+        });
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem("token");
+        const userEmail = localStorage.getItem("userEmail");
+        const userName = localStorage.getItem("userNom") + " " + localStorage.getItem("userPrenom");
+        const userCenter = localStorage.getItem("userVilleCentre");
+
+        // Formatage des données pour correspondre à l'entité Equipment du backend
+        const equipmentData = {
+            name: newEquipment.name,
+            category: newEquipment.category,
+            villeCentre: newEquipment.villeCentre,
+            description: newEquipment.description,
+            imageUrl: newEquipment.imageUrl,
+            validated: newEquipment.validated,
+            addedBy: userEmail,
+            addedByName: userName
+        };
+
+        const response = await fetch("http://localhost:8080/api/equipments/add", {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json",
+                'Authorization': `Bearer ${token}`,
+                'X-User-Email': userEmail,
+                'X-User-Name': userName,
+                'X-User-Center': userCenter
+            },
+            body: JSON.stringify(equipmentData),
+        });
+
+        if (response.ok) {
             await Swal.fire({
-                title: 'Champs manquants',
-                text: 'Tous les champs sont obligatoires !',
-                icon: 'warning',
+                title: 'Succès',
+                text: 'Équipement ajouté avec succès!',
+                icon: 'success',
                 confirmButtonText: 'OK'
             });
-            return;
-        }
-
-        try {
-            const token = localStorage.getItem("token");
-            const userEmail = localStorage.getItem("userEmail");
-            const userName = localStorage.getItem("userNom") + " " + localStorage.getItem("userPrenom");
-            const userCenter = localStorage.getItem("userVilleCentre");
-
-            const response = await fetch("http://localhost:8080/api/equipments/add", {
-                method: "POST",
-                headers: { 
-                    "Content-Type": "application/json",
-                    'Authorization': `Bearer ${token}`,
-                    'X-User-Email': userEmail,
-                    'X-User-Name': userName,
-                    'X-User-Center': userCenter
-                },
-                body: JSON.stringify(newEquipment),
+            fetchEquipments();
+            setNewEquipment({ 
+                name: "", 
+                category: "", 
+                villeCentre: "", 
+                description: "", 
+                imageUrl: "",
+                validated: false
             });
-
-            if (response.ok) {
-                await Swal.fire({
-                    title: 'Succès',
-                    text: 'Équipement ajouté avec succès!',
-                    icon: 'success',
-                    confirmButtonText: 'OK'
-                });
-                fetchEquipments();
-                setNewEquipment({ 
-                    name: "", 
-                    category: "", 
-                    villeCentre: "", 
-                    description: "", 
-                    imageUrl: "",
-                    validated: false
-                });
-                setSelectedImage(null);
-                setShowAddModal(false);
-            } else {
-                const errorData = await response.json();
-                await Swal.fire({
-                    title: 'Erreur',
-                    text: errorData.message || 'Erreur lors de l\'ajout de l\'équipement',
-                    icon: 'error',
-                    confirmButtonText: 'OK'
-                });
-            }
-        } catch (error) {
-            console.error("Erreur lors de l'ajout d'un équipement:", error);
+            setSelectedImage(null);
+            setShowAddModal(false);
+        } else {
+            const errorData = await response.json();
             await Swal.fire({
                 title: 'Erreur',
-                text: 'Erreur lors de l\'ajout de l\'équipement',
+                text: errorData.message || 'Erreur lors de l\'ajout de l\'équipement',
                 icon: 'error',
                 confirmButtonText: 'OK'
             });
         }
-    };
-
+    } catch (error) {
+        console.error("Erreur lors de l'ajout d'un équipement:", error);
+        await Swal.fire({
+            title: 'Erreur',
+            text: 'Erreur lors de l\'ajout de l\'équipement',
+            icon: 'error',
+            confirmButtonText: 'OK'
+        });
+    }
+};
     const handleUpdateEquipment = async () => {
         if (!editingEquipment) return;
 
@@ -461,7 +418,7 @@ const EquipmentsRP = () => {
             ? equipment.villeCentre === selectedCenter
             : true;
 
-        return matchesSearch && matchesCategory && matchesCenter && equipment.validated;
+        return matchesSearch && matchesCategory && matchesCenter;
     }) : [];
 
     const indexOfLastItem = currentPage * itemsPerPage;
@@ -634,7 +591,7 @@ const EquipmentsRP = () => {
                         ))
                     ) : (
                         <div className="no-data">
-                            <p>Aucun équipement validé trouvé</p>
+                            <p>Aucun équipement trouvé</p>
                         </div>
                     )}
                 </div>
@@ -927,4 +884,4 @@ const EquipmentsRP = () => {
     );
 };
 
-export default EquipmentsRP;
+export default EquipmentsRP;    

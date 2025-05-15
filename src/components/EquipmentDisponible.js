@@ -74,30 +74,41 @@ const EquipmentDisponible = () => {
     }
   };
 
-  const fetchEquipmentsByCenter = async (villeCentre) => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:8080/api/equipments`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'X-User-Center': villeCentre,
-          'X-User-Role': 'ADHERANT'
-        }
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);
+const fetchEquipmentsByCenter = async (villeCentre) => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await fetch(`http://localhost:8080/api/equipments`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'X-User-Center': villeCentre,
+        'X-User-Role': 'ADHERANT'
       }
+    });
 
-      const data = await response.json();
-      setEquipments(data); // Pas besoin de filtrer ici, le backend s'en charge
-      setLoading(false);
-    } catch (error) {
-      console.error("Erreur lors du chargement des équipements:", error);
-      setError(error.message);
-      setLoading(false);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);
     }
+
+    const data = await response.json();
+    // Normaliser les valeurs boolean
+    const normalizedData = data.map(equip => ({
+      ...equip,
+      enMaintenance: equip.enMaintenance || false,
+      status: equip.status || "Disponible"
+    }));
+    
+    const availableEquipments = normalizedData.filter(equip => 
+      !equip.enMaintenance && 
+      equip.status === "Disponible"
+    );
+    setEquipments(availableEquipments);
+    setLoading(false);
+  } catch (error) {
+    console.error("Erreur:", error);
+    setError(error.message);
+    setLoading(false);
+  }
 };
   const formatVilleCentre = (ville) => {
     if (!ville) return "";

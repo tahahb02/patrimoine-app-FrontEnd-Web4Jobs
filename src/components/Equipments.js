@@ -41,43 +41,48 @@ const Equipments = () => {
     fetchValidatedEquipments();
   }, []);
 
-  const fetchValidatedEquipments = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const userCenter = localStorage.getItem("userVilleCentre");
-      const userRole = localStorage.getItem("userRole");
-      
-      const response = await fetch(`${API_URL}/validated`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          'Authorization': `Bearer ${token}`,
-          'X-User-Center': userCenter,
-          'X-User-Role': userRole
-        }
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          localStorage.removeItem("token");
-          navigate("/login");
-          return;
-        }
-        throw new Error(`Erreur HTTP: ${response.status}`);
+ const fetchValidatedEquipments = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    const userCenter = localStorage.getItem("userVilleCentre");
+    const userRole = localStorage.getItem("userRole");
+    
+    const response = await fetch(`http://localhost:8080/api/equipments`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        'Authorization': `Bearer ${token}`,
+        'X-User-Center': userCenter,
+        'X-User-Role': userRole
       }
+    });
 
-      const data = await response.json();
-      setEquipments(data);
-    } catch (error) {
-      console.error("Erreur lors du chargement des équipements:", error);
-      Swal.fire({
-        title: 'Erreur',
-        text: 'Impossible de charger les équipements. Veuillez réessayer.',
-        icon: 'error',
-        confirmButtonText: 'OK'
-      });
+    if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem("token");
+        navigate("/login");
+        return;
+      }
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);
     }
-  };
+
+    const data = await response.json();
+    // Ajouter une vérification de la structure des données
+    if (!Array.isArray(data)) {
+      throw new Error("Format de données incorrect");
+    }
+    setEquipments(data);
+  } catch (error) {
+    console.error("Erreur:", error);
+    Swal.fire({
+      title: 'Erreur',
+      text: error.message || 'Erreur lors du chargement des équipements',
+      icon: 'error',
+      confirmButtonText: 'OK'
+    });
+  }
+};
 
   const fetchMyEquipments = async () => {
     try {

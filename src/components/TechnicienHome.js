@@ -1,16 +1,42 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { FaBars, FaTimes, FaTachometerAlt, FaTools, FaWrench, FaHistory, FaBell, FaUser, FaSignOutAlt } from "react-icons/fa";
-import "../styles/adherant.css";
+import { 
+  FaBars, FaTimes, FaTachometerAlt, FaTools, FaWrench, 
+  FaHistory, FaBell, FaUser, FaSignOutAlt 
+} from "react-icons/fa";
+import "../styles/responsable.css";
 
 const TechnicienHome = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [userData, setUserData] = useState(null);
     const navigate = useNavigate();
     const location = useLocation();
 
+    useEffect(() => {
+        const userNom = localStorage.getItem("userNom");
+        const userPrenom = localStorage.getItem("userPrenom");
+        const userVilleCentre = localStorage.getItem("userVilleCentre");
+        
+        if (userNom && userPrenom && userVilleCentre) {
+            setUserData({
+                nom: userNom,
+                prenom: userPrenom,
+                villeCentre: userVilleCentre
+            });
+        }
+    }, []);
+
     const handleLogout = () => {
-        localStorage.removeItem("userSession");
-        navigate("/", { replace: true });
+        localStorage.removeItem("token");
+        localStorage.removeItem("userId");
+        localStorage.removeItem("userRole");
+        localStorage.removeItem("userVilleCentre");
+        navigate("/login");
+    };
+
+    const formatVilleCentre = (ville) => {
+        if (!ville) return "";
+        return ville.charAt(0) + ville.slice(1).toLowerCase().replace(/_/g, " ");
     };
 
     return (
@@ -56,7 +82,10 @@ const TechnicienHome = () => {
             </aside>
 
             <main className="content">
-                <h2>Bienvenue, Technicien</h2>
+                <h2>
+                    Bienvenue, {userData?.prenom} {userData?.nom}<br />
+                    <span className="welcome-subtitle">Technicien du centre {formatVilleCentre(userData?.villeCentre)}</span>
+                </h2>
                 <div className="dashboard-cards">
                     <div className="card">
                         <h3>Diagnostics à faire</h3>
