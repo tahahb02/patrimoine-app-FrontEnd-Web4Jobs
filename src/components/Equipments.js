@@ -41,7 +41,7 @@ const Equipments = () => {
     fetchValidatedEquipments();
   }, []);
 
- const fetchValidatedEquipments = async () => {
+const fetchValidatedEquipments = async () => {
   try {
     const token = localStorage.getItem("token");
     const userCenter = localStorage.getItem("userVilleCentre");
@@ -68,11 +68,14 @@ const Equipments = () => {
     }
 
     const data = await response.json();
-    // Ajouter une vérification de la structure des données
-    if (!Array.isArray(data)) {
-      throw new Error("Format de données incorrect");
-    }
-    setEquipments(data);
+    
+    // Normaliser les données pour s'assurer que enMaintenance a toujours une valeur
+    const normalizedData = data.map(item => ({
+      ...item,
+      enMaintenance: item.enMaintenance !== null ? item.enMaintenance : false
+    }));
+    
+    setEquipments(normalizedData);
   } catch (error) {
     console.error("Erreur:", error);
     Swal.fire({

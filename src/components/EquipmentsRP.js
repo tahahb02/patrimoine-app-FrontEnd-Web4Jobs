@@ -48,14 +48,14 @@ const EquipmentsRP = () => {
         fetchEquipments();
     }, []);
 
- const fetchEquipments = async () => {
+const fetchEquipments = async () => {
   setLoading(true);
   try {
     const token = localStorage.getItem("token");
     const userRole = localStorage.getItem("userRole");
     const userCenter = localStorage.getItem("userVilleCentre");
 
-    const response = await fetch("http://localhost:8080/api/equipments/validated", {
+    const response = await fetch("http://localhost:8080/api/equipments/responsable/all", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -71,13 +71,15 @@ const EquipmentsRP = () => {
     }
 
     const data = await response.json();
-    // Vérification de la structure des données
-    if (!Array.isArray(data)) {
-      console.warn("Structure de données inattendue:", data);
-      throw new Error("Format de données incorrect");
-    }
-
-    setEquipments(data);
+    
+    // Normaliser les données
+    const normalizedData = data.map(item => ({
+      ...item,
+      enMaintenance: item.enMaintenance !== null ? item.enMaintenance : false,
+      validated: item.validated !== null ? item.validated : false
+    }));
+    
+    setEquipments(normalizedData);
   } catch (error) {
     console.error("Erreur de récupération:", error);
     Swal.fire({
@@ -89,6 +91,7 @@ const EquipmentsRP = () => {
     setLoading(false);
   }
 };
+
     const formatVilleCentre = (ville) => {
         if (!ville) return "";
         const formatted = ville.replace(/_/g, " ");
