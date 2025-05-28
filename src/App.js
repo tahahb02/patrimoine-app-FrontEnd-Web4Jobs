@@ -25,6 +25,7 @@ import DiagnostiqueEquipements from './components/DiagnostiqueEquipements';
 import EquipementReparation from './components/EquipementReparation';
 import HistoriqueReparations from './components/HistoriqueReparations';
 import NotificationsTechnicien from './components/NotificationsTechnicien';
+import Notifications from './components/Notifications';
 
 function App() {
     return (
@@ -55,6 +56,7 @@ function App() {
                 <Route path="/EquipementReparation" element={<EquipementReparation />} />
                 <Route path="/HistoriqueReparations" element={<HistoriqueReparations />} />
                 <Route path="/NotificationsTechnicien" element={<NotificationsTechnicien />} />
+                <Route path="/Notifications" element={<Notifications />} />
                 
 
 

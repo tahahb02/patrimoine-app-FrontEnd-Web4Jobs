@@ -206,62 +206,82 @@ const LivraisonsRetours = () => {
     }
   };
 
-  const handleValiderRetour = async (id) => {
-    const result = await Swal.fire({
-      title: 'Confirmer la validation',
-      text: 'Êtes-vous sûr de vouloir valider ce retour ?',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Oui, valider',
-      cancelButtonText: 'Annuler'
+ const handleValiderRetour = async (id) => {
+  const result = await Swal.fire({
+    title: 'Confirmer la validation',
+    text: 'Êtes-vous sûr de vouloir valider ce retour ? Un formulaire de feedback sera envoyé à l\'adhérent.',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Oui, valider',
+    cancelButtonText: 'Annuler'
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+    const token = localStorage.getItem("token");
+    const villeCentre = localStorage.getItem('userVilleCentre');
+    const userRole = localStorage.getItem('userRole');
+    
+    // 1. Valider le retour
+    const validationResponse = await fetch(`${API_URL}/${id}/valider-retour`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'X-User-Center': villeCentre,
+        'X-User-Role': userRole,
+        'Content-Type': 'application/json'
+      }
     });
-
-    if (!result.isConfirmed) return;
-
-    try {
-      const token = localStorage.getItem("token");
-      const villeCentre = localStorage.getItem('userVilleCentre');
-      const userRole = localStorage.getItem('userRole');
-      
-      const response = await fetch(`${API_URL}/${id}/valider-retour`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'X-User-Center': villeCentre,
-          'X-User-Role': userRole,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (response.ok) {
-        await Swal.fire({
-          title: 'Succès',
-          text: 'Retour validé avec succès',
-          icon: 'success',
-          confirmButtonText: 'OK'
-        });
-        fetchRetours(villeCentre);
-      } else {
-        const errorData = await response.json();
-        await Swal.fire({
-          title: 'Erreur',
-          text: errorData.message || "Erreur lors de la validation",
-          icon: 'error',
-          confirmButtonText: 'OK'
+    
+    if (validationResponse.ok) {
+      // 2. Envoyer le formulaire de feedback
+      const demande = retours.find(d => d.id === id);
+      if (demande) {
+        await fetch('http://localhost:8080/api/notifications/feedback', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            userId: demande.utilisateur.id,
+            equipmentId: demande.idEquipement,
+            equipmentName: demande.nomEquipement,
+            dateUtilisation: demande.dateDebut,
+            demandeId: demande.id
+          })
         });
       }
-    } catch (error) {
-      console.error("Erreur:", error);
+
+      await Swal.fire({
+        title: 'Succès',
+        text: 'Retour validé avec succès et feedback envoyé',
+        icon: 'success',
+        confirmButtonText: 'OK'
+      });
+      fetchRetours(villeCentre);
+    } else {
+      const errorData = await validationResponse.json();
       await Swal.fire({
         title: 'Erreur',
-        text: 'Une erreur est survenue',
+        text: errorData.message || "Erreur lors de la validation",
         icon: 'error',
         confirmButtonText: 'OK'
       });
     }
-  };
+  } catch (error) {
+    console.error("Erreur:", error);
+    await Swal.fire({
+      title: 'Erreur',
+      text: 'Une erreur est survenue',
+      icon: 'error',
+      confirmButtonText: 'OK'
+    });
+  }
+};
 
   const handleLogout = async () => {
     const result = await Swal.fire({

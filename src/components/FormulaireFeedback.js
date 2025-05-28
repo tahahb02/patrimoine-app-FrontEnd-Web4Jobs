@@ -1,18 +1,15 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { 
-  FaStar, 
-  FaPaperPlane, 
-  FaChevronLeft, 
-  FaChevronRight,
-  FaInfoCircle, 
-  FaCheck, 
-  FaExclamationTriangle 
+  FaStar, FaPaperPlane, FaChevronLeft, FaChevronRight,
+  FaInfoCircle, FaCheck, FaExclamationTriangle 
 } from "react-icons/fa";
+import Swal from "sweetalert2";
 import "../styles/FormulaireFeedback.css";
 
 const FormulaireFeedback = () => {
     const navigate = useNavigate();
+    const { demandeId } = useParams();
     const [formData, setFormData] = useState({
         equipmentId: "",
         equipmentName: "",
@@ -30,6 +27,36 @@ const FormulaireFeedback = () => {
     const [currentSection, setCurrentSection] = useState(1);
     const [hoveredStar, setHoveredStar] = useState(0);
     const [submitted, setSubmitted] = useState(false);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const fetchDemandeInfo = async () => {
+            try {
+                const token = localStorage.getItem("token");
+                const response = await fetch(`http://localhost:8080/api/demandes/${demandeId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setFormData(prev => ({
+                        ...prev,
+                        equipmentId: data.idEquipement,
+                        equipmentName: data.nomEquipement,
+                        dateUtilisation: data.dateDebut.split('T')[0]
+                    }));
+                }
+            } catch (error) {
+                console.error("Erreur lors du chargement des informations de la demande:", error);
+            }
+        };
+
+        if (demandeId) {
+            fetchDemandeInfo();
+        }
+    }, [demandeId]);
 
     const problemesTechniquesOptions = [
         "Dysfonctionnement matériel",
@@ -80,10 +107,52 @@ const FormulaireFeedback = () => {
         }
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log("Feedback submitted:", formData);
-        setSubmitted(true);
+        setLoading(true);
+
+        try {
+            const token = localStorage.getItem("token");
+            const response = await fetch('http://localhost:8080/api/feedback', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    ...formData,
+                    demandeId,
+                    userId: localStorage.getItem("userId")
+                })
+            });
+
+            if (response.ok) {
+                // Marquer la notification comme lue
+                await fetch(`http://localhost:8080/api/notifications/marquer-lue-par-lien`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        link: `/FormulaireFeedback/${demandeId}`
+                    })
+                });
+
+                setSubmitted(true);
+            } else {
+                throw new Error('Erreur lors de l\'envoi du feedback');
+            }
+        } catch (error) {
+            console.error(error);
+            Swal.fire({
+                title: 'Erreur',
+                text: 'Une erreur est survenue lors de l\'envoi de votre feedback',
+                icon: 'error'
+            });
+        } finally {
+            setLoading(false);
+        }
     };
 
     const RatingSection = ({ title, name, value, description }) => (
@@ -100,7 +169,7 @@ const FormulaireFeedback = () => {
                 {[1, 2, 3, 4, 5].map((star) => (
                     <FaStar
                         key={star}
-                        className={`star ${star <= (hoveredStar === name ? hoveredStar : value) ? "active" : ""}`}
+                        className={`star ${star <= (hoveredStar || value) ? "active" : ""}`}
                         onMouseEnter={() => setHoveredStar(star)}
                         onMouseLeave={() => setHoveredStar(0)}
                         onClick={() => handleRatingChange(name, star)}
@@ -166,7 +235,6 @@ const FormulaireFeedback = () => {
                     </h3>
 
                     <form onSubmit={handleSubmit}>
-                        {/* Section 1: Information de base */}
                         {currentSection === 1 && (
                             <div className="form-section">
                                 <h4>1. Identification de l'équipement</h4>
@@ -179,6 +247,7 @@ const FormulaireFeedback = () => {
                                         value={formData.equipmentId}
                                         onChange={handleChange}
                                         required
+                                        readOnly={!!demandeId}
                                     />
                                 </div>
 
@@ -189,6 +258,7 @@ const FormulaireFeedback = () => {
                                         name="equipmentName"
                                         value={formData.equipmentName}
                                         onChange={handleChange}
+                                        readOnly={!!demandeId}
                                     />
                                 </div>
 
@@ -200,6 +270,7 @@ const FormulaireFeedback = () => {
                                         value={formData.dateUtilisation}
                                         onChange={handleChange}
                                         required
+                                        readOnly={!!demandeId}
                                     />
                                 </div>
 
@@ -215,7 +286,6 @@ const FormulaireFeedback = () => {
                             </div>
                         )}
 
-                        {/* Section 2: Évaluation */}
                         {currentSection === 2 && (
                             <div className="form-section">
                                 <h4>2. Évaluation de l'équipement</h4>
@@ -250,7 +320,6 @@ const FormulaireFeedback = () => {
                             </div>
                         )}
 
-                        {/* Section 3: Problèmes et commentaires */}
                         {currentSection === 3 && (
                             <div className="form-section">
                                 <h4>3. Retour d'expérience</h4>
@@ -298,7 +367,6 @@ const FormulaireFeedback = () => {
                             </div>
                         )}
 
-                        {/* Section 4: Recommandation */}
                         {currentSection === 4 && (
                             <div className="form-section">
                                 <h4>4. Recommandation et validation</h4>
@@ -383,9 +451,16 @@ const FormulaireFeedback = () => {
                                 <button
                                     type="submit"
                                     className="btn btn-primary"
+                                    disabled={loading}
                                 >
-                                    <FaPaperPlane />
-                                    Soumettre l'évaluation
+                                    {loading ? (
+                                        <span>Envoi en cours...</span>
+                                    ) : (
+                                        <>
+                                            <FaPaperPlane />
+                                            Soumettre l'évaluation
+                                        </>
+                                    )}
                                 </button>
                             )}
                         </div>
