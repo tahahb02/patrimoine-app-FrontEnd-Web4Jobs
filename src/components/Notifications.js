@@ -189,7 +189,7 @@ const Notifications = () => {
                       </button>
                     )}
                     <Link 
-                      to={notification.link || '#'} 
+                      to={`/FormulaireFeedback/${notification.relatedId || notification.id}`} 
                       className="action-btn"
                       onClick={() => markAsRead(notification.id)}
                     >

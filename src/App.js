@@ -45,7 +45,7 @@ function App() {
                 <Route path="/HistoriqueDemandes" element={<HistoriqueDemandes />} />
                 <Route path="/HistoriqueEquipements" element={<HistoriqueEquipements />} />
                 <Route path="/LivraisonsRetours" element={<LivraisonsRetours />} />
-                <Route path="/FormulaireFeedback" element={<FormulaireFeedback />} />
+                <Route path="/FormulaireFeedback/:demandeId" element={<FormulaireFeedback />} />
                 <Route path="/ResponsablePatrimoineHome" element={<ResponsablePatrimoineHome />} />
                 <Route path="/EquipmentsRP" element={<EquipmentsRP />} />
                 <Route path="/ValidationEquipementRP" element={<ValidationEquipementRP />} />
@@ -57,10 +57,6 @@ function App() {
                 <Route path="/HistoriqueReparations" element={<HistoriqueReparations />} />
                 <Route path="/NotificationsTechnicien" element={<NotificationsTechnicien />} />
                 <Route path="/Notifications" element={<Notifications />} />
-                
-
-
-
             </Routes>
         </Router>
     );
