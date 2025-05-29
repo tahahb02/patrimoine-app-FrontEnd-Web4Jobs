@@ -1,474 +1,510 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { 
-  FaStar, FaPaperPlane, FaChevronLeft, FaChevronRight,
-  FaInfoCircle, FaCheck, FaExclamationTriangle 
-} from "react-icons/fa";
-import Swal from "sweetalert2";
-import "../styles/FormulaireFeedback.css";
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import {
+  FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt,
+  FaSearch, FaEye, FaHistory, FaBoxOpen, FaBox, FaCheckCircle, FaArrowLeft
+} from 'react-icons/fa';
+import { Pagination } from 'antd';
+import Swal from 'sweetalert2';
+import '../styles/responsable.css';
 
-const FormulaireFeedback = () => {
-    const navigate = useNavigate();
-    const { demandeId } = useParams();
-    const [formData, setFormData] = useState({
-        equipmentId: "",
-        equipmentName: "",
-        dateUtilisation: "",
-        satisfaction: 0,
-        performance: 0,
-        faciliteUtilisation: 0,
-        fiabilite: 0,
-        commentaires: "",
-        problemesRencontres: "",
-        problemesTechniques: [],
-        recommander: "",
-        email: ""
-    });
-    const [currentSection, setCurrentSection] = useState(1);
-    const [hoveredStar, setHoveredStar] = useState(0);
-    const [submitted, setSubmitted] = useState(false);
-    const [loading, setLoading] = useState(false);
+const API_URL = 'http://localhost:8080/api/demandes';
 
-    useEffect(() => {
-        const fetchDemandeInfo = async () => {
-            try {
-                const token = localStorage.getItem("token");
-                const response = await fetch(`http://localhost:8080/api/demandes/${demandeId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
+const LivraisonsRetours = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('livraisons');
+  const [livraisons, setLivraisons] = useState([]);
+  const [retours, setRetours] = useState([]);
+  const [loading, setLoading] = useState({
+    livraisons: false,
+    retours: false
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [userCenter, setUserCenter] = useState('');
+  const navigate = useNavigate();
+  const location = useLocation();
+  const userVilleCentre = localStorage.getItem("userVilleCentre");
 
-                if (response.ok) {
-                    const data = await response.json();
-                    setFormData(prev => ({
-                        ...prev,
-                        equipmentId: data.idEquipement,
-                        equipmentName: data.nomEquipement,
-                        dateUtilisation: data.dateDebut.split('T')[0]
-                    }));
-                }
-            } catch (error) {
-                console.error("Erreur lors du chargement des informations de la demande:", error);
-            }
-        };
-
-        if (demandeId) {
-            fetchDemandeInfo();
-        }
-    }, [demandeId]);
-
-    const problemesTechniquesOptions = [
-        "Dysfonctionnement matériel",
-        "Problème logiciel",
-        "Interface difficile",
-        "Lenteur de réponse",
-        "Autre problème technique"
-    ];
-
-    const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        
-        if (type === "checkbox") {
-            const updatedProblems = checked 
-                ? [...formData.problemesTechniques, value]
-                : formData.problemesTechniques.filter(item => item !== value);
-            
-            setFormData(prev => ({
-                ...prev,
-                problemesTechniques: updatedProblems
-            }));
-        } else {
-            setFormData(prev => ({
-                ...prev,
-                [name]: value
-            }));
-        }
-    };
-
-    const handleRatingChange = (name, value) => {
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-
-    const nextSection = () => {
-        if (currentSection < 4) {
-            setCurrentSection(currentSection + 1);
-            window.scrollTo(0, 0);
-        }
-    };
-
-    const prevSection = () => {
-        if (currentSection > 1) {
-            setCurrentSection(currentSection - 1);
-            window.scrollTo(0, 0);
-        }
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-
-        try {
-            const token = localStorage.getItem("token");
-            const response = await fetch('http://localhost:8080/api/feedback', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    ...formData,
-                    demandeId,
-                    userId: localStorage.getItem("userId")
-                })
-            });
-
-            if (response.ok) {
-                // Marquer la notification comme lue
-                await fetch(`http://localhost:8080/api/notifications/marquer-lue-par-lien`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        link: `/FormulaireFeedback/${demandeId}`
-                    })
-                });
-
-                setSubmitted(true);
-            } else {
-                throw new Error('Erreur lors de l\'envoi du feedback');
-            }
-        } catch (error) {
-            console.error(error);
-            Swal.fire({
-                title: 'Erreur',
-                text: 'Une erreur est survenue lors de l\'envoi de votre feedback',
-                icon: 'error'
-            });
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const RatingSection = ({ title, name, value, description }) => (
-        <div className="rating-section">
-            <h4>
-                {title}
-                {description && (
-                    <span className="rating-description">
-                        <FaInfoCircle /> {description}
-                    </span>
-                )}
-            </h4>
-            <div className="stars-container">
-                {[1, 2, 3, 4, 5].map((star) => (
-                    <FaStar
-                        key={star}
-                        className={`star ${star <= (hoveredStar || value) ? "active" : ""}`}
-                        onMouseEnter={() => setHoveredStar(star)}
-                        onMouseLeave={() => setHoveredStar(0)}
-                        onClick={() => handleRatingChange(name, star)}
-                    />
-                ))}
-            </div>
-            <div className="rating-labels">
-                <span>Pas du tout d'accord</span>
-                <span>Totalement d'accord</span>
-            </div>
-        </div>
-    );
-
-    if (submitted) {
-        return (
-            <div className="dashboard-container">
-                <nav className="navbar">
-                    <div className="menu-icon" onClick={() => navigate(-1)}>
-                        <FaChevronLeft />
-                    </div>
-                    <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
-                </nav>
-
-                <main className="content">
-                    <div className="feedback-confirmation">
-                        <div className="confirmation-icon">
-                            <FaCheck />
-                        </div>
-                        <h3>Merci pour votre feedback !</h3>
-                        <p>
-                            Votre évaluation a été enregistrée avec succès. Nous prenons en compte tous les retours pour améliorer nos équipements et services.
-                        </p>
-                        <button
-                            onClick={() => navigate("/AdherantHome")}
-                            className="btn btn-primary"
-                        >
-                            Retour à l'accueil
-                        </button>
-                    </div>
-                </main>
-            </div>
-        );
+  useEffect(() => {
+    const center = localStorage.getItem('userVilleCentre');
+    if (center) {
+      setUserCenter(center);
+      fetchLivraisons(center);
+      fetchRetours(center);
     }
+  }, []);
 
-    return (
-        <div className="dashboard-container">
-            <nav className="navbar">
-                <div className="menu-icon" onClick={() => navigate(-1)}>
-                    <FaChevronLeft />
-                </div>
-                <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
-            </nav>
+  const fetchLivraisons = async (villeCentre) => {
+    setLoading(prev => ({...prev, livraisons: true}));
+    try {
+      const token = localStorage.getItem("token");
+      const userRole = localStorage.getItem("userRole");
+      
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+      
+      const response = await fetch(`${API_URL}/livraisons-aujourdhui/${villeCentre}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'X-User-Center': villeCentre,
+          'X-User-Role': userRole
+        }
+      });
 
-            <main className="content">
-                <div className="feedback-container">
-                    <div className="progress-bar">
-                        <div style={{ width: `${(currentSection / 4) * 100}%` }}></div>
-                    </div>
+      if (!response.ok) {
+        if (response.status === 401) {
+          await Swal.fire({
+            title: 'Session expirée',
+            text: 'Votre session a expiré. Veuillez vous reconnecter.',
+            icon: 'warning',
+            confirmButtonText: 'OK'
+          });
+          localStorage.removeItem("token");
+          navigate("/login");
+          return;
+        }
+        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+      }
 
-                    <h3 className="feedback-title">
-                        <FaInfoCircle />
-                        Évaluation de l'Équipement
-                    </h3>
+      const data = await response.json();
+      setLivraisons(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Erreur lors du chargement des livraisons:", error);
+      await Swal.fire({
+        title: 'Erreur',
+        text: 'Une erreur est survenue lors du chargement des livraisons',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
+    } finally {
+      setLoading(prev => ({...prev, livraisons: false}));
+    }
+  };
 
-                    <form onSubmit={handleSubmit}>
-                        {currentSection === 1 && (
-                            <div className="form-section">
-                                <h4>1. Identification de l'équipement</h4>
-                                
-                                <div className="form-group">
-                                    <label>Numéro/ID de l'équipement *</label>
-                                    <input
-                                        type="text"
-                                        name="equipmentId"
-                                        value={formData.equipmentId}
-                                        onChange={handleChange}
-                                        required
-                                        readOnly={!!demandeId}
-                                    />
-                                </div>
+  const fetchRetours = async (villeCentre) => {
+    setLoading(prev => ({...prev, retours: true}));
+    try {
+      const token = localStorage.getItem("token");
+      const userRole = localStorage.getItem("userRole");
+      
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+      
+      const response = await fetch(`${API_URL}/retours-aujourdhui/${villeCentre}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'X-User-Center': villeCentre,
+          'X-User-Role': userRole
+        }
+      });
 
-                                <div className="form-group">
-                                    <label>Nom de l'équipement (si connu)</label>
-                                    <input
-                                        type="text"
-                                        name="equipmentName"
-                                        value={formData.equipmentName}
-                                        onChange={handleChange}
-                                        readOnly={!!demandeId}
-                                    />
-                                </div>
+      if (!response.ok) {
+        if (response.status === 401) {
+          await Swal.fire({
+            title: 'Session expirée',
+            text: 'Votre session a expiré. Veuillez vous reconnecter.',
+            icon: 'warning',
+            confirmButtonText: 'OK'
+          });
+          localStorage.removeItem("token");
+          navigate("/login");
+          return;
+        }
+        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+      }
 
-                                <div className="form-group">
-                                    <label>Date d'utilisation *</label>
-                                    <input
-                                        type="date"
-                                        name="dateUtilisation"
-                                        value={formData.dateUtilisation}
-                                        onChange={handleChange}
-                                        required
-                                        readOnly={!!demandeId}
-                                    />
-                                </div>
+      const data = await response.json();
+      setRetours(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Erreur lors du chargement des retours:", error);
+      await Swal.fire({
+        title: 'Erreur',
+        text: 'Une erreur est survenue lors du chargement des retours',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
+    } finally {
+      setLoading(prev => ({...prev, retours: false}));
+    }
+  };
 
-                                <div className="form-group">
-                                    <label>Votre email (facultatif)</label>
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        value={formData.email}
-                                        onChange={handleChange}
-                                    />
-                                </div>
-                            </div>
-                        )}
+  const formatDateTime = (dateTime) => {
+    if (!dateTime) return 'Non disponible';
+    try {
+      const date = new Date(dateTime);
+      return date.toLocaleString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      return 'Format invalide';
+    }
+  };
 
-                        {currentSection === 2 && (
-                            <div className="form-section">
-                                <h4>2. Évaluation de l'équipement</h4>
-                                
-                                <RatingSection 
-                                    title="Satisfaction globale" 
-                                    name="satisfaction" 
-                                    value={formData.satisfaction}
-                                    description="Dans quelle mesure êtes-vous satisfait de cet équipement ?"
-                                />
+  const handleValiderLivraison = async (id) => {
+    const result = await Swal.fire({
+      title: 'Confirmer la validation',
+      text: 'Êtes-vous sûr de vouloir valider cette livraison ?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Oui, valider',
+      cancelButtonText: 'Annuler'
+    });
 
-                                <RatingSection 
-                                    title="Performance technique" 
-                                    name="performance" 
-                                    value={formData.performance}
-                                    description="L'équipement a-t-il répondu à vos attentes techniques ?"
-                                />
+    if (!result.isConfirmed) return;
 
-                                <RatingSection 
-                                    title="Facilité d'utilisation" 
-                                    name="faciliteUtilisation" 
-                                    value={formData.faciliteUtilisation}
-                                    description="L'interface et l'utilisation étaient-elles intuitives ?"
-                                />
+    try {
+      const token = localStorage.getItem("token");
+      const villeCentre = localStorage.getItem('userVilleCentre');
+      const userRole = localStorage.getItem('userRole');
+      
+      const response = await fetch(`${API_URL}/${id}/valider-livraison`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'X-User-Center': villeCentre,
+          'X-User-Role': userRole,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        await Swal.fire({
+          title: 'Succès',
+          text: 'Livraison validée avec succès',
+          icon: 'success',
+          confirmButtonText: 'OK'
+        });
+        fetchLivraisons(villeCentre);
+      } else {
+        const errorData = await response.json();
+        await Swal.fire({
+          title: 'Erreur',
+          text: errorData.message || "Erreur lors de la validation",
+          icon: 'error',
+          confirmButtonText: 'OK'
+        });
+      }
+    } catch (error) {
+      console.error("Erreur:", error);
+      await Swal.fire({
+        title: 'Erreur',
+        text: 'Une erreur est survenue',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
+    }
+  };
 
-                                <RatingSection 
-                                    title="Fiabilité" 
-                                    name="fiabilite" 
-                                    value={formData.fiabilite}
-                                    description="L'équipement a-t-il fonctionné sans problème ?"
-                                />
-                            </div>
-                        )}
+  const handleValiderRetour = async (id) => {
+    const result = await Swal.fire({
+      title: 'Confirmer la validation',
+      text: 'Êtes-vous sûr de vouloir valider ce retour ? Un formulaire de feedback sera envoyé à l\'adhérent.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Oui, valider',
+      cancelButtonText: 'Annuler'
+    });
 
-                        {currentSection === 3 && (
-                            <div className="form-section">
-                                <h4>3. Retour d'expérience</h4>
-                                
-                                <div className="form-group">
-                                    <label>Commentaires généraux</label>
-                                    <textarea
-                                        name="commentaires"
-                                        value={formData.commentaires}
-                                        onChange={handleChange}
-                                        placeholder="Décrivez votre expérience globale avec cet équipement..."
-                                    />
-                                </div>
+    if (!result.isConfirmed) return;
 
-                                <div className="form-group">
-                                    <label>Problèmes rencontrés (le cas échéant)</label>
-                                    <textarea
-                                        name="problemesRencontres"
-                                        value={formData.problemesRencontres}
-                                        onChange={handleChange}
-                                        placeholder="Décrivez les problèmes que vous avez rencontrés..."
-                                    />
-                                </div>
+    try {
+      const token = localStorage.getItem("token");
+      const villeCentre = localStorage.getItem('userVilleCentre');
+      const userRole = localStorage.getItem('userRole');
+      
+      // 1. Valider le retour
+      const validationResponse = await fetch(`${API_URL}/${id}/valider-retour`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'X-User-Center': villeCentre,
+          'X-User-Role': userRole,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!validationResponse.ok) {
+        throw new Error('Échec de la validation du retour');
+      }
 
-                                <div className="form-group">
-                                    <label>Types de problèmes techniques</label>
-                                    <div className="checkbox-grid">
-                                        {problemesTechniquesOptions.map((option, index) => (
-                                            <label 
-                                                key={index}
-                                                className={`checkbox-label ${formData.problemesTechniques.includes(option) ? "checked" : ""}`}
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    name="problemesTechniques"
-                                                    value={option}
-                                                    checked={formData.problemesTechniques.includes(option)}
-                                                    onChange={handleChange}
-                                                />
-                                                {option}
-                                            </label>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+      // 2. Récupérer les détails de la demande
+      const demandeResponse = await fetch(`${API_URL}/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!demandeResponse.ok) {
+        throw new Error('Échec de la récupération de la demande');
+      }
 
-                        {currentSection === 4 && (
-                            <div className="form-section">
-                                <h4>4. Recommandation et validation</h4>
-                                
-                                <div className="form-group">
-                                    <h4>Recommandation</h4>
-                                    <p>Recommanderiez-vous cet équipement à un collègue ou pour un autre projet ?</p>
-                                    <div className="recommendation-options">
-                                        <label className={`recommendation-option ${formData.recommander === "oui" ? "selected" : ""}`}>
-                                            <input
-                                                type="radio"
-                                                name="recommander"
-                                                value="oui"
-                                                checked={formData.recommander === "oui"}
-                                                onChange={handleChange}
-                                                required
-                                            />
-                                            <div className="radio-indicator"></div>
-                                            <span>Oui, certainement</span>
-                                        </label>
+      const demande = await demandeResponse.json();
+      
+      if (!demande || !demande.utilisateur || !demande.utilisateur.id) {
+        throw new Error('Données de demande incomplètes');
+      }
 
-                                        <label className={`recommendation-option ${formData.recommander === "peutetre" ? "selected" : ""}`}>
-                                            <input
-                                                type="radio"
-                                                name="recommander"
-                                                value="peutetre"
-                                                checked={formData.recommander === "peutetre"}
-                                                onChange={handleChange}
-                                            />
-                                            <div className="radio-indicator"></div>
-                                            <span>Peut-être</span>
-                                        </label>
+      // 3. Créer la notification de feedback
+      const notifResponse = await fetch('http://localhost:8080/api/notifications/create-feedback-notif', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          userId: demande.utilisateur.id,
+          demandeId: demande.id
+        })
+      });
 
-                                        <label className={`recommendation-option ${formData.recommander === "non" ? "selected" : ""}`}>
-                                            <input
-                                                type="radio"
-                                                name="recommander"
-                                                value="non"
-                                                checked={formData.recommander === "non"}
-                                                onChange={handleChange}
-                                            />
-                                            <div className="radio-indicator"></div>
-                                            <span>Non, pas recommandé</span>
-                                        </label>
-                                    </div>
-                                </div>
+      if (!notifResponse.ok) {
+        throw new Error('Échec de la création de la notification');
+      }
 
-                                <div className="confidentiality-notice">
-                                    <FaExclamationTriangle />
-                                    <div>
-                                        <h5>Confidentialité</h5>
-                                        <p>
-                                            Vos réponses seront traitées de manière confidentielle et utilisées uniquement pour améliorer nos équipements et services.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+      await Swal.fire({
+        title: 'Succès',
+        text: 'Retour validé et notification envoyée à l\'adhérent',
+        icon: 'success',
+        confirmButtonText: 'OK'
+      });
+      
+      // Actualiser la liste
+      fetchRetours(villeCentre);
+    } catch (error) {
+      console.error("Erreur:", error);
+      await Swal.fire({
+        title: 'Erreur',
+        text: error.message || 'Une erreur est survenue',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
+    }
+  };
 
-                        <div className="form-navigation">
-                            {currentSection > 1 && (
-                                <button
-                                    type="button"
-                                    onClick={prevSection}
-                                    className="btn btn-secondary"
-                                >
-                                    <FaChevronLeft />
-                                    Précédent
-                                </button>
-                            )}
+  const handleLogout = async () => {
+    const result = await Swal.fire({
+      title: 'Déconnexion',
+      text: 'Êtes-vous sûr de vouloir vous déconnecter ?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Oui, déconnecter',
+      cancelButtonText: 'Annuler'
+    });
 
-                            {currentSection < 4 ? (
-                                <button
-                                    type="button"
-                                    onClick={nextSection}
-                                    className="btn btn-primary"
-                                >
-                                    Suivant
-                                    <FaChevronRight />
-                                </button>
-                            ) : (
-                                <button
-                                    type="submit"
-                                    className="btn btn-primary"
-                                    disabled={loading}
-                                >
-                                    {loading ? (
-                                        <span>Envoi en cours...</span>
-                                    ) : (
-                                        <>
-                                            <FaPaperPlane />
-                                            Soumettre l'évaluation
-                                        </>
-                                    )}
-                                </button>
-                            )}
-                        </div>
-                    </form>
-                </div>
-            </main>
+    if (result.isConfirmed) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("userId");
+      localStorage.removeItem("userRole");
+      localStorage.removeItem("userEmail");
+      localStorage.removeItem("userNom");
+      localStorage.removeItem("userPrenom");
+      localStorage.removeItem("userVilleCentre");
+      navigate("/login");
+    }
+  };
+
+  const currentData = activeTab === 'livraisons' ? livraisons : retours;
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = currentData.slice(indexOfFirstItem, indexOfLastItem);
+
+  const isLoading = activeTab === 'livraisons' ? loading.livraisons : loading.retours;
+
+  return (
+    <div className={`dashboard-container ${sidebarOpen ? 'sidebar-expanded' : ''}`}>
+      <nav className="navbar">
+        <div className="menu-icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
+          {sidebarOpen ? <FaTimes /> : <FaBars />}
         </div>
-    );
+        <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
+      </nav>
+
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+        <ul className="sidebar-menu">
+          <li className={location.pathname === '/ResponsableHome' ? 'active' : ''}>
+            <Link to="/ResponsableHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
+          </li>
+          <li className={location.pathname === '/Equipments' ? 'active' : ''}>
+            <Link to="/Equipments"><FaCogs /><span>Gestion des Équipements</span></Link>
+          </li>
+          <li className={location.pathname === '/GestionDemandes' ? 'active' : ''}>
+            <Link to="/GestionDemandes"><FaClipboardList /><span>Gestion des Demandes</span></Link>
+          </li>
+          <li className={location.pathname === '/LivraisonsRetours' ? 'active' : ''}>
+            <Link to="/LivraisonsRetours"><FaBoxOpen /><span>Livraisons/Retours</span></Link>
+          </li>
+          <li className={location.pathname === '/HistoriqueDemandes' ? 'active' : ''}>
+            <Link to="/HistoriqueDemandes"><FaHistory /><span>Historique des Demandes</span></Link>
+          </li>
+          <li className={location.pathname === '/HistoriqueEquipements' ? 'active' : ''}>
+            <Link to="/HistoriqueEquipements"><FaHistory /><span>Historique des Équipements</span></Link>
+          </li>
+          <li className={location.pathname === '/Notifications' ? 'active' : ''}>
+            <Link to="/Notifications"><FaBell /><span>Notifications</span></Link>
+          </li>
+        </ul>
+
+        <div className="sidebar-bottom">
+          <ul>
+            <li className={location.pathname === '/account' ? 'active' : ''}>
+              <Link to="/account"><FaUser /><span>Compte</span></Link>
+            </li>
+            <li className="logout">
+              <button onClick={handleLogout} className="logout-button">
+                <FaSignOutAlt /><span>Déconnexion</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+      </aside>
+
+      <main className="content">
+        <div className="page-header">
+          <h2>
+            <FaBox /> Gestion des Livraisons et Retours - Centre {userVilleCentre}
+          </h2>
+          <p className="page-description">
+            Gestion des équipements à livrer et à récupérer aujourd'hui pour le centre: <strong>{userCenter}</strong>
+          </p>
+        </div>
+
+        <div className="tabs-container">
+          <div className="tabs">
+            <button
+              className={`tab ${activeTab === 'livraisons' ? 'active' : ''}`}
+              onClick={() => {
+                setCurrentPage(1);
+                setActiveTab('livraisons');
+              }}
+            >
+              <FaBoxOpen /> Livraisons aujourd'hui
+              <span className={`count-badge ${livraisons.length === 0 ? 'zero' : ''}`}>
+                {livraisons.length}
+              </span>
+            </button>
+            <button
+              className={`tab ${activeTab === 'retours' ? 'active' : ''}`}
+              onClick={() => {
+                setCurrentPage(1);
+                setActiveTab('retours');
+              }}
+            >
+              <FaBox /> Retours aujourd'hui
+              <span className={`count-badge retour ${retours.length === 0 ? 'zero' : ''}`}>
+                {retours.length}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="loading-indicator">
+            <div className="spinner"></div>
+            <p>Chargement en cours...</p>
+          </div>
+        ) : (
+          <>
+            <div className="table-container">
+              <table className="demandes-table">
+                <thead>
+                  <tr>
+                    <th>Équipement</th>
+                    <th>Adhérent</th>
+                    <th>Email</th>
+                    <th>Téléphone</th>
+                    {activeTab === 'livraisons' ? (
+                      <th>Date début</th>
+                    ) : (
+                      <th>Date fin</th>
+                    )}
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentItems.length > 0 ? (
+                    currentItems.map((item) => (
+                      <tr key={item.id}>
+                        <td>
+                          <strong>{item.nomEquipement}</strong>
+                          <div className="equipment-details">
+                            {item.categorieEquipement} - {item.centreEquipement}
+                          </div>
+                        </td>
+                        <td>
+                          {item.prenom} {item.nom}
+                        </td>
+                        <td>{item.utilisateur?.email || 'N/A'}</td>
+                        <td>{item.numeroTelephone}</td>
+                        <td>
+                          {activeTab === 'livraisons' 
+                            ? formatDateTime(item.dateDebut)
+                            : formatDateTime(item.dateFin)}
+                        </td>
+                        <td>
+                          {activeTab === 'livraisons' ? (
+                            <button
+                              className="validate-button"
+                              onClick={() => handleValiderLivraison(item.id)}
+                              disabled={loading.livraisons}
+                            >
+                              <FaCheckCircle /> Valider livraison
+                            </button>
+                          ) : (
+                            <button
+                              className="validate-button retour"
+                              onClick={() => handleValiderRetour(item.id)}
+                              disabled={loading.retours}
+                            >
+                              <FaCheckCircle /> Valider retour
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="6" className="no-data">
+                        {activeTab === 'livraisons' 
+                          ? `Aucune livraison prévue aujourd'hui pour le centre ${userCenter}` 
+                          : `Aucun retour prévu aujourd'hui pour le centre ${userCenter}`}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {currentData.length > itemsPerPage && (
+              <div className="pagination-container">
+                <Pagination
+                  current={currentPage}
+                  total={currentData.length}
+                  pageSize={itemsPerPage}
+                  onChange={(page) => setCurrentPage(page)}
+                  showSizeChanger={false}
+                />
+              </div>
+            )}
+          </>
+        )}
+      </main>
+    </div>
+  );
 };
 
-export default FormulaireFeedback;
+export default LivraisonsRetours;
