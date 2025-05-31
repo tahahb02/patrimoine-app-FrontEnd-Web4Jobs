@@ -28,35 +28,89 @@ const FormulaireFeedback = () => {
     const [hoveredStar, setHoveredStar] = useState(0);
     const [submitted, setSubmitted] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [initialLoading, setInitialLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
-        const fetchDemandeInfo = async () => {
+        const fetchData = async () => {
             try {
                 const token = localStorage.getItem("token");
-                const response = await fetch(`http://localhost:8080/api/demandes/${demandeId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
+                if (!token) {
+                    throw new Error("Token d'authentification manquant");
+                }
+
+                // 1. Récupérer les données de la demande
+                const demandeResponse = await fetch(`http://localhost:8080/api/demandes/${demandeId}`, {
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
                     }
                 });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    setFormData(prev => ({
-                        ...prev,
-                        equipmentId: data.idEquipement,
-                        equipmentName: data.nomEquipement,
-                        dateUtilisation: data.dateDebut.split('T')[0]
-                    }));
+                if (!demandeResponse.ok) {
+                    const errorData = await demandeResponse.json();
+                    throw new Error(errorData.message || "Échec du chargement de la demande");
                 }
-            } catch (error) {
-                console.error("Erreur lors du chargement des informations de la demande:", error);
+
+                const demandeData = await demandeResponse.json();
+                console.log("Données de la demande:", demandeData);
+
+                // 2. Préparer les données utilisateur
+                const userId = localStorage.getItem("userId") || demandeData.utilisateur?.id;
+                let userEmail = localStorage.getItem("userEmail") || "";
+
+                if (userId) {
+                    const userResponse = await fetch(`http://localhost:8080/api/utilisateurs/${userId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+
+                    if (userResponse.ok) {
+                        const userData = await userResponse.json();
+                        userEmail = userData.email || userEmail;
+                    }
+                }
+
+                // 3. Mettre à jour le state avec les données récupérées
+                setFormData({
+                    equipmentId: demandeData.idEquipement || "",
+                    equipmentName: demandeData.nomEquipement || "",
+                    dateUtilisation: demandeData.dateDebut ? 
+                        new Date(demandeData.dateDebut).toISOString().split('T')[0] : "",
+                    email: userEmail,
+                    satisfaction: 0,
+                    performance: 0,
+                    faciliteUtilisation: 0,
+                    fiabilite: 0,
+                    commentaires: "",
+                    problemesRencontres: "",
+                    problemesTechniques: [],
+                    recommander: ""
+                });
+
+                setError(null);
+            } catch (err) {
+                console.error("Erreur lors du chargement:", err);
+                setError(err.message);
+                Swal.fire({
+                    title: 'Erreur',
+                    text: err.message || "Impossible de charger les données",
+                    icon: 'error'
+                });
+            } finally {
+                setInitialLoading(false);
             }
         };
 
         if (demandeId) {
-            fetchDemandeInfo();
+            fetchData();
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                email: localStorage.getItem("userEmail") || ""
+            }));
+            setInitialLoading(false);
         }
-    }, [demandeId]);
+    }, [demandeId, navigate]);
 
     const problemesTechniquesOptions = [
         "Dysfonctionnement matériel",
@@ -126,28 +180,29 @@ const FormulaireFeedback = () => {
                 })
             });
 
-            if (response.ok) {
-                // Marquer la notification comme lue
-                await fetch(`http://localhost:8080/api/notifications/marquer-lue-par-lien`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        link: `/FormulaireFeedback/${demandeId}`
-                    })
-                });
-
-                setSubmitted(true);
-            } else {
-                throw new Error('Erreur lors de l\'envoi du feedback');
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || "Erreur lors de l'envoi");
             }
+
+            // Marquer la notification comme lue
+            await fetch(`http://localhost:8080/api/notifications/marquer-lue-par-lien`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    link: `/FormulaireFeedback/${demandeId}`
+                })
+            });
+
+            setSubmitted(true);
         } catch (error) {
-            console.error(error);
+            console.error("Erreur:", error);
             Swal.fire({
                 title: 'Erreur',
-                text: 'Une erreur est survenue lors de l\'envoi de votre feedback',
+                text: error.message || "Échec de l'envoi du formulaire",
                 icon: 'error'
             });
         } finally {
@@ -157,14 +212,16 @@ const FormulaireFeedback = () => {
 
     const RatingSection = ({ title, name, value, description }) => (
         <div className="rating-section">
-            <h4>
-                {title}
-                {description && (
-                    <span className="rating-description">
-                        <FaInfoCircle /> {description}
-                    </span>
-                )}
-            </h4>
+            <div className="rating-header">
+                <h4 className="rating-title">
+                    {title}
+                    {description && (
+                        <span className="rating-description">
+                            <FaInfoCircle /> {description}
+                        </span>
+                    )}
+                </h4>
+            </div>
             <div className="stars-container">
                 {[1, 2, 3, 4, 5].map((star) => (
                     <FaStar
@@ -183,6 +240,49 @@ const FormulaireFeedback = () => {
         </div>
     );
 
+    if (initialLoading) {
+        return (
+            <div className="dashboard-container">
+                <div className="loading-overlay">
+                    <div className="spinner"></div>
+                    <p>Chargement des informations...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="dashboard-container">
+                <nav className="navbar">
+                    <div className="menu-icon" onClick={() => navigate(-1)}>
+                        <FaChevronLeft />
+                    </div>
+                    <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
+                </nav>
+                <main className="content">
+                    <div className="error-message">
+                        <FaExclamationTriangle className="error-icon" />
+                        <h3>Erreur de chargement</h3>
+                        <p>{error}</p>
+                        <button 
+                            onClick={() => window.location.reload()} 
+                            className="btn btn-primary"
+                        >
+                            Réessayer
+                        </button>
+                        <button 
+                            onClick={() => navigate("/AdherantHome")} 
+                            className="btn btn-secondary"
+                        >
+                            Retour à l'accueil
+                        </button>
+                    </div>
+                </main>
+            </div>
+        );
+    }
+
     if (submitted) {
         return (
             <div className="dashboard-container">
@@ -198,9 +298,9 @@ const FormulaireFeedback = () => {
                         <div className="confirmation-icon">
                             <FaCheck />
                         </div>
-                        <h3>Merci pour votre feedback !</h3>
-                        <p>
-                            Votre évaluation a été enregistrée avec succès. Nous prenons en compte tous les retours pour améliorer nos équipements et services.
+                        <h3 className="confirmation-title">Merci pour votre feedback !</h3>
+                        <p className="confirmation-message">
+                            Votre évaluation a été enregistrée avec succès.
                         </p>
                         <button
                             onClick={() => navigate("/AdherantHome")}
@@ -225,8 +325,16 @@ const FormulaireFeedback = () => {
 
             <main className="content">
                 <div className="feedback-container">
-                    <div className="progress-bar">
-                        <div style={{ width: `${(currentSection / 4) * 100}%` }}></div>
+                    <div className="progress-container">
+                        <div className="progress-bar">
+                            <div style={{ width: `${(currentSection / 4) * 100}%` }}></div>
+                        </div>
+                        <div className="progress-steps">
+                            <span className={`progress-step ${currentSection >= 1 ? 'active' : ''}`}>Identification</span>
+                            <span className={`progress-step ${currentSection >= 2 ? 'active' : ''}`}>Évaluation</span>
+                            <span className={`progress-step ${currentSection >= 3 ? 'active' : ''}`}>Retour</span>
+                            <span className={`progress-step ${currentSection >= 4 ? 'active' : ''}`}>Validation</span>
+                        </div>
                     </div>
 
                     <h3 className="feedback-title">
@@ -237,58 +345,41 @@ const FormulaireFeedback = () => {
                     <form onSubmit={handleSubmit}>
                         {currentSection === 1 && (
                             <div className="form-section">
-                                <h4>1. Identification de l'équipement</h4>
+                                <h4 className="section-title">1. Identification de l'équipement</h4>
                                 
                                 <div className="form-group">
-                                    <label>Numéro/ID de l'équipement *</label>
-                                    <input
-                                        type="text"
-                                        name="equipmentId"
-                                        value={formData.equipmentId}
-                                        onChange={handleChange}
-                                        required
-                                        readOnly={!!demandeId}
-                                    />
+                                    <label className="required">Numéro/ID de l'équipement</label>
+                                    <div className="read-only-field">
+                                        {formData.equipmentId || "Non spécifié"}
+                                    </div>
                                 </div>
 
                                 <div className="form-group">
-                                    <label>Nom de l'équipement (si connu)</label>
-                                    <input
-                                        type="text"
-                                        name="equipmentName"
-                                        value={formData.equipmentName}
-                                        onChange={handleChange}
-                                        readOnly={!!demandeId}
-                                    />
+                                    <label>Nom de l'équipement</label>
+                                    <div className="read-only-field">
+                                        {formData.equipmentName || "Non spécifié"}
+                                    </div>
                                 </div>
 
                                 <div className="form-group">
-                                    <label>Date d'utilisation *</label>
-                                    <input
-                                        type="date"
-                                        name="dateUtilisation"
-                                        value={formData.dateUtilisation}
-                                        onChange={handleChange}
-                                        required
-                                        readOnly={!!demandeId}
-                                    />
+                                    <label className="required">Date d'utilisation</label>
+                                    <div className="read-only-field">
+                                        {formData.dateUtilisation || "Non spécifié"}
+                                    </div>
                                 </div>
 
                                 <div className="form-group">
-                                    <label>Votre email (facultatif)</label>
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        value={formData.email}
-                                        onChange={handleChange}
-                                    />
+                                    <label>Votre email</label>
+                                    <div className="read-only-field">
+                                        {formData.email || "Non spécifié"}
+                                    </div>
                                 </div>
                             </div>
                         )}
 
                         {currentSection === 2 && (
                             <div className="form-section">
-                                <h4>2. Évaluation de l'équipement</h4>
+                                <h4 className="section-title">2. Évaluation de l'équipement</h4>
                                 
                                 <RatingSection 
                                     title="Satisfaction globale" 
@@ -322,11 +413,12 @@ const FormulaireFeedback = () => {
 
                         {currentSection === 3 && (
                             <div className="form-section">
-                                <h4>3. Retour d'expérience</h4>
+                                <h4 className="section-title">3. Retour d'expérience</h4>
                                 
                                 <div className="form-group">
                                     <label>Commentaires généraux</label>
                                     <textarea
+                                        className="form-control"
                                         name="commentaires"
                                         value={formData.commentaires}
                                         onChange={handleChange}
@@ -337,6 +429,7 @@ const FormulaireFeedback = () => {
                                 <div className="form-group">
                                     <label>Problèmes rencontrés (le cas échéant)</label>
                                     <textarea
+                                        className="form-control"
                                         name="problemesRencontres"
                                         value={formData.problemesRencontres}
                                         onChange={handleChange}
@@ -348,19 +441,23 @@ const FormulaireFeedback = () => {
                                     <label>Types de problèmes techniques</label>
                                     <div className="checkbox-grid">
                                         {problemesTechniquesOptions.map((option, index) => (
-                                            <label 
-                                                key={index}
-                                                className={`checkbox-label ${formData.problemesTechniques.includes(option) ? "checked" : ""}`}
-                                            >
+                                            <div key={index} className="checkbox-item">
                                                 <input
                                                     type="checkbox"
+                                                    id={`probleme-${index}`}
+                                                    className="checkbox-input"
                                                     name="problemesTechniques"
                                                     value={option}
                                                     checked={formData.problemesTechniques.includes(option)}
                                                     onChange={handleChange}
                                                 />
-                                                {option}
-                                            </label>
+                                                <label 
+                                                    htmlFor={`probleme-${index}`}
+                                                    className={`checkbox-label ${formData.problemesTechniques.includes(option) ? "checked" : ""}`}
+                                                >
+                                                    {option}
+                                                </label>
+                                            </div>
                                         ))}
                                     </div>
                                 </div>
@@ -369,13 +466,16 @@ const FormulaireFeedback = () => {
 
                         {currentSection === 4 && (
                             <div className="form-section">
-                                <h4>4. Recommandation et validation</h4>
+                                <h4 className="section-title">4. Recommandation et validation</h4>
                                 
                                 <div className="form-group">
                                     <h4>Recommandation</h4>
                                     <p>Recommanderiez-vous cet équipement à un collègue ou pour un autre projet ?</p>
                                     <div className="recommendation-options">
-                                        <label className={`recommendation-option ${formData.recommander === "oui" ? "selected" : ""}`}>
+                                        <div 
+                                            className={`recommendation-option ${formData.recommander === "oui" ? "selected" : ""}`}
+                                            onClick={() => setFormData({...formData, recommander: "oui"})}
+                                        >
                                             <input
                                                 type="radio"
                                                 name="recommander"
@@ -385,10 +485,13 @@ const FormulaireFeedback = () => {
                                                 required
                                             />
                                             <div className="radio-indicator"></div>
-                                            <span>Oui, certainement</span>
-                                        </label>
+                                            <span className="recommendation-text">Oui, certainement</span>
+                                        </div>
 
-                                        <label className={`recommendation-option ${formData.recommander === "peutetre" ? "selected" : ""}`}>
+                                        <div 
+                                            className={`recommendation-option ${formData.recommander === "peutetre" ? "selected" : ""}`}
+                                            onClick={() => setFormData({...formData, recommander: "peutetre"})}
+                                        >
                                             <input
                                                 type="radio"
                                                 name="recommander"
@@ -397,10 +500,13 @@ const FormulaireFeedback = () => {
                                                 onChange={handleChange}
                                             />
                                             <div className="radio-indicator"></div>
-                                            <span>Peut-être</span>
-                                        </label>
+                                            <span className="recommendation-text">Peut-être</span>
+                                        </div>
 
-                                        <label className={`recommendation-option ${formData.recommander === "non" ? "selected" : ""}`}>
+                                        <div 
+                                            className={`recommendation-option ${formData.recommander === "non" ? "selected" : ""}`}
+                                            onClick={() => setFormData({...formData, recommander: "non"})}
+                                        >
                                             <input
                                                 type="radio"
                                                 name="recommander"
@@ -409,14 +515,16 @@ const FormulaireFeedback = () => {
                                                 onChange={handleChange}
                                             />
                                             <div className="radio-indicator"></div>
-                                            <span>Non, pas recommandé</span>
-                                        </label>
+                                            <span className="recommendation-text">Non, pas recommandé</span>
+                                        </div>
                                     </div>
                                 </div>
 
                                 <div className="confidentiality-notice">
-                                    <FaExclamationTriangle />
-                                    <div>
+                                    <div className="notice-icon">
+                                        <FaExclamationTriangle />
+                                    </div>
+                                    <div className="notice-content">
                                         <h5>Confidentialité</h5>
                                         <p>
                                             Vos réponses seront traitées de manière confidentielle et utilisées uniquement pour améliorer nos équipements et services.
@@ -433,7 +541,7 @@ const FormulaireFeedback = () => {
                                     onClick={prevSection}
                                     className="btn btn-secondary"
                                 >
-                                    <FaChevronLeft />
+                                    <FaChevronLeft className="btn-icon" />
                                     Précédent
                                 </button>
                             )}
@@ -445,7 +553,7 @@ const FormulaireFeedback = () => {
                                     className="btn btn-primary"
                                 >
                                     Suivant
-                                    <FaChevronRight />
+                                    <FaChevronRight className="btn-icon" />
                                 </button>
                             ) : (
                                 <button
@@ -457,7 +565,7 @@ const FormulaireFeedback = () => {
                                         <span>Envoi en cours...</span>
                                     ) : (
                                         <>
-                                            <FaPaperPlane />
+                                            <FaPaperPlane className="btn-icon" />
                                             Soumettre l'évaluation
                                         </>
                                     )}
