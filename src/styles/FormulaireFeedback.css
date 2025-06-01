@@ -685,4 +685,21 @@ textarea.form-control {
     margin-bottom: 5px;
     font-weight: 500;
 }
+
+
+.form-control.read-only {
+    background-color: #f8f9fa;
+    border: 1px solid #ced4da;
+    color: #495057;
+    cursor: not-allowed;
+}
+
+.read-only-field {
+    background-color: #f8f9fa;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 15px;
+    color: #495057;
+}
 }

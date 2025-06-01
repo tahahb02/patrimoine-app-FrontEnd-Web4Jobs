@@ -31,52 +31,58 @@ const FormulaireFeedback = () => {
     const [initialLoading, setInitialLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    const problemesTechniquesOptions = [
+        "Dysfonctionnement matériel",
+        "Problème logiciel",
+        "Interface difficile",
+        "Lenteur de réponse",
+        "Autre problème technique"
+    ];
+
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchDemandeData = async () => {
             try {
                 const token = localStorage.getItem("token");
-                if (!token) {
-                    throw new Error("Token d'authentification manquant");
+                const userId = localStorage.getItem("userId");
+                
+                if (!token || !userId) {
+                    throw new Error("Authentification requise");
                 }
 
-                // 1. Récupérer les données de la demande
-                const demandeResponse = await fetch(`http://localhost:8080/api/demandes/${demandeId}`, {
+                // Récupérer toutes les demandes de l'utilisateur
+                const response = await fetch(`http://localhost:8080/api/demandes/utilisateur/${userId}/demandes`, {
                     headers: { 
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     }
                 });
 
-                if (!demandeResponse.ok) {
-                    const errorData = await demandeResponse.json();
-                    throw new Error(errorData.message || "Échec du chargement de la demande");
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || "Échec du chargement des demandes");
                 }
 
-                const demandeData = await demandeResponse.json();
-                console.log("Données de la demande:", demandeData);
-
-                // 2. Préparer les données utilisateur
-                const userId = localStorage.getItem("userId") || demandeData.utilisateur?.id;
-                let userEmail = localStorage.getItem("userEmail") || "";
-
-                if (userId) {
-                    const userResponse = await fetch(`http://localhost:8080/api/utilisateurs/${userId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-
-                    if (userResponse.ok) {
-                        const userData = await userResponse.json();
-                        userEmail = userData.email || userEmail;
-                    }
+                const demandes = await response.json();
+                
+                // Trouver la demande spécifique
+                const demande = demandes.find(d => d.id == demandeId);
+                
+                if (!demande) {
+                    throw new Error("Demande non trouvée");
                 }
 
-                // 3. Mettre à jour le state avec les données récupérées
+                // Vérifier que la demande appartient bien à l'utilisateur
+                if (demande.utilisateur.id != userId) {
+                    throw new Error("Vous n'êtes pas autorisé à accéder à cette demande");
+                }
+
+                // Préremplir le formulaire
                 setFormData({
-                    equipmentId: demandeData.idEquipement || "",
-                    equipmentName: demandeData.nomEquipement || "",
-                    dateUtilisation: demandeData.dateDebut ? 
-                        new Date(demandeData.dateDebut).toISOString().split('T')[0] : "",
-                    email: userEmail,
+                    equipmentId: demande.idEquipement || "",
+                    equipmentName: demande.nomEquipement || "",
+                    dateUtilisation: demande.dateDebut ? 
+                        new Date(demande.dateDebut).toLocaleDateString('fr-FR') : "",
+                    email: localStorage.getItem("userEmail") || "",
                     satisfaction: 0,
                     performance: 0,
                     faciliteUtilisation: 0,
@@ -87,38 +93,26 @@ const FormulaireFeedback = () => {
                     recommander: ""
                 });
 
-                setError(null);
             } catch (err) {
-                console.error("Erreur lors du chargement:", err);
+                console.error("Erreur:", err);
                 setError(err.message);
                 Swal.fire({
                     title: 'Erreur',
-                    text: err.message || "Impossible de charger les données",
+                    text: err.message || "Une erreur est survenue",
                     icon: 'error'
-                });
+                }).then(() => navigate("/AdherantHome"));
             } finally {
                 setInitialLoading(false);
             }
         };
 
         if (demandeId) {
-            fetchData();
+            fetchDemandeData();
         } else {
-            setFormData(prev => ({
-                ...prev,
-                email: localStorage.getItem("userEmail") || ""
-            }));
-            setInitialLoading(false);
+            setError("ID de demande manquant");
+            navigate("/AdherantHome");
         }
     }, [demandeId, navigate]);
-
-    const problemesTechniquesOptions = [
-        "Dysfonctionnement matériel",
-        "Problème logiciel",
-        "Interface difficile",
-        "Lenteur de réponse",
-        "Autre problème technique"
-    ];
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -167,6 +161,12 @@ const FormulaireFeedback = () => {
 
         try {
             const token = localStorage.getItem("token");
+            const userId = localStorage.getItem("userId");
+            
+            if (!token || !userId) {
+                throw new Error("Authentification requise");
+            }
+
             const response = await fetch('http://localhost:8080/api/feedback', {
                 method: 'POST',
                 headers: {
@@ -174,15 +174,26 @@ const FormulaireFeedback = () => {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    ...formData,
-                    demandeId,
-                    userId: localStorage.getItem("userId")
+                    userId: userId,
+                    demandeId: demandeId,
+                    equipmentId: formData.equipmentId,
+                    equipmentName: formData.equipmentName,
+                    satisfaction: formData.satisfaction,
+                    performance: formData.performance,
+                    faciliteUtilisation: formData.faciliteUtilisation,
+                    fiabilite: formData.fiabilite,
+                    commentaires: formData.commentaires,
+                    problemesRencontres: formData.problemesRencontres,
+                    problemesTechniques: formData.problemesTechniques,
+                    recommander: formData.recommander,
+                    email: formData.email,
+                    villeCentre: localStorage.getItem("userVilleCentre") || ""
                 })
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.message || "Erreur lors de l'envoi");
+                throw new Error(errorData.message || "Erreur lors de l'envoi du feedback");
             }
 
             // Marquer la notification comme lue
@@ -198,11 +209,12 @@ const FormulaireFeedback = () => {
             });
 
             setSubmitted(true);
-        } catch (error) {
-            console.error("Erreur:", error);
+            
+        } catch (err) {
+            console.error("Erreur:", err);
             Swal.fire({
                 title: 'Erreur',
-                text: error.message || "Échec de l'envoi du formulaire",
+                text: err.message || "Échec de l'envoi du formulaire",
                 icon: 'error'
             });
         } finally {
@@ -266,14 +278,8 @@ const FormulaireFeedback = () => {
                         <h3>Erreur de chargement</h3>
                         <p>{error}</p>
                         <button 
-                            onClick={() => window.location.reload()} 
-                            className="btn btn-primary"
-                        >
-                            Réessayer
-                        </button>
-                        <button 
                             onClick={() => navigate("/AdherantHome")} 
-                            className="btn btn-secondary"
+                            className="btn btn-primary"
                         >
                             Retour à l'accueil
                         </button>
@@ -349,30 +355,42 @@ const FormulaireFeedback = () => {
                                 
                                 <div className="form-group">
                                     <label className="required">Numéro/ID de l'équipement</label>
-                                    <div className="read-only-field">
-                                        {formData.equipmentId || "Non spécifié"}
-                                    </div>
+                                    <input
+                                        type="text"
+                                        className="form-control read-only"
+                                        value={formData.equipmentId}
+                                        readOnly
+                                    />
                                 </div>
 
                                 <div className="form-group">
                                     <label>Nom de l'équipement</label>
-                                    <div className="read-only-field">
-                                        {formData.equipmentName || "Non spécifié"}
-                                    </div>
+                                    <input
+                                        type="text"
+                                        className="form-control read-only"
+                                        value={formData.equipmentName}
+                                        readOnly
+                                    />
                                 </div>
 
                                 <div className="form-group">
                                     <label className="required">Date d'utilisation</label>
-                                    <div className="read-only-field">
-                                        {formData.dateUtilisation || "Non spécifié"}
-                                    </div>
+                                    <input
+                                        type="text"
+                                        className="form-control read-only"
+                                        value={formData.dateUtilisation}
+                                        readOnly
+                                    />
                                 </div>
 
                                 <div className="form-group">
                                     <label>Votre email</label>
-                                    <div className="read-only-field">
-                                        {formData.email || "Non spécifié"}
-                                    </div>
+                                    <input
+                                        type="text"
+                                        className="form-control read-only"
+                                        value={formData.email}
+                                        readOnly
+                                    />
                                 </div>
                             </div>
                         )}
@@ -423,6 +441,7 @@ const FormulaireFeedback = () => {
                                         value={formData.commentaires}
                                         onChange={handleChange}
                                         placeholder="Décrivez votre expérience globale avec cet équipement..."
+                                        rows="4"
                                     />
                                 </div>
 
@@ -434,6 +453,7 @@ const FormulaireFeedback = () => {
                                         value={formData.problemesRencontres}
                                         onChange={handleChange}
                                         placeholder="Décrivez les problèmes que vous avez rencontrés..."
+                                        rows="4"
                                     />
                                 </div>
 
