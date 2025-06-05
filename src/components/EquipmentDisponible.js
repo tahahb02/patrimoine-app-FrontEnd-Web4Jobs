@@ -13,6 +13,7 @@ import {
   FaClock,
   FaExclamationTriangle,
   FaInfoCircle,
+  FaClipboardCheck,
   FaFilter
 } from "react-icons/fa";
 import { Pagination } from 'antd';
@@ -296,6 +297,9 @@ const fetchEquipmentsByCenter = async (villeCentre) => {
           </li>
           <li className={location.pathname === '/SuiviDemandeAdherant' ? 'active' : ''}>
             <Link to="/SuiviDemandeAdherant"><FaClipboardList /><span>Suivi des Demandes</span></Link>
+          </li>
+          <li  className={location.pathname === '/HistoriqueDemandeAdherant' ? 'active' : ''}>
+            <Link to="/MesDemandes"><FaClipboardCheck /><span>Mes Demandes</span></Link>
           </li>
           <li className={location.pathname === '/notifications' ? 'active' : ''}>
             <Link to="/notifications"><FaBell /><span>Notifications</span></Link>

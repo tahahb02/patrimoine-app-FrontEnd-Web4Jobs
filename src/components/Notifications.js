@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   FaBars, FaTimes, FaBell, FaUser, FaSignOutAlt, FaCheck, 
-  FaArrowRight, FaHistory, FaClipboardCheck, FaStar
+  FaArrowRight, FaHistory, FaClipboardCheck, FaStar,
+  FaTachometerAlt, FaCogs, FaClipboardList
 } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import "../styles/adherant.css";
@@ -12,6 +13,7 @@ const Notifications = () => {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const userId = localStorage.getItem("userId");
 
   useEffect(() => {
@@ -112,29 +114,32 @@ const Notifications = () => {
         <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
       </nav>
 
-      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+      <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <ul className="sidebar-menu">
-          <li>
-            <Link to="/AdherantHome"><FaUser /><span>Tableau de Bord</span></Link>
+          <li className={location.pathname === '/AdherantHome' ? 'active' : ''}>
+            <Link to="/AdherantHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
           </li>
-          <li>
+          <li className={location.pathname === '/EquipmentDisponible' ? 'active' : ''}>
+            <Link to="/EquipmentDisponible"><FaCogs /><span>Équipements Disponibles</span></Link>
+          </li>
+          <li className={location.pathname === '/SuiviDemandeAdherant' ? 'active' : ''}>
+            <Link to="/SuiviDemandeAdherant"><FaClipboardList /><span>Suivi des Demandes</span></Link>
+          </li>
+          <li className={location.pathname === '/HistoriqueDemandeAdherant' ? 'active' : ''}>
             <Link to="/MesDemandes"><FaClipboardCheck /><span>Mes Demandes</span></Link>
           </li>
-          <li className="active">
+          <li className={location.pathname === '/Notifications' ? 'active' : ''}>
             <Link to="/Notifications"><FaBell /><span>Notifications</span></Link>
-          </li>
-          <li>
-            <Link to="/Historique"><FaHistory /><span>Mon Historique</span></Link>
           </li>
         </ul>
 
         <div className="sidebar-bottom">
           <ul>
-            <li>
-              <Link to="/account"><FaUser /><span>Mon Compte</span></Link>
+            <li className={location.pathname === '/account' ? 'active' : ''}>
+              <Link to="/account"><FaUser /><span>Compte</span></Link>
             </li>
             <li className="logout">
-              <button onClick={handleLogout} className="logout-button">
+              <button onClick={handleLogout} style={{ background: 'none', border: 'none', padding: '10px', width: '100%', textAlign: 'left' }}>
                 <FaSignOutAlt /><span>Déconnexion</span>
               </button>
             </li>

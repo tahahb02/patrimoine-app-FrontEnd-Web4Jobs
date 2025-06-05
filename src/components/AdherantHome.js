@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt } from "react-icons/fa";
+import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt ,FaClipboardCheck} from "react-icons/fa";
 import "../styles/adherant.css";
 
 const AdherantHome = () => {
@@ -59,6 +59,9 @@ const AdherantHome = () => {
                     </li>
                     <li className={location.pathname === '/SuiviDemandeAdherant' ? 'active' : ''}>
                         <Link to="/SuiviDemandeAdherant"><FaClipboardList /><span>Suivi des Demandes</span></Link>
+                    </li>
+                     <li  className={location.pathname === '/HistoriqueDemandeAdherant' ? 'active' : ''}>
+                                <Link to="/MesDemandes"><FaClipboardCheck /><span>Mes Demandes</span></Link>
                     </li>
                     <li className={location.pathname === '/Notifications' ? 'active' : ''}>
                         <Link to="/Notifications"><FaBell /><span>Notifications</span></Link>
