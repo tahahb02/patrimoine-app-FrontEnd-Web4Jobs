@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
+import NotificationDropdown from "../components/NotificationDropdown";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+
 import {
   FaBars, FaTimes, FaTachometerAlt, FaClipboardList, FaBell,
   FaUser, FaSignOutAlt, FaEye, FaCogs, FaSort, FaSortUp,
@@ -276,11 +278,12 @@ const SuiviDemandeAdherant = () => {
   return (
     <div className={`dashboard-container ${sidebarOpen ? "sidebar-expanded" : ""}`}>
       <nav className="navbar">
-        <div className="menu-icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
-          {sidebarOpen ? <FaTimes /> : <FaBars />}
-        </div>
-        <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
-      </nav>
+    <div className="menu-icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
+        {sidebarOpen ? <FaTimes /> : <FaBars />}
+    </div>
+    <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
+    <NotificationDropdown />
+</nav>
 
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <ul className="sidebar-menu">

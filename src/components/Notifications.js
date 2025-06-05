@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import NotificationDropdown from "../components/NotificationDropdown";
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   FaBars, FaTimes, FaBell, FaUser, FaSignOutAlt, FaCheck, 
@@ -108,11 +109,12 @@ const Notifications = () => {
   return (
     <div className={`dashboard-container ${sidebarOpen ? 'sidebar-expanded' : ''}`}>
       <nav className="navbar">
-        <div className="menu-icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
-          {sidebarOpen ? <FaTimes /> : <FaBars />}
-        </div>
-        <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
-      </nav>
+    <div className="menu-icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
+        {sidebarOpen ? <FaTimes /> : <FaBars />}
+    </div>
+    <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
+    <NotificationDropdown />
+</nav>
 
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <ul className="sidebar-menu">

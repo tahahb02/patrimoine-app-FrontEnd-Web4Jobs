@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt ,FaClipboardCheck} from "react-icons/fa";
+import { 
+  FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, 
+  FaBell, FaUser, FaSignOutAlt, FaClipboardCheck 
+} from "react-icons/fa";
+import NotificationDropdown from "../components/NotificationDropdown";
 import "../styles/adherant.css";
 
 const AdherantHome = () => {
@@ -47,6 +51,7 @@ const AdherantHome = () => {
                     {sidebarOpen ? <FaTimes /> : <FaBars />}
                 </div>
                 <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
+                <NotificationDropdown />
             </nav>
 
             <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
@@ -60,8 +65,8 @@ const AdherantHome = () => {
                     <li className={location.pathname === '/SuiviDemandeAdherant' ? 'active' : ''}>
                         <Link to="/SuiviDemandeAdherant"><FaClipboardList /><span>Suivi des Demandes</span></Link>
                     </li>
-                     <li  className={location.pathname === '/HistoriqueDemandeAdherant' ? 'active' : ''}>
-                                <Link to="/MesDemandes"><FaClipboardCheck /><span>Mes Demandes</span></Link>
+                    <li className={location.pathname === '/HistoriqueDemandeAdherant' ? 'active' : ''}>
+                        <Link to="/MesDemandes"><FaClipboardCheck /><span>Mes Demandes</span></Link>
                     </li>
                     <li className={location.pathname === '/Notifications' ? 'active' : ''}>
                         <Link to="/Notifications"><FaBell /><span>Notifications</span></Link>

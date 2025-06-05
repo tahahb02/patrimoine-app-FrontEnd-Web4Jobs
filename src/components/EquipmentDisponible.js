@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import NotificationDropdown from "../components/NotificationDropdown";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
   FaBars, 
@@ -262,12 +263,13 @@ const fetchEquipmentsByCenter = async (villeCentre) => {
   if (error && !showRequestModal && !showDetailsModal) {
     return (
       <div className="dashboard-container">
-        <nav className="navbar">
-          <div className="menu-icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
-            {sidebarOpen ? <FaTimes /> : <FaBars />}
-          </div>
-          <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
-        </nav>
+       <nav className="navbar">
+    <div className="menu-icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
+        {sidebarOpen ? <FaTimes /> : <FaBars />}
+    </div>
+    <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
+    <NotificationDropdown />
+</nav>
         <div className="content">
           <div className="error">Erreur: {error}</div>
           <button onClick={() => window.location.reload()} className="retry-button">
