@@ -107,8 +107,15 @@ const NotificationDropdown = () => {
             markAsRead(notification.id);
         }
         setIsOpen(false);
-        // Redirection vers la page Notifications
-        navigate('/Notifications');
+        
+        // Redirection différente selon le type de notification
+        if (notification.type === 'FEEDBACK') {
+            // Pour les notifications de feedback, rediriger vers le formulaire
+            navigate(`/FormulaireFeedback/${notification.relatedId || notification.id}`);
+        } else {
+            // Pour les autres types, rediriger vers la page des notifications
+            navigate('/Notifications');
+        }
     };
 
     return (
@@ -159,6 +166,9 @@ const NotificationDropdown = () => {
                                             <strong>{notification.titre}</strong>
                                             <p>{notification.message}</p>
                                             <small>{formatDate(notification.dateCreation)}</small>
+                                            {notification.type === 'FEEDBACK' && (
+                                                <small className="feedback-tag">...</small>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
