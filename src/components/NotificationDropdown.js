@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaBell, FaTimes, FaCircle } from 'react-icons/fa';
+import { FaBell, FaTimes, FaCircle, FaCheck } from 'react-icons/fa';
 import axios from 'axios';
 import '../styles/notificationDropdown.css';
 
 const NotificationDropdown = () => {
-    const [notifications, setNotifications] = useState([]);
+    const [allNotifications, setAllNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -18,15 +18,13 @@ const NotificationDropdown = () => {
                 
                 if (!token || !userId) return;
 
-                // Récupérer les notifications non lues
-                const unreadResponse = await axios.get(
-                    `http://localhost:8080/api/notifications/user/${userId}/unread`, 
+                const response = await axios.get(
+                    `http://localhost:8080/api/notifications/user/${userId}`, 
                     {
                         headers: { 'Authorization': `Bearer ${token}` }
                     }
                 );
 
-                // Récupérer le nombre total de notifications non lues
                 const countResponse = await axios.get(
                     `http://localhost:8080/api/notifications/count/user/${userId}/unread`, 
                     {
@@ -34,10 +32,10 @@ const NotificationDropdown = () => {
                     }
                 );
 
-                setNotifications(unreadResponse.data);
+                setAllNotifications(response.data);
                 setUnreadCount(countResponse.data);
             } catch (error) {
-                console.error('Error fetching notifications:', error);
+                console.error('Erreur lors du chargement des notifications:', error);
             } finally {
                 setLoading(false);
             }
@@ -45,7 +43,6 @@ const NotificationDropdown = () => {
 
         fetchNotifications();
 
-        // Rafraîchir les notifications toutes les 30 secondes
         const interval = setInterval(fetchNotifications, 30000);
         return () => clearInterval(interval);
     }, []);
@@ -61,11 +58,12 @@ const NotificationDropdown = () => {
                 }
             );
 
-            // Mettre à jour l'état local
-            setNotifications(notifications.filter(notif => notif.id !== id));
+            setAllNotifications(allNotifications.map(notif => 
+                notif.id === id ? { ...notif, lue: true } : notif
+            ));
             setUnreadCount(prev => prev - 1);
         } catch (error) {
-            console.error('Error marking notification as read:', error);
+            console.error('Erreur lors du marquage comme lu:', error);
         }
     };
 
@@ -82,10 +80,13 @@ const NotificationDropdown = () => {
                 }
             );
 
-            setNotifications([]);
+            setAllNotifications(allNotifications.map(notif => ({
+                ...notif,
+                lue: true
+            })));
             setUnreadCount(0);
         } catch (error) {
-            console.error('Error marking all notifications as read:', error);
+            console.error('Erreur lors du marquage de toutes les notifications comme lues:', error);
         }
     };
 
@@ -101,17 +102,10 @@ const NotificationDropdown = () => {
     };
 
     const handleNotificationClick = (notification) => {
-        // Marquer comme lu si ce n'est pas déjà fait
         if (!notification.lue) {
             markAsRead(notification.id);
         }
-        
-        // Fermer le dropdown
         setIsOpen(false);
-        
-        // Rediriger vers la page de notification complète
-        // Vous pouvez adapter le lien selon votre routing
-        window.location.href = `/Notifications#notification-${notification.id}`;
     };
 
     return (
@@ -129,7 +123,7 @@ const NotificationDropdown = () => {
             {isOpen && (
                 <div className="notification-dropdown-content">
                     <div className="notification-header">
-                        <h4>Notifications ({unreadCount})</h4>
+                        <h4>Notifications {unreadCount > 0 && `(${unreadCount} non lues)`}</h4>
                         <button 
                             className="close-btn"
                             onClick={() => setIsOpen(false)}
@@ -140,20 +134,24 @@ const NotificationDropdown = () => {
 
                     <div className="notification-list">
                         {loading ? (
-                            <div className="loading-notifications">Chargement...</div>
-                        ) : notifications.length === 0 ? (
-                            <div className="no-notifications">Aucune nouvelle notification</div>
+                            <div className="loading-notifications">Chargement en cours...</div>
+                        ) : allNotifications.length === 0 ? (
+                            <div className="no-notifications">Aucune notification</div>
                         ) : (
                             <>
-                                {notifications.slice(0, 5).map(notification => (
+                                {allNotifications.slice(0, 5).map(notification => (
                                     <div 
                                         key={notification.id} 
-                                        className={`notification-item ${notification.lue ? '' : 'unread'}`}
+                                        className={`notification-item ${notification.lue ? 'read' : 'unread'}`}
                                         onClick={() => handleNotificationClick(notification)}
                                     >
-                                        {!notification.lue && (
-                                            <FaCircle className="unread-indicator" />
-                                        )}
+                                        <div className="notification-status">
+                                            {!notification.lue ? (
+                                                <FaCircle className="unread-indicator" />
+                                            ) : (
+                                                <FaCheck className="read-indicator" />
+                                            )}
+                                        </div>
                                         <div className="notification-message">
                                             <strong>{notification.titre}</strong>
                                             <p>{notification.message}</p>
@@ -161,9 +159,9 @@ const NotificationDropdown = () => {
                                         </div>
                                     </div>
                                 ))}
-                                {notifications.length > 5 && (
+                                {allNotifications.length > 5 && (
                                     <div className="notification-more">
-                                        + {notifications.length - 5} autres notifications
+                                        + {allNotifications.length - 5} autres notifications
                                     </div>
                                 )}
                             </>
@@ -171,13 +169,14 @@ const NotificationDropdown = () => {
                     </div>
 
                     <div className="notification-footer">
-                        <button 
-                            className="mark-all-read"
-                            onClick={markAllAsRead}
-                            disabled={notifications.length === 0}
-                        >
-                            Tout marquer comme lu
-                        </button>
+                        {unreadCount > 0 && (
+                            <button 
+                                className="mark-all-read"
+                                onClick={markAllAsRead}
+                            >
+                                Tout marquer comme lu
+                            </button>
+                        )}
                         <Link 
                             to="/Notifications" 
                             className="view-all"
