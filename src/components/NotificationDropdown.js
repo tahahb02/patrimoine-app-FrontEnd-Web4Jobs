@@ -184,7 +184,7 @@ const NotificationDropdown = () => {
                                                 </button>
                                             </div>
                                             {notification.type === 'FEEDBACK' && (
-                                                <small className="feedback-tag">Feedback demandé</small>
+                                                <small className="feedback-tag"></small>
                                             )}
                                         </div>
                                     </div>
