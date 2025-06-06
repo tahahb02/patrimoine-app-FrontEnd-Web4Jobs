@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaBell, FaTimes, FaCircle, FaCheck } from 'react-icons/fa';
+import { FaBell, FaTimes, FaCircle, FaCheck, FaArrowRight } from 'react-icons/fa';
 import axios from 'axios';
 import '../styles/notificationDropdown.css';
 
@@ -118,6 +118,15 @@ const NotificationDropdown = () => {
         }
     };
 
+    const handleViewFullMessage = (e, notification) => {
+        e.stopPropagation(); // Empêche le déclenchement du click sur la notification
+        if (!notification.lue) {
+            markAsRead(notification.id);
+        }
+        setIsOpen(false);
+        navigate('/Notifications');
+    };
+
     return (
         <div className="notification-dropdown">
             <div 
@@ -165,9 +174,17 @@ const NotificationDropdown = () => {
                                         <div className="notification-message">
                                             <strong>{notification.titre}</strong>
                                             <p>{notification.message}</p>
-                                            <small>{formatDate(notification.dateCreation)}</small>
+                                            <div className="notification-footer-meta">
+                                                <small>{formatDate(notification.dateCreation)}</small>
+                                                <button 
+                                                    className="view-full-message"
+                                                    onClick={(e) => handleViewFullMessage(e, notification)}
+                                                >
+                                                    Voir tout le message <FaArrowRight />
+                                                </button>
+                                            </div>
                                             {notification.type === 'FEEDBACK' && (
-                                                <small className="feedback-tag">...</small>
+                                                <small className="feedback-tag">Feedback demandé</small>
                                             )}
                                         </div>
                                     </div>

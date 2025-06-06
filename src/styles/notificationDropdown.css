@@ -225,3 +225,30 @@
 .notification-list::-webkit-scrollbar-thumb:hover {
     background: #7e57c2;
 }
+
+.notification-footer-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 5px;
+}
+
+.view-full-message {
+    background: none;
+    border: none;
+    color: #0066cc;
+    cursor: pointer;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    padding: 0;
+}
+
+.view-full-message:hover {
+    text-decoration: underline;
+}
+
+.view-full-message svg {
+    margin-left: 3px;
+    font-size: 0.7rem;
+}
