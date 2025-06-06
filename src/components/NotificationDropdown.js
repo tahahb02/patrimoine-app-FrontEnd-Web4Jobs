@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FaBell, FaTimes, FaCircle, FaCheck } from 'react-icons/fa';
 import axios from 'axios';
 import '../styles/notificationDropdown.css';
@@ -9,6 +9,7 @@ const NotificationDropdown = () => {
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchNotifications = async () => {
@@ -106,6 +107,8 @@ const NotificationDropdown = () => {
             markAsRead(notification.id);
         }
         setIsOpen(false);
+        // Redirection vers la page Notifications
+        navigate('/Notifications');
     };
 
     return (
