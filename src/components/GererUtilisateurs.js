@@ -324,6 +324,7 @@ const GererUtilisateurs = () => {
               <option value="DIRECTEUR">Directeur</option>
               <option value="ADMIN">Admin</option>
               <option value="RESPONSABLE_PATRIMOINE">Responsable Patrimoine</option>
+              <option value="TECHNICIEN">Technicien</option>
             </select>
           </div>
 
@@ -589,6 +590,7 @@ const GererUtilisateurs = () => {
                         <option value="DIRECTEUR">Directeur</option>
                         <option value="ADMIN">Admin</option>
                         <option value="RESPONSABLE_PATRIMOINE">Responsable Patrimoine</option>
+                        <option value="TECHNICIEN">Technicien</option>
                       </select>
                     </div>
                   </div>

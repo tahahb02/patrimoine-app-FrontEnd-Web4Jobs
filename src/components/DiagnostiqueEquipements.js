@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   FaTools, FaClock, FaExclamationTriangle, FaCheckCircle, 
-  FaSearch, FaSort, FaSortUp,FaTachometerAlt,FaWrench,FaHistory,FaBell,FaUser,FaSignOutAlt,FaBars,FaTimes, FaSortDown 
+  FaSearch, FaSort, FaSortUp, FaTachometerAlt, FaWrench, 
+  FaHistory, FaBell, FaUser, FaSignOutAlt, FaBars, FaTimes, 
+  FaSortDown, FaRobot, FaEye, FaInfoCircle
 } from 'react-icons/fa';
-import { Pagination } from 'antd';
+import { Pagination, Tag, Tooltip, Modal, message } from 'antd';
 import "../styles/responsable.css";
 
 const DiagnostiqueEquipements = () => {
@@ -23,31 +25,83 @@ const DiagnostiqueEquipements = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
     const [sortConfig, setSortConfig] = useState({ key: 'nomEquipement', direction: 'asc' });
+    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [detailDiagnostic, setDetailDiagnostic] = useState(null);
     const navigate = useNavigate();
     const location = useLocation();
-    const userVilleCentre = localStorage.getItem("userVilleCentre");
+    const userVilleCentre = localStorage.getItem("userVilleCentre") || "";
+    const token = localStorage.getItem("token");
 
     useEffect(() => {
         const fetchDiagnostics = async () => {
             try {
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                setLoading(true);
                 
-                const simulatedData = [
-                    { id: 1, nomEquipement: "PC-0245", categorie: "Ordinateur", heuresUtilisation: 1250, nbDemandes: 22 },
-                    { id: 2, nomEquipement: "Projecteur-012", categorie: "Projecteur", heuresUtilisation: 1580, nbDemandes: 18 },
-                    { id: 3, nomEquipement: "Imprimante-045", categorie: "Imprimante", heuresUtilisation: 980, nbDemandes: 15 }
-                ];
+                if (!token || !userVilleCentre) {
+                    throw new Error("Authentification ou ville centre manquante");
+                }
+
+                const normalizedVille = userVilleCentre.toUpperCase().replace(" ", "_");
                 
-                setDiagnostics(simulatedData);
-                setLoading(false);
+                const response = await fetch(`http://localhost:8080/api/diagnostics/ville/${normalizedVille}`, {
+                    method: "GET",
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-Role': 'TECHNICIEN',
+                        'X-User-Center': normalizedVille,
+                        'Authorization': `Bearer ${token}`
+                    },
+                    credentials: 'include'
+                });
+
+                if (response.status === 403) {
+                    navigate('/login');
+                    return;
+                }
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (!Array.isArray(data)) {
+                    throw new Error("Format de données invalide");
+                }
+
+                const formattedData = data.map(diagnostic => ({
+                    id: diagnostic.id,
+                    nomEquipement: diagnostic.nomEquipement || 'Non spécifié',
+                    categorie: diagnostic.categorie || 'Non spécifié',
+                    idEquipement: diagnostic.idEquipement || 'Non spécifié',
+                    dateDiagnostic: diagnostic.dateDiagnostic ? 
+                        new Date(diagnostic.dateDiagnostic).toLocaleString() : 'Non spécifié',
+                    typeProbleme: diagnostic.typeProbleme || 'Non spécifié',
+                    degreUrgence: diagnostic.degreUrgence || 'Non spécifié',
+                    descriptionProbleme: diagnostic.descriptionProbleme || 'Aucune description',
+                    dureeEstimee: diagnostic.dureeEstimee || 0,
+                    besoinMaintenance: Boolean(diagnostic.besoinMaintenance),
+                    maintenanceEffectuee: Boolean(diagnostic.maintenanceEffectuee),
+                    automaticDiagnostic: Boolean(diagnostic.automaticDiagnostic),
+                    villeCentre: diagnostic.villeCentre || userVilleCentre
+                }));
+                
+                setDiagnostics(formattedData);
             } catch (error) {
-                console.error("Erreur lors de la récupération des diagnostics:", error);
+                console.error("Erreur fetch diagnostics:", error);
+                message.error(error.message || 'Erreur de chargement');
+                
+                if (error.message.includes("Authentification") || error.message.includes("403")) {
+                    navigate('/login');
+                }
+            } finally {
                 setLoading(false);
             }
         };
 
         fetchDiagnostics();
-    }, []);
+    }, [userVilleCentre, navigate, token]);
 
     const handleLogout = () => {
         localStorage.removeItem("token");
@@ -70,16 +124,54 @@ const DiagnostiqueEquipements = () => {
 
     const handleSubmit = async () => {
         try {
-            await new Promise(resolve => setTimeout(resolve, 500));
+            if (!selectedDiagnostic) return;
+
+            const response = await fetch(`http://localhost:8080/api/diagnostics/${selectedDiagnostic.id}/evaluation`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                    'X-User-Role': 'TECHNICIEN'
+                },
+                body: JSON.stringify({
+                    besoinMaintenance: formData.besoinMaintenance,
+                    typeProbleme: formData.typeProbleme,
+                    degreUrgence: formData.degreUrgence,
+                    description: formData.description,
+                    dureeEstimee: parseInt(formData.dureeEstimee)
+                }),
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Erreur de mise à jour');
+            }
+
+            const updatedDiagnostic = await response.json();
             
-            const updatedDiagnostics = diagnostics.map(d => 
-                d.id === selectedDiagnostic.id ? { ...d, ...formData } : d
-            );
-            setDiagnostics(updatedDiagnostics);
+            setDiagnostics(diagnostics.map(d => 
+                d.id === updatedDiagnostic.id ? {
+                    ...d,
+                    besoinMaintenance: Boolean(updatedDiagnostic.besoinMaintenance),
+                    typeProbleme: updatedDiagnostic.typeProbleme || d.typeProbleme,
+                    degreUrgence: updatedDiagnostic.degreUrgence || d.degreUrgence,
+                    descriptionProbleme: updatedDiagnostic.descriptionProbleme || d.descriptionProbleme,
+                    dureeEstimee: updatedDiagnostic.dureeEstimee || d.dureeEstimee
+                } : d
+            ));
+            
+            message.success('Diagnostic mis à jour');
             setSelectedDiagnostic(null);
         } catch (error) {
-            console.error("Erreur lors de la mise à jour du diagnostic:", error);
+            console.error("Erreur update diagnostic:", error);
+            message.error(error.message || "Erreur de mise à jour");
         }
+    };
+
+    const showDetails = (diagnostic) => {
+        setDetailDiagnostic(diagnostic);
+        setIsModalVisible(true);
     };
 
     const requestSort = (key) => {
@@ -95,16 +187,32 @@ const DiagnostiqueEquipements = () => {
         return sortConfig.direction === 'asc' ? <FaSortUp /> : <FaSortDown />;
     };
 
-    const filteredDiagnostics = diagnostics.filter(diagnostic =>
-        diagnostic.nomEquipement.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        diagnostic.categorie.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const getUrgencyColor = (urgency) => {
+        switch (urgency) {
+            case 'ELEVE': return 'red';
+            case 'MOYEN': return 'orange';
+            case 'FAIBLE': return 'green';
+            default: return 'gray';
+        }
+    };
+
+    const filteredDiagnostics = diagnostics.filter(diagnostic => {
+        const searchTermLower = searchTerm.toLowerCase();
+        return (
+            (diagnostic.nomEquipement?.toLowerCase().includes(searchTermLower)) ||
+            (diagnostic.categorie?.toLowerCase().includes(searchTermLower)) ||
+            (diagnostic.idEquipement?.toLowerCase().includes(searchTermLower))
+        );
+    });
 
     const sortedDiagnostics = [...filteredDiagnostics].sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) {
+        const aValue = a[sortConfig.key] || '';
+        const bValue = b[sortConfig.key] || '';
+        
+        if (aValue < bValue) {
             return sortConfig.direction === 'asc' ? -1 : 1;
         }
-        if (a[sortConfig.key] > b[sortConfig.key]) {
+        if (aValue > bValue) {
             return sortConfig.direction === 'asc' ? 1 : -1;
         }
         return 0;
@@ -175,9 +283,13 @@ const DiagnostiqueEquipements = () => {
                 </div>
 
                 <div className="alert-panel">
-                    <div className="alert urgent-alert">
-                        <FaExclamationTriangle />
-                        <span>Les équipements sont ajoutés automatiquement lorsqu'ils atteignent 1000h d'utilisation (PC) ou 1500h (autres), ou après 20/40 demandes.</span>
+                    <div className="alert info-alert">
+                        <FaInfoCircle />
+                        <span>
+                            Les diagnostics sont générés automatiquement par le système ou manuellement par les techniciens.
+                            <br />
+                            Les diagnostics automatiques sont marqués par l'icône <FaRobot />.
+                        </span>
                     </div>
                 </div>
 
@@ -201,20 +313,22 @@ const DiagnostiqueEquipements = () => {
                                         </span>
                                     </div>
                                 </th>
-                                <th onClick={() => requestSort('heuresUtilisation')}>
+                                <th onClick={() => requestSort('idEquipement')}>
                                     <div className="sortable-header">
-                                        Heures d'utilisation
+                                        ID Équipement
                                         <span className="sort-icon">
-                                            {getSortIcon('heuresUtilisation')}
+                                            {getSortIcon('idEquipement')}
                                         </span>
                                     </div>
                                 </th>
-                                <th onClick={() => requestSort('nbDemandes')}>
+                                <th>
                                     <div className="sortable-header">
-                                        Demandes
-                                        <span className="sort-icon">
-                                            {getSortIcon('nbDemandes')}
-                                        </span>
+                                        Type de Diagnostic
+                                    </div>
+                                </th>
+                                <th>
+                                    <div className="sortable-header">
+                                        Urgence
                                     </div>
                                 </th>
                                 <th>Actions</th>
@@ -223,12 +337,14 @@ const DiagnostiqueEquipements = () => {
                         <tbody>
                             {loading ? (
                                 <tr>
-                                    <td colSpan="5" className="loading">Chargement en cours...</td>
+                                    <td colSpan="6" className="loading">Chargement en cours...</td>
                                 </tr>
                             ) : currentDiagnostics.length === 0 ? (
                                 <tr>
-                                    <td colSpan="5" className="no-data-message">
-                                        Aucun équipement nécessitant un diagnostic pour le moment
+                                    <td colSpan="6" className="no-data-message">
+                                        {diagnostics.length === 0 ? 
+                                            "Aucun diagnostic disponible pour le moment" : 
+                                            "Aucun résultat trouvé pour votre recherche"}
                                     </td>
                                 </tr>
                             ) : (
@@ -236,15 +352,42 @@ const DiagnostiqueEquipements = () => {
                                     <tr key={diagnostic.id}>
                                         <td>{diagnostic.nomEquipement}</td>
                                         <td>{diagnostic.categorie}</td>
-                                        <td>{diagnostic.heuresUtilisation.toLocaleString()}h</td>
-                                        <td>{diagnostic.nbDemandes}</td>
+                                        <td>{diagnostic.idEquipement}</td>
                                         <td>
-                                            <button 
-                                                className="btn btn-primary"
-                                                onClick={() => handleEvaluate(diagnostic)}
-                                            >
-                                                Évaluer
-                                            </button>
+                                            {diagnostic.automaticDiagnostic ? (
+                                                <Tag icon={<FaRobot />} color="blue">
+                                                    Automatique
+                                                </Tag>
+                                            ) : (
+                                                <Tag color="geekblue">Manuel</Tag>
+                                            )}
+                                        </td>
+                                        <td>
+                                            {diagnostic.degreUrgence && diagnostic.degreUrgence !== 'Non spécifié' ? (
+                                                <Tag color={getUrgencyColor(diagnostic.degreUrgence)}>
+                                                    {diagnostic.degreUrgence}
+                                                </Tag>
+                                            ) : (
+                                                <Tag color="gray">Non évalué</Tag>
+                                            )}
+                                        </td>
+                                        <td>
+                                            <div className="action-buttons">
+                                                <Tooltip title="Voir les détails">
+                                                    <button 
+                                                        className="btn btn-view"
+                                                        onClick={() => showDetails(diagnostic)}
+                                                    >
+                                                        <FaEye /> Détails
+                                                    </button>
+                                                </Tooltip>
+                                                <button 
+                                                    className="btn btn-primary"
+                                                    onClick={() => handleEvaluate(diagnostic)}
+                                                >
+                                                    Évaluer
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
@@ -264,6 +407,91 @@ const DiagnostiqueEquipements = () => {
                         />
                     </div>
                 )}
+
+                <Modal
+                    title={`Détails du diagnostic - ${detailDiagnostic?.nomEquipement || 'Non spécifié'}`}
+                    open={isModalVisible}
+                    onCancel={() => setIsModalVisible(false)}
+                    footer={null}
+                    width={700}
+                >
+                    {detailDiagnostic && (
+                        <div className="diagnostic-details">
+                            <div className="detail-row">
+                                <span className="detail-label">ID Équipement:</span>
+                                <span className="detail-value">{detailDiagnostic.idEquipement}</span>
+                            </div>
+                            <div className="detail-row">
+                                <span className="detail-label">Nom:</span>
+                                <span className="detail-value">{detailDiagnostic.nomEquipement}</span>
+                            </div>
+                            <div className="detail-row">
+                                <span className="detail-label">Catégorie:</span>
+                                <span className="detail-value">{detailDiagnostic.categorie}</span>
+                            </div>
+                            <div className="detail-row">
+                                <span className="detail-label">Type de diagnostic:</span>
+                                <span className="detail-value">
+                                    {detailDiagnostic.automaticDiagnostic ? (
+                                        <Tag icon={<FaRobot />} color="blue">Automatique</Tag>
+                                    ) : (
+                                        <Tag color="geekblue">Manuel</Tag>
+                                    )}
+                                </span>
+                            </div>
+                            <div className="detail-row">
+                                <span className="detail-label">Date du diagnostic:</span>
+                                <span className="detail-value">
+                                    {detailDiagnostic.dateDiagnostic}
+                                </span>
+                            </div>
+                            <div className="detail-row">
+                                <span className="detail-label">Besoin de maintenance:</span>
+                                <span className="detail-value">
+                                    {detailDiagnostic.besoinMaintenance ? (
+                                        <Tag color="red">Oui</Tag>
+                                    ) : (
+                                        <Tag color="green">Non</Tag>
+                                    )}
+                                </span>
+                            </div>
+                            {detailDiagnostic.besoinMaintenance && (
+                                <>
+                                    <div className="detail-row">
+                                        <span className="detail-label">Type de problème:</span>
+                                        <span className="detail-value">
+                                            {detailDiagnostic.typeProbleme}
+                                        </span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="detail-label">Degré d'urgence:</span>
+                                        <span className="detail-value">
+                                            {detailDiagnostic.degreUrgence && detailDiagnostic.degreUrgence !== 'Non spécifié' ? (
+                                                <Tag color={getUrgencyColor(detailDiagnostic.degreUrgence)}>
+                                                    {detailDiagnostic.degreUrgence}
+                                                </Tag>
+                                            ) : (
+                                                <Tag color="gray">Non évalué</Tag>
+                                            )}
+                                        </span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="detail-label">Durée estimée:</span>
+                                        <span className="detail-value">
+                                            {detailDiagnostic.dureeEstimee} heures
+                                        </span>
+                                    </div>
+                                    <div className="detail-row full-width">
+                                        <span className="detail-label">Description du problème:</span>
+                                        <div className="detail-value description-box">
+                                            {detailDiagnostic.descriptionProbleme}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
+                </Modal>
 
                 {selectedDiagnostic && (
                     <div className="modal-overlay">
@@ -290,6 +518,7 @@ const DiagnostiqueEquipements = () => {
                                             className="filter-select"
                                             value={formData.typeProbleme}
                                             onChange={(e) => setFormData({...formData, typeProbleme: e.target.value})}
+                                            required
                                         >
                                             <option value="">Sélectionner</option>
                                             <option value="MATERIEL">Matériel</option>
@@ -303,6 +532,7 @@ const DiagnostiqueEquipements = () => {
                                             className="filter-select"
                                             value={formData.degreUrgence}
                                             onChange={(e) => setFormData({...formData, degreUrgence: e.target.value})}
+                                            required
                                         >
                                             <option value="">Sélectionner</option>
                                             <option value="FAIBLE">Faible</option>
@@ -316,6 +546,8 @@ const DiagnostiqueEquipements = () => {
                                         <textarea 
                                             value={formData.description}
                                             onChange={(e) => setFormData({...formData, description: e.target.value})}
+                                            placeholder="Décrivez le problème en détail..."
+                                            required
                                         />
                                     </div>
 
@@ -325,6 +557,8 @@ const DiagnostiqueEquipements = () => {
                                             type="number" 
                                             value={formData.dureeEstimee}
                                             onChange={(e) => setFormData({...formData, dureeEstimee: e.target.value})}
+                                            min="1"
+                                            required
                                         />
                                     </div>
                                 </>

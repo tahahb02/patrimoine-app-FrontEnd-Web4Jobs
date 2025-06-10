@@ -86,6 +86,9 @@ export default function LoginPage() {
           case "RESPONSABLE_PATRIMOINE":
           navigate("/ResponsablePatrimoineHome");
           break;
+          case "TECHNICIEN":
+          navigate("/TechnicienHome");
+          break;
         default:
           setErrorMessage("Accès refusé. Rôle non reconnu.");
       }
