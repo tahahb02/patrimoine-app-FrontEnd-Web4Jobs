@@ -16,15 +16,21 @@ const NotificationDropdown = () => {
             try {
                 const token = localStorage.getItem('token');
                 const userId = localStorage.getItem('userId');
+                const userRole = localStorage.getItem('userRole');
                 
                 if (!token || !userId) return;
 
-                const response = await axios.get(
-                    `http://localhost:8080/api/notifications/user/${userId}`, 
-                    {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    }
-                );
+                // Construire l'URL en fonction du rôle
+                let url = `http://localhost:8080/api/notifications/user/${userId}`;
+                if (userRole === 'ADHERANT') {
+                    url += '?types=FEEDBACK,REPONSE';
+                } else if (userRole === 'RESPONSABLE') {
+                    url += '?types=DEMANDE';
+                }
+
+                const response = await axios.get(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
 
                 const countResponse = await axios.get(
                     `http://localhost:8080/api/notifications/count/user/${userId}/unread`, 
@@ -108,18 +114,23 @@ const NotificationDropdown = () => {
         }
         setIsOpen(false);
         
-        // Redirection différente selon le type de notification
-        if (notification.type === 'FEEDBACK') {
-            // Pour les notifications de feedback, rediriger vers le formulaire
-            navigate(`/FormulaireFeedback/${notification.relatedId || notification.id}`);
+        const userRole = localStorage.getItem("userRole");
+        
+        if (userRole === "ADHERANT") {
+            if (notification.type === 'FEEDBACK') {
+                navigate(`/FormulaireFeedback/${notification.relatedId || notification.id}`);
+            } else {
+                navigate('/MesDemandes');
+            }
+        } else if (userRole === "RESPONSABLE") {
+            navigate(`/demandes/${notification.relatedId || notification.id}`);
         } else {
-            // Pour les autres types, rediriger vers la page des notifications
             navigate('/Notifications');
         }
     };
 
     const handleViewFullMessage = (e, notification) => {
-        e.stopPropagation(); // Empêche le déclenchement du click sur la notification
+        e.stopPropagation();
         if (!notification.lue) {
             markAsRead(notification.id);
         }
@@ -174,6 +185,12 @@ const NotificationDropdown = () => {
                                         <div className="notification-message">
                                             <strong>{notification.titre}</strong>
                                             <p>{notification.message}</p>
+                                            {notification.demandeurNom && (
+                                                <small>Demandeur: {notification.demandeurPrenom} {notification.demandeurNom}</small>
+                                            )}
+                                            {notification.statutDemande && (
+                                                <small>Statut: {notification.statutDemande}</small>
+                                            )}
                                             <div className="notification-footer-meta">
                                                 <small>{formatDate(notification.dateCreation)}</small>
                                                 <button 

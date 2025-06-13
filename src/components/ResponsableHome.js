@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt, FaHistory, FaBoxOpen } from "react-icons/fa";
 import "../styles/responsable.css";
+import NotificationDropdown from "../components/NotificationDropdown";
 
 const ResponsableHome = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -47,6 +48,8 @@ const ResponsableHome = () => {
                     {sidebarOpen ? <FaTimes /> : <FaBars />}
                 </div>
                 <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
+                    <NotificationDropdown />
+
             </nav>
 
             <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
