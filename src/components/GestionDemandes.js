@@ -23,6 +23,7 @@ import {
 import { Pagination } from 'antd';
 import Swal from 'sweetalert2';
 import "../styles/responsable.css";
+import NotificationDropdown from "../components/NotificationDropdown";   
 
 const API_URL = "http://localhost:8080/api/demandes";
 
@@ -503,6 +504,7 @@ const GestionDemandes = () => {
           {sidebarOpen ? <FaTimes /> : <FaBars />}
         </div>
         <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
+        <NotificationDropdown />
       </nav>
 
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>

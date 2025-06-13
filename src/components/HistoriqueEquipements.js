@@ -7,6 +7,7 @@ import {
 } from 'react-icons/fa';
 import { Pagination } from 'antd';
 import '../styles/responsable.css';
+import NotificationDropdown from "../components/NotificationDropdown";    
 
 const API_URL = 'http://localhost:8080/api/equipments';
 const HISTORIQUE_URL = 'http://localhost:8080/api/historique-equipements';
@@ -187,6 +188,7 @@ const HistoriqueEquipements = () => {
           {sidebarOpen ? <FaTimes /> : <FaBars />}
         </div>
         <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
+        <NotificationDropdown />
       </nav>
 
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
