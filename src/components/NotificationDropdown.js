@@ -211,6 +211,7 @@ const NotificationDropdown = () => {
                                             {notification.demandeurNom && (
                                                 <small>Demandeur: {notification.demandeurPrenom} {notification.demandeurNom}</small>
                                             )}
+                                            <br></br>
                                             {notification.statutDemande && (
                                                 <small>Statut: {notification.statutDemande}</small>
                                             )}
