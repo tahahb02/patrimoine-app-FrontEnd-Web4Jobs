@@ -11,43 +11,54 @@ const NotificationDropdown = () => {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        const fetchNotifications = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const userId = localStorage.getItem('userId');
-                const userRole = localStorage.getItem('userRole');
-                
-                if (!token || !userId) return;
+    const fetchNotifications = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const userId = localStorage.getItem('userId');
+            const userRole = localStorage.getItem('userRole');
+            
+            if (!token || !userId) return;
 
-                // Construire l'URL en fonction du rôle
-                let url = `http://localhost:8080/api/notifications/user/${userId}`;
-                if (userRole === 'ADHERANT') {
-                    url += '?types=FEEDBACK,REPONSE';
-                } else if (userRole === 'RESPONSABLE') {
-                    url += '?types=DEMANDE';
+            let url = `http://localhost:8080/api/notifications/user/${userId}`;
+            const params = new URLSearchParams();
+
+            if (userRole === 'ADHERANT') {
+                params.append('types', 'FEEDBACK,REPONSE');
+            } else if (userRole === 'RESPONSABLE') {
+                params.append('types', 'DEMANDE');
+                const userCenter = localStorage.getItem('userVilleCentre');
+                if (userCenter) {
+                    params.append('villeCentre', userCenter);
                 }
+            }
 
-                const response = await axios.get(url, {
+            if (params.toString()) {
+                url += `?${params.toString()}`;
+            }
+
+            const [notificationsResponse, countResponse] = await Promise.all([
+                axios.get(url, {
                     headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                const countResponse = await axios.get(
+                }),
+                axios.get(
                     `http://localhost:8080/api/notifications/count/user/${userId}/unread`, 
                     {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        params: userRole === 'RESPONSABLE' ? { types: 'DEMANDE' } : {}
                     }
-                );
+                )
+            ]);
 
-                setAllNotifications(response.data);
-                setUnreadCount(countResponse.data);
-            } catch (error) {
-                console.error('Erreur lors du chargement des notifications:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
+            setAllNotifications(notificationsResponse.data);
+            setUnreadCount(countResponse.data);
+        } catch (error) {
+            console.error('Erreur lors du chargement des notifications:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    useEffect(() => {
         fetchNotifications();
 
         const interval = setInterval(fetchNotifications, 30000);
@@ -78,9 +89,21 @@ const NotificationDropdown = () => {
         try {
             const token = localStorage.getItem('token');
             const userId = localStorage.getItem('userId');
+            const userRole = localStorage.getItem('userRole');
             
+            let url = `http://localhost:8080/api/notifications/user/${userId}/marquer-toutes-lues`;
+            const params = new URLSearchParams();
+
+            if (userRole === 'RESPONSABLE') {
+                params.append('types', 'DEMANDE');
+            }
+
+            if (params.toString()) {
+                url += `?${params.toString()}`;
+            }
+
             await axios.put(
-                `http://localhost:8080/api/notifications/user/${userId}/marquer-toutes-lues`, 
+                url, 
                 {}, 
                 {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -200,9 +223,6 @@ const NotificationDropdown = () => {
                                                     Voir tout le message <FaArrowRight />
                                                 </button>
                                             </div>
-                                            {notification.type === 'FEEDBACK' && (
-                                                <small className="feedback-tag"></small>
-                                            )}
                                         </div>
                                     </div>
                                 ))}

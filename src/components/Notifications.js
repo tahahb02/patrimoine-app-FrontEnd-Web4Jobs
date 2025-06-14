@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import NotificationDropdown from "../components/NotificationDropdown";
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   FaBars, FaTimes, FaBell, FaUser, FaSignOutAlt, FaCheck, 
@@ -20,47 +19,56 @@ const Notifications = () => {
   const userId = localStorage.getItem("userId");
   const userRole = localStorage.getItem("userRole");
 
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          navigate("/login");
-          return;
-        }
-
-        // Construire l'URL en fonction du rôle
-        let url = `http://localhost:8080/api/notifications/user/${userId}`;
-        if (userRole === 'ADHERANT') {
-          url += '?types=FEEDBACK,REPONSE';
-        } else if (userRole === 'RESPONSABLE') {
-          url += '?types=DEMANDE,ALERTE';
-        }
-
-        const response = await fetch(url, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setNotifications(data);
-        } else {
-          throw new Error('Erreur lors du chargement des notifications');
-        }
-      } catch (error) {
-        console.error(error);
-        Swal.fire({
-          title: 'Erreur',
-          text: 'Impossible de charger les notifications',
-          icon: 'error'
-        });
-      } finally {
-        setLoading(false);
+  const fetchNotifications = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        navigate("/login");
+        return;
       }
-    };
 
+      let url = `http://localhost:8080/api/notifications/user/${userId}`;
+      const params = new URLSearchParams();
+
+      if (userRole === 'ADHERANT') {
+        params.append('types', 'FEEDBACK,REPONSE');
+      } else if (userRole === 'RESPONSABLE') {
+        params.append('types', 'DEMANDE');
+        const userCenter = localStorage.getItem('userVilleCentre');
+        if (userCenter) {
+          params.append('villeCentre', userCenter);
+        }
+      }
+
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setNotifications(data);
+      } else {
+        throw new Error('Erreur lors du chargement des notifications');
+      }
+    } catch (error) {
+      console.error(error);
+      Swal.fire({
+        title: 'Erreur',
+        text: 'Impossible de charger les notifications',
+        icon: 'error'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchNotifications();
   }, [userId, navigate, userRole]);
 
@@ -85,7 +93,21 @@ const Notifications = () => {
   const markAllAsRead = async () => {
     try {
       const token = localStorage.getItem("token");
-      await fetch(`http://localhost:8080/api/notifications/user/${userId}/marquer-toutes-lues`, {
+      const userId = localStorage.getItem("userId");
+      const userRole = localStorage.getItem("userRole");
+
+      let url = `http://localhost:8080/api/notifications/user/${userId}/marquer-toutes-lues`;
+      const params = new URLSearchParams();
+
+      if (userRole === 'RESPONSABLE') {
+        params.append('types', 'DEMANDE');
+      }
+
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
+      await fetch(url, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -221,7 +243,6 @@ const Notifications = () => {
             {sidebarOpen ? <FaTimes /> : <FaBars />}
         </div>
         <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
-        <NotificationDropdown />
       </nav>
 
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
