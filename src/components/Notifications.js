@@ -268,7 +268,7 @@ const Notifications = () => {
           <p>
             {userRole === 'ADHERANT' 
               ? "Retrouvez ici toutes vos notifications et demandes de feedback" 
-              : "Gestion des notifications et alertes concernant les demandes"}
+              : "Gestion des notifications et alertes concernant les demandes des equipements"}
           </p>
           
           {notifications.length > 0 && (
