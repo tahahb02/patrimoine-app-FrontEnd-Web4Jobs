@@ -1,17 +1,31 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, FaBell, FaUser, FaSignOutAlt, FaHistory, FaBoxOpen } from "react-icons/fa";
-import "../styles/responsable.css";
+import { 
+  FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, 
+  FaBell, FaUser, FaSignOutAlt, FaHistory, FaBoxOpen,FaCheckCircle,FaUsers, FaChartLine 
+} from "react-icons/fa";
+import axios from "axios";
+import { Bar, Pie } from "react-chartjs-2";
+import { Chart, registerables } from 'chart.js';
 import NotificationDropdown from "../components/NotificationDropdown";
+import "../styles/responsable.css";
+
+Chart.register(...registerables);
 
 const ResponsableHome = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [userData, setUserData] = useState(null);
+    const [stats, setStats] = useState({
+        equipments: 0,
+        pendingRequests: 0,
+        completedRequests: 0,
+        centerStats: {}
+    });
+    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
     const location = useLocation();
 
     useEffect(() => {
-        // Récupérer les données utilisateur depuis localStorage
         const userNom = localStorage.getItem("userNom");
         const userPrenom = localStorage.getItem("userPrenom");
         const userVilleCentre = localStorage.getItem("userVilleCentre");
@@ -22,8 +36,20 @@ const ResponsableHome = () => {
                 prenom: userPrenom,
                 villeCentre: userVilleCentre
             });
+            fetchStatistics(userVilleCentre);
         }
     }, []);
+
+    const fetchStatistics = async (center) => {
+        try {
+            const response = await axios.get(`/api/statistics/center/${center}`);
+            setStats(response.data);
+            setLoading(false);
+        } catch (error) {
+            console.error("Error fetching statistics:", error);
+            setLoading(false);
+        }
+    };
 
     const handleLogout = () => {
         localStorage.removeItem("token");
@@ -41,6 +67,34 @@ const ResponsableHome = () => {
         return ville.charAt(0) + ville.slice(1).toLowerCase().replace(/_/g, " ");
     };
 
+    const requestsChartData = {
+        labels: ['En attente', 'Acceptées', 'Refusées', 'Terminées'],
+        datasets: [
+            {
+                label: 'Demandes',
+                data: [
+                    stats.pendingRequests,
+                    stats.centerStats.accepted || 0,
+                    stats.centerStats.rejected || 0,
+                    stats.completedRequests
+                ],
+                backgroundColor: [
+                    'rgba(255, 206, 86, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(255, 99, 132, 0.7)',
+                    'rgba(54, 162, 235, 0.7)'
+                ],
+                borderColor: [
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)'
+                ],
+                borderWidth: 1,
+            },
+        ],
+    };
+
     return (
         <div className={`dashboard-container ${sidebarOpen ? "sidebar-expanded" : ""}`}>
             <nav className="navbar">
@@ -48,8 +102,7 @@ const ResponsableHome = () => {
                     {sidebarOpen ? <FaTimes /> : <FaBars />}
                 </div>
                 <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
-                    <NotificationDropdown />
-
+                <NotificationDropdown />
             </nav>
 
             <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
@@ -69,11 +122,8 @@ const ResponsableHome = () => {
                     <li className={location.pathname === '/HistoriqueDemandes' ? 'active' : ''}>
                         <Link to="/HistoriqueDemandes"><FaHistory /><span>Historique des Demandes</span></Link>
                     </li>
-                    <li className={location.pathname === '/HistoriqueEquipements' ? 'active' : ''}>
-                        <Link to="/HistoriqueEquipements"><FaHistory /><span>Historique des Équipements</span></Link>
-                    </li>
-                    <li className={location.pathname === '/Notifications' ? 'active' : ''}>
-                        <Link to="/Notifications"><FaBell /><span>Notifications</span></Link>
+                    <li className={location.pathname === '/Analytics' ? 'active' : ''}>
+                        <Link to="/Analytics"><FaChartLine /><span>Statistiques</span></Link>
                     </li>
                 </ul>
 
@@ -96,20 +146,103 @@ const ResponsableHome = () => {
                     Bienvenue, {userData?.prenom} {userData?.nom}<br />
                     <span className="welcome-subtitle">Responsable du centre {formatVilleCentre(userData?.villeCentre)}</span>
                 </h2>
-                <div className="dashboard-cards">
-                    <div className="card">
-                        <h3>Équipements</h3>
-                        <p>120 enregistrés</p>
-                    </div>
-                    <div className="card">
-                        <h3>Demandes en attente</h3>
-                        <p>5 nouvelles</p>
-                    </div>
-                    <div className="card">
-                        <h3>Notifications</h3>
-                        <p>3 alertes</p>
-                    </div>
-                </div>
+                
+                {loading ? (
+                    <div className="loading">Chargement des statistiques...</div>
+                ) : (
+                    <>
+                        <div className="dashboard-cards">
+                            <div className="stat-card">
+                                <div className="stat-icon equipment">
+                                    <FaCogs />
+                                </div>
+                                <div className="stat-info">
+                                    <h3>Équipements</h3>
+                                    <p>{stats.equipments}</p>
+                                    <span>Disponibles: {stats.centerStats.availableEquipments || 0}</span>
+                                </div>
+                            </div>
+
+                            <div className="stat-card">
+                                <div className="stat-icon pending">
+                                    <FaClipboardList />
+                                </div>
+                                <div className="stat-info">
+                                    <h3>Demandes en attente</h3>
+                                    <p>{stats.pendingRequests}</p>
+                                    <span>Urgentes: {stats.centerStats.urgentRequests || 0}</span>
+                                </div>
+                            </div>
+
+                            <div className="stat-card">
+                                <div className="stat-icon completed">
+                                    <FaCheckCircle />
+                                </div>
+                                <div className="stat-info">
+                                    <h3>Demandes terminées</h3>
+                                    <p>{stats.completedRequests}</p>
+                                    <span>Ce mois</span>
+                                </div>
+                            </div>
+
+                            <div className="stat-card">
+                                <div className="stat-icon members">
+                                    <FaUsers />
+                                </div>
+                                <div className="stat-info">
+                                    <h3>Adhérents</h3>
+                                    <p>{stats.centerStats.adherants || 0}</p>
+                                    <span>Actifs</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="charts-container">
+                            <div className="chart-wrapper">
+                                <h3>Statut des demandes</h3>
+                                <div className="chart">
+                                    <Pie 
+                                        data={requestsChartData}
+                                        options={{
+                                            responsive: true,
+                                            plugins: {
+                                                legend: {
+                                                    position: 'top',
+                                                },
+                                            },
+                                        }}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="chart-wrapper">
+                                <h3>Activité récente</h3>
+                                <div className="chart">
+                                    <Bar
+                                        data={{
+                                            labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+                                            datasets: [
+                                                {
+                                                    label: 'Demandes',
+                                                    data: [12, 19, 3, 5, 2, 3, 7],
+                                                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                                                }
+                                            ]
+                                        }}
+                                        options={{
+                                            responsive: true,
+                                            plugins: {
+                                                legend: {
+                                                    display: false,
+                                                },
+                                            },
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                )}
             </main>
         </div>
     );
