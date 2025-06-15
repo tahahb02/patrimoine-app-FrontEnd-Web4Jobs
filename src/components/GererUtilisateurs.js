@@ -47,7 +47,7 @@ const GererUtilisateurs = () => {
   const location = useLocation();
 
   const villesCentre = [
-    "TINGHIR", "TEMARA", "ESSAOUIRA", 
+    "TINGHIR", "TEMARA", "TCHAD", "ESSAOUIRA", 
     "DAKHLA", "LAAYOUNE", "NADOR", "AIN_EL_AOUDA"
   ];
 
