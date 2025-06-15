@@ -2,14 +2,29 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
   FaBars, FaTimes, FaTachometerAlt, FaUsers, FaUserCog, 
-  FaBell, FaUser, FaSignOutAlt, FaChartLine, FaBuilding 
+  FaUser, FaSignOutAlt, FaChartLine, FaBuilding 
 } from "react-icons/fa";
 import axios from "axios";
-import { Line, Bar, Pie } from "react-chartjs-2";
+import { Line, Bar } from "react-chartjs-2";
 import { Chart, registerables } from 'chart.js';
 import "../styles/admin.css";
 
 Chart.register(...registerables);
+
+const api = axios.create({
+  baseURL: process.env.REACT_APP_API_URL || "http://localhost:8080",
+  timeout: 5000
+});
+
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}, error => {
+  return Promise.reject(error);
+});
 
 const AdminHome = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -18,76 +33,192 @@ const AdminHome = () => {
         totalAdherants: 0,
         totalResponsables: 0,
         totalTechniciens: 0,
-        centersStats: []
+        centersStats: {},
+        newUsersStats: {
+            totalNewUsers: 0,
+            newAdherants: 0,
+            newResponsables: 0,
+            newTechniciens: 0
+        },
+        evolutionData: []
     });
     const [loading, setLoading] = useState(true);
     const [timeRange, setTimeRange] = useState('week');
+    const [error, setError] = useState(null);
     const navigate = useNavigate();
     const location = useLocation();
 
-    useEffect(() => {
-        fetchStatistics();
-    }, [timeRange]);
-
-    const fetchStatistics = async () => {
+    const fetchWithRetry = async (url, options = {}, retries = 3) => {
         try {
-            const [generalRes, centersRes, evolutionRes] = await Promise.all([
-                axios.get("/api/statistics/general"),
-                axios.get("/api/statistics/by-center"),
-                axios.get(`/api/statistics/new-users?period=${timeRange}`)
-            ]);
-            
-            setStats({
-                ...generalRes.data,
-                centersStats: centersRes.data,
-                evolution: evolutionRes.data
-            });
-            
-            setLoading(false);
-        } catch (error) {
-            console.error("Error fetching statistics:", error);
-            setLoading(false);
+            const response = await api(url, options);
+            return response.data;
+        } catch (err) {
+            if (retries > 0) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                return fetchWithRetry(url, options, retries - 1);
+            }
+            throw err;
         }
     };
 
+    const formatCenterStats = (data) => {
+        const centerMapping = {
+            'TINGHIR': 'Tinghir',
+            'TEMARA': 'Témara',
+            'TCHAD': 'Tchad',
+            'ESSAOUIRA': 'Essaouira',
+            'DAKHLA': 'Dakhla',
+            'LAAYOUNE': 'Laayoune',
+            'NADOR': 'Nador',
+            'AIN_EL_AOUDA': 'Ain El Aouda'
+        };
+
+        const formatted = {};
+        Object.entries(centerMapping).forEach(([key, name]) => {
+            const centerData = data[key] || {};
+            formatted[key] = {
+                name,
+                total: centerData.total || 0,
+                adherants: centerData.adherants || 0,
+                responsables: centerData.responsables || 0,
+                techniciens: centerData.techniciens || 0
+            };
+        });
+        return formatted;
+    };
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                
+                if (!localStorage.getItem("token")) {
+                    navigate("/login");
+                    return;
+                }
+
+                const endDate = new Date();
+                const startDate = new Date();
+                
+                switch(timeRange) {
+                    case 'day': startDate.setDate(endDate.getDate() - 1); break;
+                    case 'week': startDate.setDate(endDate.getDate() - 7); break;
+                    case 'month': startDate.setMonth(endDate.getMonth() - 1); break;
+                    case 'year': startDate.setFullYear(endDate.getFullYear() - 1); break;
+                    default: startDate.setDate(endDate.getDate() - 7);
+                }
+
+                const [generalRes, centersRes, newUsersRes, evolutionRes] = await Promise.all([
+                    fetchWithRetry("/api/statistics/general"),
+                    fetchWithRetry("/api/statistics/by-center"),
+                    fetchWithRetry(`/api/statistics/new-users?period=${timeRange}`),
+                    fetchWithRetry(
+                        `/api/statistics/adherants/evolution?startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}`
+                    )
+                ]);
+
+                const formattedCenters = formatCenterStats(centersRes || {});
+
+                const formattedEvolutionData = (evolutionRes?.data || []).map(item => {
+                    try {
+                        return {
+                            date: new Date(item.date || item[0]),
+                            count: parseInt(item.count || item[1] || 0)
+                        };
+                    } catch (e) {
+                        return null;
+                    }
+                }).filter(Boolean);
+
+                setStats({
+                    totalUsers: generalRes?.totalUsers || 0,
+                    totalAdherants: generalRes?.totalAdherants || 0,
+                    totalResponsables: generalRes?.totalResponsables || 0,
+                    totalTechniciens: generalRes?.totalTechniciens || 0,
+                    centersStats: formattedCenters,
+                    newUsersStats: {
+                        totalNewUsers: newUsersRes?.totalNewUsers || 0,
+                        newAdherants: newUsersRes?.newAdherants || 0,
+                        newResponsables: newUsersRes?.newResponsables || 0,
+                        newTechniciens: newUsersRes?.newTechniciens || 0
+                    },
+                    evolutionData: formattedEvolutionData
+                });
+
+            } catch (err) {
+                console.error("Fetch error:", err);
+                setError(err.response?.data?.message || 
+                       err.message || 
+                       "Erreur lors du chargement des données. Veuillez réessayer.");
+                
+                if (err.response?.status === 401) {
+                    localStorage.removeItem("token");
+                    navigate("/login");
+                }
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [timeRange, navigate]);
+
     const handleLogout = () => {
-        localStorage.removeItem("userSession");
-        navigate("/", { replace: true });
+        localStorage.removeItem("token");
+        navigate("/login");
     };
 
-    const evolutionChartData = {
-        labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
-        datasets: [
-            {
-                label: 'Nouveaux adhérents',
-                data: [12, 19, 3, 5, 2, 3, 7],
-                backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                borderColor: 'rgba(54, 162, 235, 1)',
-                borderWidth: 1,
-            },
-        ],
+    const getEvolutionChartData = () => ({
+        labels: stats.evolutionData.map(item => 
+            item.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+        ),
+        datasets: [{
+            label: 'Nouveaux adhérents',
+            data: stats.evolutionData.map(item => item.count),
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1,
+            tension: 0.1
+        }]
+    });
+
+    const getCentersChartData = () => {
+        const activeCenters = Object.entries(stats.centersStats)
+            .filter(([_, data]) => data.total > 0);
+
+        return {
+            labels: activeCenters.map(([_, data]) => data.name),
+            datasets: [
+                {
+                    label: 'Adhérents',
+                    data: activeCenters.map(([_, data]) => data.adherants),
+                    backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                },
+                {
+                    label: 'Responsables',
+                    data: activeCenters.map(([_, data]) => data.responsables),
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                },
+                {
+                    label: 'Techniciens',
+                    data: activeCenters.map(([_, data]) => data.techniciens),
+                    backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                }
+            ]
+        };
     };
 
-    const centersChartData = {
-        labels: stats.centersStats ? Object.keys(stats.centersStats) : [],
-        datasets: [
-            {
-                label: 'Adhérents',
-                data: stats.centersStats ? Object.values(stats.centersStats).map(c => c.adherants) : [],
-                backgroundColor: 'rgba(75, 192, 192, 0.6)',
-            },
-            {
-                label: 'Responsables',
-                data: stats.centersStats ? Object.values(stats.centersStats).map(c => c.responsables) : [],
-                backgroundColor: 'rgba(54, 162, 235, 0.6)',
-            },
-            {
-                label: 'Techniciens',
-                data: stats.centersStats ? Object.values(stats.centersStats).map(c => c.techniciens) : [],
-                backgroundColor: 'rgba(255, 99, 132, 0.6)',
-            },
-        ],
-    };
+    const centerTotals = Object.entries(stats.centersStats)
+        .filter(([_, data]) => data.total > 0)
+        .map(([key, data]) => ({
+            center: key,
+            name: data.name,
+            ...data
+        }));
+
+    const hasCentersData = centerTotals.length > 0;
+    const hasEvolutionData = stats.evolutionData.length > 0;
 
     return (
         <div className={`dashboard-container ${sidebarOpen ? "sidebar-expanded" : ""}`}>
@@ -131,8 +262,20 @@ const AdminHome = () => {
             <main className="content">
                 <h2>Tableau de Bord Administrateur</h2>
                 
+                {error && (
+                    <div className="error-message">
+                        <p>{error}</p>
+                        <button onClick={() => window.location.reload()} className="retry-button">
+                            Réessayer
+                        </button>
+                    </div>
+                )}
+                
                 {loading ? (
-                    <div className="loading">Chargement des statistiques...</div>
+                    <div className="loading">
+                        <div className="spinner"></div>
+                        <span>Chargement des statistiques...</span>
+                    </div>
                 ) : (
                     <>
                         <div className="time-range-selector">
@@ -181,7 +324,7 @@ const AdminHome = () => {
                                 <div className="stat-info">
                                     <h3>Adhérents</h3>
                                     <p>{stats.totalAdherants}</p>
-                                    <span>+{stats.evolution?.newAdherants || 0} nouveaux</span>
+                                    <span>+{stats.newUsersStats.newAdherants} nouveaux</span>
                                 </div>
                             </div>
 
@@ -192,7 +335,7 @@ const AdminHome = () => {
                                 <div className="stat-info">
                                     <h3>Responsables</h3>
                                     <p>{stats.totalResponsables}</p>
-                                    <span>+{stats.evolution?.newResponsables || 0} nouveaux</span>
+                                    <span>+{stats.newUsersStats.newResponsables} nouveaux</span>
                                 </div>
                             </div>
 
@@ -203,8 +346,41 @@ const AdminHome = () => {
                                 <div className="stat-info">
                                     <h3>Techniciens</h3>
                                     <p>{stats.totalTechniciens}</p>
-                                    <span>+{stats.evolution?.newTechniciens || 0} nouveaux</span>
+                                    <span>+{stats.newUsersStats.newTechniciens} nouveaux</span>
                                 </div>
+                            </div>
+                        </div>
+
+                        <div className="centers-summary">
+                            <h3>Répartition par centre</h3>
+                            <div className="centers-grid">
+                                {hasCentersData ? (
+                                    centerTotals.map(({ center, name, total, adherants, responsables, techniciens }) => (
+                                        <div key={center} className="center-card">
+                                            <h4>{name}</h4>
+                                            <div className="center-stats">
+                                                <div>
+                                                    <span>Total</span>
+                                                    <strong>{total}</strong>
+                                                </div>
+                                                <div>
+                                                    <span>Adhérents</span>
+                                                    <strong>{adherants}</strong>
+                                                </div>
+                                                <div>
+                                                    <span>Responsables</span>
+                                                    <strong>{responsables}</strong>
+                                                </div>
+                                                <div>
+                                                    <span>Techniciens</span>
+                                                    <strong>{techniciens}</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="no-data">Aucune donnée de centre disponible</p>
+                                )}
                             </div>
                         </div>
                         
@@ -212,51 +388,70 @@ const AdminHome = () => {
                             <div className="chart-wrapper">
                                 <h3>Évolution des nouveaux adhérents</h3>
                                 <div className="chart">
-                                    <Line 
-                                        data={evolutionChartData}
-                                        options={{
-                                            responsive: true,
-                                            plugins: {
-                                                legend: {
-                                                    position: 'top',
+                                    {hasEvolutionData ? (
+                                        <Line 
+                                            data={getEvolutionChartData()}
+                                            options={{
+                                                responsive: true,
+                                                plugins: {
+                                                    legend: {
+                                                        position: 'top',
+                                                    },
+                                                    title: {
+                                                        display: true,
+                                                        text: 'Nouveaux adhérents'
+                                                    },
                                                 },
-                                                title: {
-                                                    display: true,
-                                                    text: 'Nouveaux adhérents par jour'
-                                                },
-                                            },
-                                        }}
-                                    />
+                                                scales: {
+                                                    y: {
+                                                        beginAtZero: true,
+                                                        ticks: {
+                                                            precision: 0
+                                                        }
+                                                    }
+                                                }
+                                            }}
+                                        />
+                                    ) : (
+                                        <p className="no-data">Aucune donnée d'évolution disponible pour cette période</p>
+                                    )}
                                 </div>
                             </div>
 
                             <div className="chart-wrapper">
                                 <h3>Répartition par centre</h3>
                                 <div className="chart">
-                                    <Bar
-                                        data={centersChartData}
-                                        options={{
-                                            responsive: true,
-                                            plugins: {
-                                                legend: {
-                                                    position: 'top',
+                                    {hasCentersData ? (
+                                        <Bar
+                                            data={getCentersChartData()}
+                                            options={{
+                                                responsive: true,
+                                                plugins: {
+                                                    legend: {
+                                                        position: 'top',
+                                                    },
+                                                    title: {
+                                                        display: true,
+                                                        text: 'Utilisateurs par centre'
+                                                    },
                                                 },
-                                                title: {
-                                                    display: true,
-                                                    text: 'Utilisateurs par centre'
-                                                },
-                                            },
-                                            scales: {
-                                                x: {
-                                                    stacked: true,
-                                                },
-                                                y: {
-                                                    stacked: true,
-                                                    beginAtZero: true
+                                                scales: {
+                                                    x: {
+                                                        stacked: true,
+                                                    },
+                                                    y: {
+                                                        stacked: true,
+                                                        beginAtZero: true,
+                                                        ticks: {
+                                                            precision: 0
+                                                        }
+                                                    }
                                                 }
-                                            }
-                                        }}
-                                    />
+                                            }}
+                                        />
+                                    ) : (
+                                        <p className="no-data">Aucune donnée de centre disponible</p>
+                                    )}
                                 </div>
                             </div>
                         </div>
