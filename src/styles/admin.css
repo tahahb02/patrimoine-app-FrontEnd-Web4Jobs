@@ -898,3 +898,117 @@
     color: #777;
     padding: 20px;
 }
+
+/* ================ CENTERS SECTION IMPROVEMENTS ================ */
+.centers-summary {
+  margin: 2rem 0;
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.centers-summary h3 {
+  color: var(--primary-color);
+  font-size: 1.25rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--divider-color);
+  display: flex;
+  align-items: center;
+}
+
+.centers-summary h3 svg {
+  margin-right: 0.75rem;
+  color: var(--primary-light);
+}
+
+.centers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.5rem;
+}
+
+.center-card {
+  background: #f9f9f9;
+  border-radius: 10px;
+  padding: 1.25rem;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.center-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+  border-color: rgba(74, 20, 140, 0.1);
+}
+
+.center-card h4 {
+  margin: 0 0 1rem 0;
+  color: var(--primary-color);
+  font-size: 1.1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+
+.center-card h4::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary-light);
+  margin-right: 0.75rem;
+}
+
+.center-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+.center-stats > div {
+  background: white;
+  border-radius: 8px;
+  padding: 0.75rem;
+  text-align: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+}
+
+.center-stats span {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+}
+
+.center-stats strong {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .centers-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+  
+  .center-card {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .centers-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .centers-summary {
+    padding: 1rem;
+  }
+}
