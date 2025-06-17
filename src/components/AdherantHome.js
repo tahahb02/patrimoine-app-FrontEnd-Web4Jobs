@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
   FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, 
-  FaBell, FaUser, FaSignOutAlt, FaClipboardCheck,FaCheckCircle, FaHistory 
+  FaBell, FaUser, FaSignOutAlt, FaClipboardCheck, FaCheckCircle, FaHistory 
 } from "react-icons/fa";
 import axios from "axios";
 import { Bar, Pie } from "react-chartjs-2";
@@ -12,6 +12,24 @@ import "../styles/adherant.css";
 
 Chart.register(...registerables);
 
+const api = axios.create({
+  baseURL: process.env.REACT_APP_API_URL || "http://localhost:8080",
+  timeout: 5000
+});
+
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+    config.headers['X-User-Role'] = localStorage.getItem("userRole");
+    config.headers['X-User-Center'] = localStorage.getItem("userVilleCentre");
+    config.headers['X-User-Id'] = localStorage.getItem("userId");
+  }
+  return config;
+}, error => {
+  return Promise.reject(error);
+});
+
 const AdherantHome = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [userData, setUserData] = useState(null);
@@ -19,49 +37,112 @@ const AdherantHome = () => {
         availableEquipments: 0,
         pendingRequests: 0,
         completedRequests: 0,
-        centerStats: {}
+        centerStats: {
+            accepted: 0,
+            rejected: 0,
+            onLoan: 0,
+            inMaintenance: 0
+        }
     });
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const navigate = useNavigate();
     const location = useLocation();
 
-    useEffect(() => {
-        const userNom = localStorage.getItem("userNom");
-        const userPrenom = localStorage.getItem("userPrenom");
-        const userVilleCentre = localStorage.getItem("userVilleCentre");
-        const userId = localStorage.getItem("userId");
-        
-        if (userNom && userPrenom && userVilleCentre && userId) {
-            setUserData({
-                nom: userNom,
-                prenom: userPrenom,
-                villeCentre: userVilleCentre,
-                id: userId
-            });
-            fetchStatistics(userVilleCentre, userId);
-        }
-    }, []);
-
-    const fetchStatistics = async (center, userId) => {
+    const fetchWithRetry = async (url, options = {}, retries = 3) => {
         try {
-            const [centerRes, userRes] = await Promise.all([
-                axios.get(`/api/statistics/center/${center}`),
-                axios.get(`/api/statistics/user/${userId}`)
-            ]);
-            
-            setStats({
-                availableEquipments: centerRes.data.availableEquipments || 0,
-                pendingRequests: userRes.data.pendingRequests || 0,
-                completedRequests: userRes.data.completedRequests || 0,
-                centerStats: centerRes.data
-            });
-            
-            setLoading(false);
-        } catch (error) {
-            console.error("Error fetching statistics:", error);
-            setLoading(false);
+            const response = await api(url, options);
+            return response.data;
+        } catch (err) {
+            if (retries > 0) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                return fetchWithRetry(url, options, retries - 1);
+            }
+            throw err;
         }
     };
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                
+                const userNom = localStorage.getItem("userNom");
+                const userPrenom = localStorage.getItem("userPrenom");
+                const userVilleCentre = localStorage.getItem("userVilleCentre");
+                const userId = localStorage.getItem("userId");
+                const userRole = localStorage.getItem("userRole");
+                
+                if (!userNom || !userPrenom || !userVilleCentre || !userId || !userRole) {
+                    navigate("/login");
+                    return;
+                }
+
+                // Vérifier que l'utilisateur a bien le rôle ADHERANT
+                if (userRole !== "ADHERANT") {
+                    navigate("/unauthorized");
+                    return;
+                }
+
+                setUserData({
+                    nom: userNom,
+                    prenom: userPrenom,
+                    villeCentre: userVilleCentre,
+                    id: userId,
+                    role: userRole
+                });
+
+                // Fetch all statistics
+                const [
+                    equipmentsRes, 
+                    demandesRes
+                ] = await Promise.all([
+                    fetchWithRetry(`/api/equipments/validated?villeCentre=${userVilleCentre}`),
+                    fetchWithRetry(`/api/demandes/by-user/${userId}`)
+                ]);
+
+                // Calculate statistics
+                const pendingRequests = demandesRes.filter(d => d.statut === "EN_ATTENTE").length;
+                const completedRequests = demandesRes.filter(d => d.statut === "RETOURNEE").length;
+                const acceptedRequests = demandesRes.filter(d => d.statut === "ACCEPTEE").length;
+                const rejectedRequests = demandesRes.filter(d => d.statut === "REFUSEE").length;
+
+                // Get equipment stats from the equipments list
+                const onLoan = equipmentsRes.filter(e => e.status === "EN_PRÊT").length;
+                const inMaintenance = equipmentsRes.filter(e => e.enMaintenance).length;
+
+                setStats({
+                    availableEquipments: equipmentsRes.length - onLoan - inMaintenance,
+                    pendingRequests,
+                    completedRequests,
+                    centerStats: {
+                        accepted: acceptedRequests,
+                        rejected: rejectedRequests,
+                        onLoan,
+                        inMaintenance
+                    }
+                });
+
+            } catch (err) {
+                console.error("Fetch error:", err);
+                setError(err.response?.data?.message || 
+                       err.message || 
+                       "Erreur lors du chargement des données. Veuillez réessayer.");
+                
+                if (err.response?.status === 401) {
+                    localStorage.removeItem("token");
+                    navigate("/login");
+                } else if (err.response?.status === 403) {
+                    navigate("/unauthorized");
+                }
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [navigate]);
 
     const handleLogout = () => {
         localStorage.removeItem("token");
@@ -76,7 +157,9 @@ const AdherantHome = () => {
 
     const formatVilleCentre = (ville) => {
         if (!ville) return "";
-        return ville.charAt(0) + ville.slice(1).toLowerCase().replace(/_/g, " ");
+        return ville.split('_').map(word => 
+            word.charAt(0) + word.slice(1).toLowerCase()
+        ).join(' ');
     };
 
     const requestsData = {
@@ -86,8 +169,8 @@ const AdherantHome = () => {
                 label: 'Mes demandes',
                 data: [
                     stats.pendingRequests,
-                    stats.centerStats.accepted || 0,
-                    stats.centerStats.rejected || 0,
+                    stats.centerStats.accepted,
+                    stats.centerStats.rejected,
                     stats.completedRequests
                 ],
                 backgroundColor: [
@@ -114,8 +197,8 @@ const AdherantHome = () => {
                 label: 'Équipements',
                 data: [
                     stats.availableEquipments,
-                    stats.centerStats.onLoan || 0,
-                    stats.centerStats.inMaintenance || 0
+                    stats.centerStats.onLoan,
+                    stats.centerStats.inMaintenance
                 ],
                 backgroundColor: [
                     'rgba(75, 192, 192, 0.7)',
@@ -181,8 +264,20 @@ const AdherantHome = () => {
                     <span className="welcome-subtitle">Adhérent du centre {formatVilleCentre(userData?.villeCentre)}</span>
                 </h2>
                 
+                {error && (
+                    <div className="error-message">
+                        <p>{error}</p>
+                        <button onClick={() => window.location.reload()} className="retry-button">
+                            Réessayer
+                        </button>
+                    </div>
+                )}
+                
                 {loading ? (
-                    <div className="loading">Chargement des statistiques...</div>
+                    <div className="loading">
+                        <div className="spinner"></div>
+                        <span>Chargement des statistiques...</span>
+                    </div>
                 ) : (
                     <>
                         <div className="dashboard-cards">
@@ -261,6 +356,14 @@ const AdherantHome = () => {
                                                     display: false,
                                                 },
                                             },
+                                            scales: {
+                                                y: {
+                                                    beginAtZero: true,
+                                                    ticks: {
+                                                        precision: 0
+                                                    }
+                                                }
+                                            }
                                         }}
                                     />
                                 </div>

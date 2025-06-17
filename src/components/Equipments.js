@@ -427,9 +427,15 @@ const fetchValidatedEquipments = async () => {
                 }}>
                   <FaEdit />
                 </button>
-                <button className="delete-button" onClick={() => handleDeleteEquipment(equipment.id)}>
-                  <FaTrash />
-                </button>
+                
+                {/*
+                  <button className="delete-button" onClick={() => handleDeleteEquipment(equipment.id)}>
+                    <FaTrash />
+                  </button>
+                */}
+
+
+
               </div>
             </div>
           ))}
