@@ -316,11 +316,7 @@ const Notifications = () => {
                       </p>
                     )}
                     
-                    {notification.statutDemande && (
-                      <p className="notification-meta">
-                        <FaInfoCircle /> Statut: {notification.statutDemande}
-                      </p>
-                    )}
+                    
                     
                     {notification.equipmentName && (
                       <p className="notification-meta">

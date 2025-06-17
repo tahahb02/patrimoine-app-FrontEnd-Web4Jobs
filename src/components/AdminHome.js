@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
   FaBars, FaTimes, FaTachometerAlt, FaUsers, FaUserCog, 
-  FaUser, FaSignOutAlt, FaChartLine, FaBuilding 
+  FaUser, FaSignOutAlt, FaBell, FaChartLine, FaBuilding 
 } from "react-icons/fa";
 import axios from "axios";
 import { Line, Bar } from "react-chartjs-2";
@@ -240,12 +240,10 @@ const AdminHome = () => {
                     <li className={location.pathname === '/GererAdherants' ? 'active' : ''}>
                         <Link to="/GererAdherants"><FaUserCog /><span>Gérer les Adhérents</span></Link>
                     </li>
-                    <li className={location.pathname === '/Centres' ? 'active' : ''}>
-                        <Link to="/Centres"><FaBuilding /><span>Gestion des Centres</span></Link>
-                    </li>
-                    <li className={location.pathname === '/Analytics' ? 'active' : ''}>
-                        <Link to="/Analytics"><FaChartLine /><span>Analytics</span></Link>
-                    </li>
+                    
+                     <li className={location.pathname === '/Notifications' ? 'active' : ''}>
+                                <Link to=""><FaBell /><span>Notifications</span></Link>
+                              </li>
                 </ul>
 
                 <div className="sidebar-bottom">

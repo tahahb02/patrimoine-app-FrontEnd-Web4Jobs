@@ -212,9 +212,7 @@ const NotificationDropdown = () => {
                                                 <small>Demandeur: {notification.demandeurPrenom} {notification.demandeurNom}</small>
                                             )}
                                             <br></br>
-                                            {notification.statutDemande && (
-                                                <small>Statut: {notification.statutDemande}</small>
-                                            )}
+                                           
                                             <div className="notification-footer-meta">
                                                 <small>{formatDate(notification.dateCreation)}</small>
                                                 <button 

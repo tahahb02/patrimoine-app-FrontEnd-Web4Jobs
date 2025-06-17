@@ -106,40 +106,43 @@ const ResponsableHome = () => {
             </nav>
 
             <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
-                <ul className="sidebar-menu">
-                    <li className={location.pathname === '/ResponsableHome' ? 'active' : ''}>
-                        <Link to="/ResponsableHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
-                    </li>
-                    <li className={location.pathname === '/Equipments' ? 'active' : ''}>
-                        <Link to="/Equipments"><FaCogs /><span>Gestion des Équipements</span></Link>
-                    </li>
-                    <li className={location.pathname === '/GestionDemandes' ? 'active' : ''}>
-                        <Link to="/GestionDemandes"><FaClipboardList /><span>Gestion des Demandes</span></Link>
-                    </li>
-                    <li className={location.pathname === '/LivraisonsRetours' ? 'active' : ''}>
-                        <Link to="/LivraisonsRetours"><FaBoxOpen /><span>Livraisons/Retours</span></Link>
-                    </li>
-                    <li className={location.pathname === '/HistoriqueDemandes' ? 'active' : ''}>
-                        <Link to="/HistoriqueDemandes"><FaHistory /><span>Historique des Demandes</span></Link>
-                    </li>
-                    <li className={location.pathname === '/Analytics' ? 'active' : ''}>
-                        <Link to="/Analytics"><FaChartLine /><span>Statistiques</span></Link>
-                    </li>
-                </ul>
-
-                <div className="sidebar-bottom">
-                    <ul>
+                    <ul className="sidebar-menu">
+                        <li className={location.pathname === '/ResponsableHome' ? 'active' : ''}>
+                          <Link to="/ResponsableHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
+                        </li>
+                        <li className={location.pathname === '/Equipments' ? 'active' : ''}>
+                          <Link to="/Equipments"><FaCogs /><span>Gestion des Équipements</span></Link>
+                        </li>
+                        <li className={location.pathname === '/GestionDemandes' ? 'active' : ''}>
+                          <Link to="/GestionDemandes"><FaClipboardList /><span>Gestion des Demandes</span></Link>
+                        </li>
+                        <li className={location.pathname === '/LivraisonsRetours' ? 'active' : ''}>
+                          <Link to="/LivraisonsRetours"><FaBoxOpen /><span>Livraisons/Retours</span></Link>
+                        </li>
+                        <li className={location.pathname === '/HistoriqueDemandes' ? 'active' : ''}>
+                          <Link to="/HistoriqueDemandes"><FaHistory /><span>Historique des Demandes</span></Link>
+                        </li>
+                        <li className={location.pathname === '/HistoriqueEquipements' ? 'active' : ''}>
+                          <Link to="/HistoriqueEquipements"><FaHistory /><span>Historique des Équipements</span></Link>
+                        </li>
+                        <li className={location.pathname === '/Notifications' ? 'active' : ''}>
+                          <Link to="/Notifications"><FaBell /><span>Notifications</span></Link>
+                      </li>
+                    </ul>
+            
+                    <div className="sidebar-bottom">
+                      <ul>
                         <li className={location.pathname === '/account' ? 'active' : ''}>
-                            <Link to="/account"><FaUser /><span>Compte</span></Link>
+                          <Link to="/account"><FaUser /><span>Compte</span></Link>
                         </li>
                         <li className="logout">
-                            <button onClick={handleLogout} style={{ background: 'none', border: 'none', padding: '10px', width: '100%', textAlign: 'left' }}>
-                                <FaSignOutAlt /><span>Déconnexion</span>
-                            </button>
+                          <button onClick={handleLogout} style={{ background: 'none', border: 'none', padding: '10px', width: '100%', textAlign: 'left' }}>
+                            <FaSignOutAlt /><span>Déconnexion</span>
+                          </button>
                         </li>
-                    </ul>
-                </div>
-            </aside>
+                      </ul>
+                    </div>
+                  </aside>
 
             <main className="content">
                 <h2>

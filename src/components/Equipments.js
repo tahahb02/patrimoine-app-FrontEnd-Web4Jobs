@@ -334,26 +334,26 @@ const fetchValidatedEquipments = async () => {
 
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <ul className="sidebar-menu">
-          <li className={location.pathname === '/ResponsableHome' ? 'active' : ''}>
-            <Link to="/ResponsableHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
-          </li>
-          <li className={location.pathname === '/Equipments' ? 'active' : ''}>
-            <Link to="/Equipments"><FaCogs /><span>Gestion des Équipements</span></Link>
-          </li>
-          <li className={location.pathname === '/GestionDemandes' ? 'active' : ''}>
-            <Link to="/GestionDemandes"><FaClipboardList /><span>Gestion des Demandes</span></Link>
-          </li>
-          <li className={location.pathname === '/LivraisonsRetours' ? 'active' : ''}>
-            <Link to="/LivraisonsRetours"><FaBoxOpen /><span>Livraisons/Retours</span></Link>
-          </li>
-          <li className={location.pathname === '/HistoriqueDemandes' ? 'active' : ''}>
-            <Link to="/HistoriqueDemandes"><FaHistory /><span>Historique des Demandes</span></Link>
-          </li>
-          <li className={location.pathname === '/HistoriqueEquipements' ? 'active' : ''}>
-            <Link to="/HistoriqueEquipements"><FaHistory /><span>Historique des Équipements</span></Link>
-          </li>
-          <li className={location.pathname === '/Notifications' ? 'active' : ''}>
-            <Link to="/Notifications"><FaBell /><span>Notifications</span></Link>
+            <li className={location.pathname === '/ResponsableHome' ? 'active' : ''}>
+              <Link to="/ResponsableHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
+            </li>
+            <li className={location.pathname === '/Equipments' ? 'active' : ''}>
+              <Link to="/Equipments"><FaCogs /><span>Gestion des Équipements</span></Link>
+            </li>
+            <li className={location.pathname === '/GestionDemandes' ? 'active' : ''}>
+              <Link to="/GestionDemandes"><FaClipboardList /><span>Gestion des Demandes</span></Link>
+            </li>
+            <li className={location.pathname === '/LivraisonsRetours' ? 'active' : ''}>
+              <Link to="/LivraisonsRetours"><FaBoxOpen /><span>Livraisons/Retours</span></Link>
+            </li>
+            <li className={location.pathname === '/HistoriqueDemandes' ? 'active' : ''}>
+              <Link to="/HistoriqueDemandes"><FaHistory /><span>Historique des Demandes</span></Link>
+            </li>
+            <li className={location.pathname === '/HistoriqueEquipements' ? 'active' : ''}>
+              <Link to="/HistoriqueEquipements"><FaHistory /><span>Historique des Équipements</span></Link>
+            </li>
+            <li className={location.pathname === '/Notifications' ? 'active' : ''}>
+              <Link to="/Notifications"><FaBell /><span>Notifications</span></Link>
           </li>
         </ul>
 

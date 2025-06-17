@@ -282,11 +282,8 @@ const GererUtilisateurs = () => {
           <li className={location.pathname === '/GererAdherants' ? 'active' : ''}>
             <Link to="/GererAdherants"><FaUserCog /><span>Gérer les Adhérents</span></Link>
           </li>
-          <li className={location.pathname === '/GererPatrimoine' ? 'active' : ''}>
-            <Link to="/GererPatrimoine"><FaBoxes /><span>Gérer le Patrimoine</span></Link>
-          </li>
           <li className={location.pathname === '/Notifications' ? 'active' : ''}>
-            <Link to="/Notifications"><FaBell /><span>Notifications</span></Link>
+            <Link to=""><FaBell /><span>Notifications</span></Link>
           </li>
         </ul>
 
