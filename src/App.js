@@ -27,7 +27,9 @@ import HistoriqueReparations from './components/HistoriqueReparations';
 import NotificationsTechnicien from './components/NotificationsTechnicien';
 import Notifications from './components/Notifications';
 import MesDemandes from './components/MesDemandes;';
-
+import DirecteurHome from './components/DirecteurHome';  
+import EquipementsDirecteur  from './components/EquipementsDirecteur';
+import DirecteurUtilisateurs from './components/DirecteurUtilisateurs';           
 
 function App() {
     return (
@@ -60,6 +62,9 @@ function App() {
                 <Route path="/NotificationsTechnicien" element={<NotificationsTechnicien />} />
                 <Route path="/Notifications" element={<Notifications />} />
                 <Route path="/MesDemandes" element={<MesDemandes />} />
+                <Route path="/DirecteurHome" element={<DirecteurHome />} />
+                <Route path="/EquipementsDirecteur" element={<EquipementsDirecteur />} />
+                <Route path="/DirecteurUtilisateurs" element={<DirecteurUtilisateurs />} />
             </Routes>
         </Router>
     );
