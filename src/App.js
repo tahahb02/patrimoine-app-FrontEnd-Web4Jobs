@@ -26,6 +26,7 @@ import EquipementReparation from './components/EquipementReparation';
 import HistoriqueReparations from './components/HistoriqueReparations';
 import NotificationsTechnicien from './components/NotificationsTechnicien';
 import Notifications from './components/Notifications';
+import MesDemandes from './components/MesDemandes;';
 
 
 function App() {
@@ -58,6 +59,7 @@ function App() {
                 <Route path="/HistoriqueReparations" element={<HistoriqueReparations />} />
                 <Route path="/NotificationsTechnicien" element={<NotificationsTechnicien />} />
                 <Route path="/Notifications" element={<Notifications />} />
+                <Route path="/MesDemandes" element={<MesDemandes />} />
             </Routes>
         </Router>
     );
