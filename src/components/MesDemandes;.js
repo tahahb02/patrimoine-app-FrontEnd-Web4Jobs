@@ -5,9 +5,9 @@ import {
   FaBars, FaTimes, FaTachometerAlt, FaClipboardList, FaBell,
   FaUser, FaSignOutAlt, FaEye, FaCogs, FaSort, FaSortUp,
   FaSortDown, FaFilter, FaCalendarAlt, FaClipboardCheck,
-  FaInfoCircle, FaCheckCircle, FaTimesCircle, FaTruck,FaClock, FaBoxOpen
+  FaInfoCircle, FaCheckCircle, FaTimesCircle, FaTruck, FaClock, FaBoxOpen
 } from "react-icons/fa";
-import { Pagination, Spin, Alert, message, DatePicker, Tag } from "antd";
+import { Pagination, Spin, Alert, message, DatePicker } from "antd";
 import dayjs from "dayjs";
 import "../styles/adherant.css";
 
@@ -35,7 +35,10 @@ const MesDemandes = () => {
     { value: "ACCEPTEE", label: "Acceptées" },
     { value: "REJETEE", label: "Refusées" },
     { value: "LIVREE", label: "Livrées" },
-    { value: "RETOURNEE", label: "Retournées" }
+    { value: "RETOURNEE", label: "Retournées" },
+    { value: "EN_ATTENTE", label: "En attente" },
+    { value: "EN_COURS", label: "En cours" },
+    { value: "ANNULEE", label: "Annulées" }
   ];
 
   useEffect(() => {
@@ -117,12 +120,57 @@ const MesDemandes = () => {
     return sortConfig.direction === 'asc' ? <FaSortUp /> : <FaSortDown />;
   };
 
+  const getStatusTag = (statut) => {
+    if (!statut) return <span className="status-tag">Inconnu</span>;
+    
+    const statusConfig = {
+      'ACCEPTEE': { 
+        icon: <FaCheckCircle className="tag-icon" />,
+        text: 'Acceptée' 
+      },
+      'REJETEE': { 
+        icon: <FaTimesCircle className="tag-icon" />,
+        text: 'Refusée' 
+      },
+      'LIVREE': { 
+        icon: <FaTruck className="tag-icon" />,
+        text: 'Livrée' 
+      },
+      'RETOURNEE': { 
+        icon: <FaBoxOpen className="tag-icon" />,
+        text: 'Retournée' 
+      },
+      'EN_ATTENTE': { 
+        icon: <FaClock className="tag-icon" />,
+        text: 'En attente' 
+      },
+      'EN_COURS': {
+        icon: <FaCogs className="tag-icon" />,
+        text: 'En cours'
+      },
+      'ANNULEE': {
+        icon: <FaTimes className="tag-icon" />,
+        text: 'Annulée'
+      }
+    };
+
+    const config = statusConfig[statut] || { 
+      icon: <FaInfoCircle className="tag-icon" />,
+      text: statut 
+    };
+
+    return (
+      <span className={`status-tag status-tag-${statut}`}>
+        {config.icon}
+        {config.text}
+      </span>
+    );
+  };
+
   const filteredDemandes = useMemo(() => {
     return demandes.filter(demande => {
-      // Filtre par statut
       const matchesStatus = !selectedStatus || demande.statut === selectedStatus;
       
-      // Filtre par date
       let matchesDate = true;
       if (dateRange && dateRange.length === 2) {
         const startDate = dateRange[0].startOf('day');
@@ -176,25 +224,6 @@ const MesDemandes = () => {
     localStorage.removeItem("userNom");
     localStorage.removeItem("userPrenom");
     navigate("/login");
-  };
-
-  const getStatusTag = (statut) => {
-    if (!statut) return <Tag color="default">Inconnu</Tag>;
-    
-    switch(statut) {
-      case 'ACCEPTEE':
-        return <Tag icon={<FaCheckCircle />} color="success">Acceptée</Tag>;
-      case 'REJETEE':
-        return <Tag icon={<FaTimesCircle />} color="error">Refusée</Tag>;
-      case 'LIVREE':
-        return <Tag icon={<FaTruck />} color="processing">Livrée</Tag>;
-      case 'RETOURNEE':
-        return <Tag icon={<FaBoxOpen />} color="success">Retournée</Tag>;
-      case 'EN_ATTENTE':
-        return <Tag icon={<FaClock />} color="warning">En attente</Tag>;
-      default:
-        return <Tag color="default">{statut}</Tag>;
-    }
   };
 
   const handleDateChange = (dates) => {
@@ -332,66 +361,68 @@ const MesDemandes = () => {
         ) : (
           <>
             <div className="table-responsive">
-              <table className="demandes-table">
-                <thead>
-                  <tr>
-                    <th>Équipement</th>
-                    <th>Centre</th>
-                    <th onClick={() => requestSort('statut')}>
-                      <div className="sortable-header">
-                        Statut
-                        <span className="sort-icon">
-                          {getSortIcon('statut')}
-                        </span>
-                      </div>
-                    </th>
-                    <th onClick={() => requestSort('dateDemande')}>
-                      <div className="sortable-header">
-                        <FaCalendarAlt /> Date demande
-                        <span className="sort-icon">
-                          {getSortIcon('dateDemande')}
-                        </span>
-                      </div>
-                    </th>
-                    <th onClick={() => requestSort('dateReponse')}>
-                      <div className="sortable-header">
-                        <FaCalendarAlt /> Date réponse
-                        <span className="sort-icon">
-                          {getSortIcon('dateReponse')}
-                        </span>
-                      </div>
-                    </th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {currentDemandes.map((demande) => (
-                    <tr key={demande.id} className={`status-${demande.statut.toLowerCase()}`}>
-                      <td className="equipment-cell">
-                        <div className="equipment-name">{demande.nomEquipement || 'N/A'}</div>
-                        <div className="equipment-id">ID: {demande.idEquipement || 'N/A'}</div>
-                      </td>
-                      <td>{demande.centreEquipement || 'N/A'}</td>
-                      <td>
-                        <div className="status-cell">
-                          {getStatusTag(demande.statut)}
+              <div className="table-container">
+                <table className="demandes-table">
+                  <thead className="table-header-fixed">
+                    <tr>
+                      <th>Équipement</th>
+                      <th>Centre</th>
+                      <th onClick={() => requestSort('statut')}>
+                        <div className="sortable-header">
+                          Statut
+                          <span className="sort-icon">
+                            {getSortIcon('statut')}
+                          </span>
                         </div>
-                      </td>
-                      <td>{formatDateTime(demande.dateDemande)}</td>
-                      <td>{formatDateTime(demande.dateReponse) || 'En attente'}</td>
-                      <td>
-                        <button
-                          className="details-button"
-                          onClick={() => handleDetails(demande)}
-                          title="Voir détails"
-                        >
-                          <FaEye /> Détails
-                        </button>
-                      </td>
+                      </th>
+                      <th onClick={() => requestSort('dateDemande')}>
+                        <div className="sortable-header">
+                          <FaCalendarAlt /> Date demande
+                          <span className="sort-icon">
+                            {getSortIcon('dateDemande')}
+                          </span>
+                        </div>
+                      </th>
+                      <th onClick={() => requestSort('dateReponse')}>
+                        <div className="sortable-header">
+                          <FaCalendarAlt /> Date réponse
+                          <span className="sort-icon">
+                            {getSortIcon('dateReponse')}
+                          </span>
+                        </div>
+                      </th>
+                      <th>Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="table-body-scroll">
+                    {currentDemandes.map((demande) => (
+                      <tr key={demande.id} className={`status-${demande.statut.toLowerCase()}`}>
+                        <td className="equipment-cell">
+                          <div className="equipment-name">{demande.nomEquipement || 'N/A'}</div>
+                          <div className="equipment-id">ID: {demande.idEquipement || 'N/A'}</div>
+                        </td>
+                        <td>{demande.centreEquipement || 'N/A'}</td>
+                        <td>
+                          <div className="status-cell">
+                            {getStatusTag(demande.statut)}
+                          </div>
+                        </td>
+                        <td>{formatDateTime(demande.dateDemande)}</td>
+                        <td>{formatDateTime(demande.dateReponse) || 'En attente'}</td>
+                        <td>
+                          <button
+                            className="details-button"
+                            onClick={() => handleDetails(demande)}
+                            title="Voir détails"
+                          >
+                            <FaEye /> Détails
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             <div className="pagination-container">
