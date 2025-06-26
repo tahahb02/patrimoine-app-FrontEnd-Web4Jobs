@@ -2,8 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
   FaBars, FaTimes, FaTachometerAlt, FaUsers, FaCogs, 
-  FaClipboardList, FaHistory, FaWrench, FaStethoscope,
-  FaBuilding, FaChartLine, FaUser, FaSignOutAlt
+  FaClipboardList, FaHistory, FaWrench, FaBuilding,
+  FaChartLine, FaUser, FaSignOutAlt, FaUserTie,
+  FaUserGraduate, FaUserShield, FaUserAlt, FaUserCog
 } from "react-icons/fa";
 import { Bar, Pie } from "react-chartjs-2";
 import { Chart, registerables } from 'chart.js';
@@ -20,10 +21,24 @@ const DirecteurHome = () => {
         totalAdherants: 0,
         totalResponsables: 0,
         totalTechniciens: 0,
+        totalRP: 0,
         totalEquipments: 0,
-        equipmentStatus: {},
-        maintenanceStats: {},
-        diagnosticStats: {}
+        equipmentStatus: {
+            available: 0,
+            onLoan: 0,
+            maintenance: 0,
+            diagnostic: 0
+        },
+        maintenanceStats: {
+            inProgress: 0,
+            completed: 0,
+            planned: 0
+        },
+        diagnosticStats: {
+            pending: 0,
+            completed: 0
+        },
+        totalCenters: 0
     });
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
@@ -32,20 +47,23 @@ const DirecteurHome = () => {
     useEffect(() => {
         const userNom = localStorage.getItem("userNom");
         const userPrenom = localStorage.getItem("userPrenom");
+        const userRole = localStorage.getItem("userRole");
         
-        if (userNom && userPrenom) {
+        if (userNom && userPrenom && userRole === "DIRECTEUR") {
             setUserData({
                 nom: userNom,
                 prenom: userPrenom
             });
             fetchStatistics();
+        } else {
+            navigate("/login");
         }
     }, []);
 
     const fetchStatistics = async () => {
         try {
             const token = localStorage.getItem("token");
-            const response = await axios.get("/api/statistics/directeur", {
+            const response = await axios.get("http://localhost:8080/api/statistics/directeur", {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'X-User-Role': 'DIRECTEUR'
@@ -71,13 +89,13 @@ const DirecteurHome = () => {
     };
 
     const usersByRoleData = {
-        labels: ['Adhérents', 'Responsables', 'Techniciens', 'RP'],
+        labels: ['Adhérents', 'Responsables', 'Techniciens', 'Responsables Patrimoine'],
         datasets: [{
             data: [
                 stats.totalAdherants,
                 stats.totalResponsables,
                 stats.totalTechniciens,
-                stats.totalRP || 0
+                stats.totalRP
             ],
             backgroundColor: [
                 'rgba(54, 162, 235, 0.7)',
@@ -98,11 +116,12 @@ const DirecteurHome = () => {
     const equipmentStatusData = {
         labels: ['Disponibles', 'En prêt', 'En maintenance', 'En diagnostic'],
         datasets: [{
+            label: 'Statut des équipements',
             data: [
-                stats.equipmentStatus.available || 0,
-                stats.equipmentStatus.onLoan || 0,
-                stats.maintenanceStats.inProgress || 0,
-                stats.diagnosticStats.pending || 0
+                stats.equipmentStatus?.available || 0,
+                stats.equipmentStatus?.onLoan || 0,
+                stats.equipmentStatus?.maintenance || 0,
+                stats.equipmentStatus?.diagnostic || 0
             ],
             backgroundColor: [
                 'rgba(75, 192, 192, 0.7)',
@@ -114,6 +133,29 @@ const DirecteurHome = () => {
                 'rgba(75, 192, 192, 1)',
                 'rgba(54, 162, 235, 1)',
                 'rgba(255, 99, 132, 1)',
+                'rgba(255, 206, 86, 1)'
+            ],
+            borderWidth: 1
+        }]
+    };
+
+    const maintenanceActivityData = {
+        labels: ['En cours', 'Terminées', 'Planifiées'],
+        datasets: [{
+            label: 'Activité de maintenance',
+            data: [
+                stats.maintenanceStats?.inProgress || 0,
+                stats.maintenanceStats?.completed || 0,
+                stats.maintenanceStats?.planned || 0
+            ],
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.7)',
+                'rgba(75, 192, 192, 0.7)',
+                'rgba(255, 206, 86, 0.7)'
+            ],
+            borderColor: [
+                'rgba(255, 99, 132, 1)',
+                'rgba(75, 192, 192, 1)',
                 'rgba(255, 206, 86, 1)'
             ],
             borderWidth: 1
@@ -134,27 +176,24 @@ const DirecteurHome = () => {
                     <li className={location.pathname === '/DirecteurHome' ? 'active' : ''}>
                         <Link to="/DirecteurHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
                     </li>
-
                     <li className={location.pathname.includes('/DirecteurUtilisateurs') ? 'active' : ''}>
                         <Link to="/DirecteurUtilisateurs"><FaUsers /><span>Utilisateurs</span></Link>
                     </li>
-                    
                     <li className={location.pathname === '/EquipementsDirecteur' ? 'active' : ''}>
                         <Link to="/EquipementsDirecteur"><FaCogs /><span>Équipements</span></Link>
                     </li>
-                    
                     <li className={location.pathname === '/DirecteurHistoriqueDemandes' ? 'active' : ''}>
                         <Link to="/DirecteurHistoriqueDemandes"><FaClipboardList /><span>Historique Demandes</span></Link>
                     </li>
-                    
                     <li className={location.pathname === '/DirecteurHistoriqueUtilisations' ? 'active' : ''}>
-                        <Link to="/DirecteurHistoriqueUtilisations"><FaHistory /><span>Historique Utilisations Des Équipements</span></Link>
+                        <Link to="/DirecteurHistoriqueUtilisations"><FaHistory /><span>Historique Utilisations</span></Link>
                     </li>
-                    
                     <li className={location.pathname === '/DirecteurHistoriqueMaintenances' ? 'active' : ''}>
                         <Link to="/DirecteurHistoriqueMaintenances"><FaWrench /><span>Historique Maintenances</span></Link>
                     </li>
-                    
+                    <li className={location.pathname === '/DirecteurAnalytics' ? 'active' : ''}>
+                        <Link to="/DirecteurAnalytics"><FaChartLine /><span>Analytics</span></Link>
+                    </li>
                 </ul>
 
                 <div className="sidebar-bottom">
@@ -172,12 +211,10 @@ const DirecteurHome = () => {
             </aside>
 
             <main className="content">
-                <div className="welcome-container">
-                    <h2 className="welcome-title">
-                        Bienvenue, {userData?.prenom} {userData?.nom}
-                    </h2>
-                    <span className="welcome-subtitle">Directeur</span>
-                </div>
+                <h2>
+                    Bienvenue, {userData?.prenom} {userData?.nom}<br />
+                    <span className="welcome-subtitle">Directeur Exécutif</span>
+                </h2>
                 
                 {loading ? (
                     <div className="loading">Chargement des statistiques...</div>
@@ -197,18 +234,18 @@ const DirecteurHome = () => {
 
                             <div className="stat-card">
                                 <div className="stat-icon adherants">
-                                    <FaUser />
+                                    <FaUserGraduate />
                                 </div>
                                 <div className="stat-info">
                                     <h3>Adhérents</h3>
                                     <p>{stats.totalAdherants}</p>
-                                    <span>Actifs</span>
+                                    <span>Membres actifs</span>
                                 </div>
                             </div>
 
                             <div className="stat-card">
                                 <div className="stat-icon responsables">
-                                    <FaUser />
+                                    <FaUserAlt />
                                 </div>
                                 <div className="stat-info">
                                     <h3>Responsables</h3>
@@ -219,12 +256,23 @@ const DirecteurHome = () => {
 
                             <div className="stat-card">
                                 <div className="stat-icon techniciens">
-                                    <FaUser />
+                                    <FaUserCog />
                                 </div>
                                 <div className="stat-info">
                                     <h3>Techniciens</h3>
                                     <p>{stats.totalTechniciens}</p>
-                                    <span>Actifs</span>
+                                    <span>Maintenance</span>
+                                </div>
+                            </div>
+
+                            <div className="stat-card">
+                                <div className="stat-icon rp">
+                                    <FaUserTie />
+                                </div>
+                                <div className="stat-info">
+                                    <h3>Responsables Patrimoine</h3>
+                                    <p>{stats.totalRP}</p>
+                                    <span>Gestion équipements</span>
                                 </div>
                             </div>
 
@@ -235,29 +283,7 @@ const DirecteurHome = () => {
                                 <div className="stat-info">
                                     <h3>Équipements</h3>
                                     <p>{stats.totalEquipments}</p>
-                                    <span>Validés</span>
-                                </div>
-                            </div>
-
-                            <div className="stat-card">
-                                <div className="stat-icon maintenance">
-                                    <FaWrench />
-                                </div>
-                                <div className="stat-info">
-                                    <h3>Maintenances</h3>
-                                    <p>{stats.maintenanceStats.inProgress || 0}</p>
-                                    <span>En cours</span>
-                                </div>
-                            </div>
-
-                            <div className="stat-card">
-                                <div className="stat-icon diagnostics">
-                                    <FaStethoscope />
-                                </div>
-                                <div className="stat-info">
-                                    <h3>Diagnostics</h3>
-                                    <p>{stats.diagnosticStats.pending || 0}</p>
-                                    <span>En attente</span>
+                                    <span>Total</span>
                                 </div>
                             </div>
 
@@ -267,7 +293,7 @@ const DirecteurHome = () => {
                                 </div>
                                 <div className="stat-info">
                                     <h3>Centres</h3>
-                                    <p>{stats.totalCenters || 0}</p>
+                                    <p>{stats.totalCenters}</p>
                                     <span>Actifs</span>
                                 </div>
                             </div>
@@ -296,6 +322,23 @@ const DirecteurHome = () => {
                                 <div className="chart">
                                     <Bar
                                         data={equipmentStatusData}
+                                        options={{
+                                            responsive: true,
+                                            plugins: {
+                                                legend: {
+                                                    display: false,
+                                                },
+                                            },
+                                        }}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="chart-wrapper">
+                                <h3>Activité de maintenance</h3>
+                                <div className="chart">
+                                    <Bar
+                                        data={maintenanceActivityData}
                                         options={{
                                             responsive: true,
                                             plugins: {

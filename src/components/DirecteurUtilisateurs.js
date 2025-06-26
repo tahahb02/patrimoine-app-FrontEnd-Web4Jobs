@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Pagination } from 'antd';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
 import {
   FaBars,
   FaTimes,
@@ -21,9 +23,11 @@ import {
   FaHistory,
   FaClipboardList,
   FaCogs,
-  FaUserAlt
+  FaUserAlt,
+  FaEye
 } from "react-icons/fa";
 
+const MySwal = withReactContent(Swal);
 const API_URL = "http://localhost:8080/api/utilisateurs";
 
 const DirecteurUtilisateurs = () => {
@@ -42,6 +46,7 @@ const DirecteurUtilisateurs = () => {
     directeurs: 0,
     rp: 0
   });
+  const [showDetails, setShowDetails] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -120,6 +125,10 @@ const DirecteurUtilisateurs = () => {
 
   const onChange = (page) => {
     setCurrentPage(page);
+  };
+
+  const toggleDetails = (id) => {
+    setShowDetails(showDetails === id ? null : id);
   };
 
   const formatVilleCentre = (ville) => {
@@ -217,7 +226,7 @@ const DirecteurUtilisateurs = () => {
 
           <div className="stat-card">
             <div className="stat-icon responsables">
-              <FaUserTie />
+               <FaUserAlt />
             </div>
             <div className="stat-info">
               <h3>Responsables</h3>
@@ -228,7 +237,7 @@ const DirecteurUtilisateurs = () => {
 
           <div className="stat-card">
             <div className="stat-icon techniciens">
-              <FaUserAlt />
+               <FaUserCog />
             </div>
             <div className="stat-info">
               <h3>Techniciens</h3>
@@ -239,7 +248,7 @@ const DirecteurUtilisateurs = () => {
 
           <div className="stat-card">
             <div className="stat-icon rp">
-              <FaUserCog />
+              <FaUserTie />
             </div>
             <div className="stat-info">
               <h3>Responsables Patrimoine</h3>
@@ -305,46 +314,95 @@ const DirecteurUtilisateurs = () => {
                 <th>Ville</th>
                 <th>Centre</th>
                 <th>Rôle</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {currentUsers.length > 0 ? (
                 currentUsers.map((utilisateur) => (
-                  <tr key={utilisateur.id}>
-                    <td>
-                      {utilisateur.profileImage ? (
-                        <img 
-                          src={`data:image/jpeg;base64,${utilisateur.profileImage}`} 
-                          alt="Profile" 
-                          className="profile-image"
-                        />
-                      ) : (
-                        <div className="profile-placeholder">
-                          <FaUser />
+                  <React.Fragment key={utilisateur.id}>
+                    <tr>
+                      <td>
+                        {utilisateur.profileImage ? (
+                          <img 
+                            src={`data:image/jpeg;base64,${utilisateur.profileImage}`} 
+                            alt="Profile" 
+                            className="profile-image"
+                          />
+                        ) : (
+                          <div className="profile-placeholder">
+                            <FaUser />
+                          </div>
+                        )}
+                      </td>
+                      <td>{utilisateur.nom}</td>
+                      <td>{utilisateur.prenom}</td>
+                      <td>{utilisateur.email}</td>
+                      <td>{utilisateur.phone}</td>
+                      <td>{utilisateur.city}</td>
+                      <td>{formatVilleCentre(utilisateur.villeCentre)}</td>
+                      <td>
+                        <div className="role-cell">
+                          {getRoleIcon(utilisateur.role)}
+                          <span>
+                            {utilisateur.role === 'RESPONSABLE_PATRIMOINE' 
+                              ? 'Responsable Patrimoine' 
+                              : utilisateur.role}
+                          </span>
                         </div>
-                      )}
-                    </td>
-                    <td>{utilisateur.nom}</td>
-                    <td>{utilisateur.prenom}</td>
-                    <td>{utilisateur.email}</td>
-                    <td>{utilisateur.phone}</td>
-                    <td>{utilisateur.city}</td>
-                    <td>{formatVilleCentre(utilisateur.villeCentre)}</td>
-                    <td>
-                      <div className="role-cell">
-                        {getRoleIcon(utilisateur.role)}
-                        <span>
-                          {utilisateur.role === 'RESPONSABLE_PATRIMOINE' 
-                            ? 'Responsable Patrimoine' 
-                            : utilisateur.role}
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
+                      </td>
+                      <td>
+                        <button
+                          className="details-button"
+                          onClick={() => toggleDetails(utilisateur.id)}
+                        >
+                          <FaEye />
+                        </button>
+                      </td>
+                    </tr>
+                    {showDetails === utilisateur.id && (
+                      <tr className="details-row">
+                        <td colSpan="9">
+                          <div className="user-details-card">
+                            <div className="details-header">
+                              <h3>Détails de l'utilisateur</h3>
+                            </div>
+                            <div className="details-body">
+                              <div className="details-image">
+                                {utilisateur.profileImage ? (
+                                  <img 
+                                    src={`data:image/jpeg;base64,${utilisateur.profileImage}`} 
+                                    alt="Profile" 
+                                    className="profile-image-large"
+                                  />
+                                ) : (
+                                  <div className="profile-placeholder-large">
+                                    <FaUser />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="details-info">
+                                <p><strong>Nom complet:</strong> {utilisateur.prenom} {utilisateur.nom}</p>
+                                <p><strong>Email:</strong> {utilisateur.email}</p>
+                                <p><strong>Téléphone:</strong> {utilisateur.phone}</p>
+                                <p><strong>Ville:</strong> {utilisateur.city}</p>
+                                <p><strong>Centre:</strong> {formatVilleCentre(utilisateur.villeCentre)}</p>
+                                <p><strong>Rôle:</strong> 
+                                  {utilisateur.role === 'RESPONSABLE_PATRIMOINE' 
+                                    ? 'Responsable Patrimoine' 
+                                    : utilisateur.role}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="8" className="no-data">
+                  <td colSpan="9" className="no-data">
                     Aucun utilisateur trouvé
                   </td>
                 </tr>
