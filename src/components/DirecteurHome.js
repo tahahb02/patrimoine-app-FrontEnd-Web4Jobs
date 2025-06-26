@@ -248,9 +248,9 @@ const DirecteurHome = () => {
                                     <FaUserAlt />
                                 </div>
                                 <div className="stat-info">
-                                    <h3>Responsables</h3>
+                                    <h3>Responsables Centres</h3>
                                     <p>{stats.totalResponsables}</p>
-                                    <span>Centres</span>
+                                    <span>Gestion Centre</span>
                                 </div>
                             </div>
 
@@ -272,7 +272,7 @@ const DirecteurHome = () => {
                                 <div className="stat-info">
                                     <h3>Responsables Patrimoine</h3>
                                     <p>{stats.totalRP}</p>
-                                    <span>Gestion équipements</span>
+                                    <span>Gestion Globale</span>
                                 </div>
                             </div>
 

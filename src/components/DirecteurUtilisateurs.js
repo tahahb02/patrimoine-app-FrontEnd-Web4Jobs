@@ -229,9 +229,9 @@ const DirecteurUtilisateurs = () => {
                <FaUserAlt />
             </div>
             <div className="stat-info">
-              <h3>Responsables</h3>
+              <h3>Responsables Centres</h3>
               <p>{stats.responsables}</p>
-              <span>Responsables de centre</span>
+              <span>Gestion Centre</span>
             </div>
           </div>
 
@@ -242,7 +242,7 @@ const DirecteurUtilisateurs = () => {
             <div className="stat-info">
               <h3>Techniciens</h3>
               <p>{stats.techniciens}</p>
-              <span>Techniciens maintenance</span>
+              <span>Maintenance</span>
             </div>
           </div>
 
@@ -253,7 +253,7 @@ const DirecteurUtilisateurs = () => {
             <div className="stat-info">
               <h3>Responsables Patrimoine</h3>
               <p>{stats.rp}</p>
-              <span>Gestion équipements</span>
+              <span>Gestion Globale</span>
             </div>
           </div>
         </div>
