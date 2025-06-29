@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
   FaBars, FaTimes, FaTachometerAlt, FaUsers, FaCogs, 
-  FaClipboardList, FaHistory, FaWrench, FaStethoscope,
-  FaBuilding, FaChartLine, FaUser, FaSignOutAlt,
-  FaEdit, FaTrash, FaSearch, FaFilter, FaPlus
+  FaClipboardList, FaHistory, FaWrench, FaExclamationTriangle,
+  FaUser, FaSignOutAlt, FaSearch, FaFilter, FaSync, FaEye
 } from "react-icons/fa";
+import { Pagination } from 'antd';
 import Swal from "sweetalert2";
 import "../styles/responsable.css";
 
@@ -13,87 +13,93 @@ const EquipementsDirecteur = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [equipments, setEquipments] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("");
     const [selectedCenter, setSelectedCenter] = useState("");
     const [categories, setCategories] = useState([]);
-    const [centers, setCenters] = useState([]);
+    const [centers, setCenters] = useState([
+        "TINGHIR", "TEMARA", "TCHAD", "ESSAOUIRA", 
+        "DAKHLA", "LAAYOUNE", "NADOR", "AIN_EL_AOUDA"
+    ]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(10);
+    const [showDetailsModal, setShowDetailsModal] = useState(false);
+    const [selectedEquipment, setSelectedEquipment] = useState(null);
     const location = useLocation();
     const navigate = useNavigate();
 
     useEffect(() => {
-        fetchEquipments();
-        fetchCategories();
-        fetchCenters();
+        fetchInitialData();
     }, []);
 
+    const fetchInitialData = async () => {
+        try {
+            await fetchEquipments();
+        } catch (error) {
+            console.error("Initial fetch error:", error);
+            setError(error.message);
+        }
+    };
+
     const fetchEquipments = async () => {
-        setLoading(true);
-        try {
-            const token = localStorage.getItem("token");
-            const response = await fetch("http://localhost:8080/api/equipments/all", {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`,
-                    "X-User-Role": "DIRECTEUR"
-                }
-            });
+    setLoading(true);
+    setError(null);
+    try {
+        const token = localStorage.getItem("token");
+        const userRole = localStorage.getItem("userRole");
 
-            if (!response.ok) {
-                throw new Error(`Erreur HTTP: ${response.status}`);
-            }
-
-            const data = await response.json();
-            setEquipments(data);
-        } catch (error) {
-            console.error("Erreur de récupération:", error);
-            Swal.fire({
-                title: 'Erreur',
-                text: 'Échec de la récupération des équipements',
-                icon: 'error'
-            });
-        } finally {
-            setLoading(false);
+        if (!token || !userRole) {
+            throw new Error("Authentification requise");
         }
-    };
 
-    const fetchCategories = async () => {
-        try {
-            // Récupérer toutes les catégories uniques depuis les équipements
-            const token = localStorage.getItem("token");
-            const response = await fetch("http://localhost:8080/api/equipments/all", {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`,
-                    "X-User-Role": "DIRECTEUR"
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                const uniqueCategories = [...new Set(data.map(item => item.category))];
-                setCategories(uniqueCategories.filter(cat => cat));
+        const response = await fetch("http://localhost:8080/api/equipments/directeur/all", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+                "X-User-Role": userRole
             }
-        } catch (error) {
-            console.error("Erreur de récupération des catégories:", error);
-        }
-    };
+        });
 
-    const fetchCenters = () => {
-        // Utiliser les centres définis dans l'enum VilleCentre
-        const allCenters = [
-            "TINGHIR", "TEMARA", "TCHAD", "ESSAOUIRA", 
-            "DAKHLA", "LAAYOUNE", "NADOR", "AIN_EL_AOUDA"
-        ];
-        setCenters(allCenters);
-    };
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || `Erreur HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        setEquipments(data.map(equip => ({
+            ...equip,
+            enMaintenance: equip.enMaintenance || false,
+            status: equip.status || "Disponible",
+            validated: equip.validated || false,
+            villeCentre: equip.villeCentre || "Non spécifié"
+        })));
+
+        const uniqueCategories = [...new Set(data.map(item => item.category))];
+        setCategories(uniqueCategories.filter(cat => cat));
+
+    } catch (error) {
+        console.error("Erreur de récupération:", error);
+        setError(error.message);
+        Swal.fire({
+            title: 'Erreur',
+            text: 'Échec de la récupération des équipements: ' + error.message,
+            icon: 'error'
+        });
+    } finally {
+        setLoading(false);
+    }
+};
 
     const formatVilleCentre = (ville) => {
-        if (!ville) return "";
-        const formatted = ville.replace(/_/g, " ");
-        return formatted.charAt(0) + formatted.slice(1).toLowerCase();
+        if (!ville) return "Non spécifié";
+        return ville
+            .replace(/_/g, " ")
+            .split(" ")
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(" ");
     };
 
     const handleLogout = () => {
@@ -108,37 +114,40 @@ const EquipementsDirecteur = () => {
             cancelButtonText: 'Annuler'
         }).then((result) => {
             if (result.isConfirmed) {
-                localStorage.removeItem("token");
-                localStorage.removeItem("userId");
-                localStorage.removeItem("userRole");
-                localStorage.removeItem("userEmail");
-                localStorage.removeItem("userNom");
-                localStorage.removeItem("userPrenom");
-                localStorage.removeItem("userVilleCentre");
+                localStorage.clear();
                 navigate("/login");
             }
         });
     };
 
     const filteredEquipments = equipments.filter((equipment) => {
-        const matchesSearch =
-            equipment.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            equipment.description?.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = equipment.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            equipment.description?.toLowerCase().includes(searchTerm.toLowerCase());
 
-        const matchesCategory = selectedCategory
-            ? equipment.category === selectedCategory
-            : true;
-
-        const matchesCenter = selectedCenter
-            ? equipment.villeCentre === selectedCenter
-            : true;
+        const matchesCategory = selectedCategory ? equipment.category === selectedCategory : true;
+        const matchesCenter = selectedCenter ? equipment.villeCentre === selectedCenter : true;
 
         return matchesSearch && matchesCategory && matchesCenter;
     });
 
     const handleViewDetails = (equipment) => {
-        navigate(`/DirecteurEquipementDetails/${equipment.id}`);
+        setSelectedEquipment(equipment);
+        setShowDetailsModal(true);
     };
+
+    const handleCloseDetailsModal = () => {
+        setShowDetailsModal(false);
+        setSelectedEquipment(null);
+    };
+
+    const handleRetry = () => {
+        setError(null);
+        fetchEquipments();
+    };
+
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentEquipments = filteredEquipments.slice(indexOfFirstItem, indexOfLastItem);
 
     if (loading) {
         return (
@@ -151,65 +160,108 @@ const EquipementsDirecteur = () => {
         );
     }
 
+    if (error) {
+        return (
+            <div className="dashboard-container">
+                <div className="error-container">
+                    <FaExclamationTriangle className="error-icon" size={48} />
+                    <h3>Erreur de chargement</h3>
+                    <p className="error-message">{error}</p>
+                    <div className="error-actions">
+                        <button onClick={handleRetry} className="retry-button">
+                            <FaSync /> Réessayer
+                        </button>
+                        <button 
+                            onClick={() => window.location.reload()} 
+                            className="refresh-button"
+                        >
+                            Actualiser la page
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className={`dashboard-container ${sidebarOpen ? "sidebar-expanded" : ""}`}>
             <nav className="navbar">
                 <div className="menu-icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
                     {sidebarOpen ? <FaTimes /> : <FaBars />}
                 </div>
-                <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" /> 
+                <img src="/images/logo-light.png" alt="Logo" className="navbar-logo" />
             </nav>
 
             <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
-                           <ul className="sidebar-menu">
-                               <li className={location.pathname === '/DirecteurHome' ? 'active' : ''}>
-                                   <Link to="/DirecteurHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
-                               </li>
-           
-                               <li className={location.pathname.includes('/DirecteurUtilisateurs') ? 'active' : ''}>
-                                   <Link to="/DirecteurUtilisateurs"><FaUsers /><span>Utilisateurs</span></Link>
-                               </li>
-                               
-                               <li className={location.pathname === '/EquipementsDirecteur' ? 'active' : ''}>
-                                   <Link to="/EquipementsDirecteur"><FaCogs /><span>Équipements</span></Link>
-                               </li>
-                               
-                               <li className={location.pathname === '/DirecteurHistoriqueDemandes' ? 'active' : ''}>
-                                   <Link to="/DirecteurHistoriqueDemandes"><FaClipboardList /><span>Historique Demandes</span></Link>
-                               </li>
-                               
-                               <li className={location.pathname === '/DirecteurHistoriqueUtilisations' ? 'active' : ''}>
-                                   <Link to="/DirecteurHistoriqueUtilisations"><FaHistory /><span>Historique Utilisations Des Équipements</span></Link>
-                               </li>
-                               
-                               <li className={location.pathname === '/DirecteurHistoriqueMaintenances' ? 'active' : ''}>
-                                   <Link to="/DirecteurHistoriqueMaintenances"><FaWrench /><span>Historique Maintenances</span></Link>
-                               </li>
-                               
-                           </ul>
-           
-                           <div className="sidebar-bottom">
-                               <ul>
-                                   <li className={location.pathname === '/DirecteurAccount' ? 'active' : ''}>
-                                       <Link to="/DirecteurAccount"><FaUser /><span>Compte</span></Link>
-                                   </li>
-                                   <li className="logout">
-                                       <button onClick={handleLogout} style={{ background: 'none', border: 'none', padding: '10px', width: '100%', textAlign: 'left' }}>
-                                           <FaSignOutAlt /><span>Déconnexion</span>
-                                       </button>
-                                   </li>
-                               </ul>
-                           </div>
-                       </aside>
+                <ul className="sidebar-menu">
+                    <li className={location.pathname === '/DirecteurHome' ? 'active' : ''}>
+                        <Link to="/DirecteurHome">
+                            <FaTachometerAlt className="icon" />
+                            <span>Tableau de Bord</span>
+                        </Link>
+                    </li>
+                    <li className={location.pathname.includes('/DirecteurUtilisateurs') ? 'active' : ''}>
+                        <Link to="/DirecteurUtilisateurs">
+                            <FaUsers className="icon" />
+                            <span>Utilisateurs</span>
+                        </Link>
+                    </li>
+                    <li className={location.pathname === '/EquipementsDirecteur' ? 'active' : ''}>
+                        <Link to="/EquipementsDirecteur">
+                            <FaCogs className="icon" />
+                            <span>Équipements</span>
+                        </Link>
+                    </li>
+                    <li className={location.pathname === '/DirecteurHistoriqueDemandes' ? 'active' : ''}>
+                        <Link to="/DirecteurHistoriqueDemandes">
+                            <FaClipboardList className="icon" />
+                            <span>Historique Demandes</span>
+                        </Link>
+                    </li>
+                    <li className={location.pathname === '/DirecteurHistoriqueUtilisations' ? 'active' : ''}>
+                        <Link to="/DirecteurHistoriqueUtilisations">
+                            <FaHistory className="icon" />
+                            <span>Historique Utilisations</span>
+                        </Link>
+                    </li>
+                    <li className={location.pathname === '/DirecteurHistoriqueMaintenances' ? 'active' : ''}>
+                        <Link to="/DirecteurHistoriqueMaintenances">
+                            <FaWrench className="icon" />
+                            <span>Historique Maintenances</span>
+                        </Link>
+                    </li>
+                </ul>
+
+                <div className="sidebar-bottom">
+                    <ul>
+                        <li className={location.pathname === '/DirecteurAccount' ? 'active' : ''}>
+                            <Link to="/DirecteurAccount">
+                                <FaUser className="icon" />
+                                <span>Compte</span>
+                            </Link>
+                        </li>
+                        <li>
+                            <button onClick={handleLogout} className="logout-button">
+                                <FaSignOutAlt className="icon" />
+                                <span>Déconnexion</span>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </aside>
+
             <main className="content">
-                <h2>Gestion des Équipements - Directeur</h2>
-                
+                <div className="content-header">
+                    <h2>Gestion des Équipements</h2>
+                    
+                </div>
+
                 <div className="search-and-filters">
                     <div className="search-bar">
                         <FaSearch className="search-icon" />
                         <input
                             type="text"
-                            placeholder="Rechercher par nom ou description..."
+                            placeholder="Rechercher équipements..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -219,13 +271,13 @@ const EquipementsDirecteur = () => {
                         <div className="filter-group">
                             <FaFilter className="filter-icon" />
                             <select
-                                className="filter-select"
                                 value={selectedCategory}
                                 onChange={(e) => setSelectedCategory(e.target.value)}
+                                className="filter-select"
                             >
-                                <option value="">Toutes les catégories</option>
+                                <option value="">Toutes catégories</option>
                                 {categories.map((category, index) => (
-                                    <option key={index} value={category}>
+                                    <option key={`cat-${index}`} value={category}>
                                         {category}
                                     </option>
                                 ))}
@@ -235,13 +287,13 @@ const EquipementsDirecteur = () => {
                         <div className="filter-group">
                             <FaFilter className="filter-icon" />
                             <select
-                                className="filter-select"
                                 value={selectedCenter}
                                 onChange={(e) => setSelectedCenter(e.target.value)}
+                                className="filter-select"
                             >
-                                <option value="">Tous les centres</option>
+                                <option value="">Tous centres</option>
                                 {centers.map((center, index) => (
-                                    <option key={index} value={center}>
+                                    <option key={`center-${index}`} value={center}>
                                         {formatVilleCentre(center)}
                                     </option>
                                 ))}
@@ -260,64 +312,163 @@ const EquipementsDirecteur = () => {
                                 <th>Centre</th>
                                 <th>Statut</th>
                                 <th>Validé</th>
-                                <th>En maintenance</th>
+                                <th>Maintenance</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {filteredEquipments.length > 0 ? (
-                                filteredEquipments.map((equipment) => (
-                                    <tr key={equipment.id}>
-                                        <td>
-                                            <img 
-                                                src={equipment.imageUrl || "/images/pc.jpg"} 
-                                                alt={equipment.name} 
-                                                className="table-image"
-                                            />
+                                currentEquipments.map((equipment) => (
+                                    <tr key={`equip-${equipment.id}`}>
+                                        <td className="image-cell">
+                                            {equipment.imageUrl ? (
+                                                <img 
+                                                    src={equipment.imageUrl} 
+                                                    alt={equipment.name}
+                                                    className="equipment-image"
+                                                    onError={(e) => {
+                                                        e.target.src = '/images/equipment-placeholder.png';
+                                                    }}
+                                                />
+                                            ) : (
+                                                <div className="image-placeholder">
+                                                    <FaCogs />
+                                                </div>
+                                            )}
                                         </td>
-                                        <td>{equipment.name}</td>
-                                        <td>{equipment.category}</td>
+                                        <td>{equipment.name || "-"}</td>
+                                        <td>{equipment.category || "-"}</td>
                                         <td>{formatVilleCentre(equipment.villeCentre)}</td>
                                         <td>
-                                            <span className={`status-badge ${equipment.status?.toLowerCase() || 'disponible'}`}>
-                                                {equipment.status || 'Disponible'}
+                                            <span className={`status-badge ${equipment.status.toLowerCase().replace(' ', '-')}`}>
+                                                {equipment.status}
                                             </span>
                                         </td>
                                         <td>
-                                            {equipment.validated ? (
-                                                <span className="status-badge acceptee">Oui</span>
-                                            ) : (
-                                                <span className="status-badge en-attente">Non</span>
-                                            )}
+                                            <span className={`status-badge ${equipment.validated ? 'validated' : 'not-validated'}`}>
+                                                {equipment.validated ? "Oui" : "Non"}
+                                            </span>
                                         </td>
                                         <td>
-                                            {equipment.enMaintenance ? (
-                                                <span className="status-badge en-maintenance">Oui</span>
-                                            ) : (
-                                                <span className="status-badge disponible">Non</span>
-                                            )}
+                                            <span className={`status-badge ${equipment.enMaintenance ? 'maintenance' : 'no-maintenance'}`}>
+                                                {equipment.enMaintenance ? "Oui" : "Non"}
+                                            </span>
                                         </td>
-                                        <td className="actions-cell">
+                                        <td>
                                             <button 
-                                                className="view-button"
                                                 onClick={() => handleViewDetails(equipment)}
+                                                className="details-button"
                                             >
-                                                Détails
+                                                <FaEye /> Détails
                                             </button>
                                         </td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="8" className="no-data">
-                                        Aucun équipement trouvé
+                                    <td colSpan="8" className="no-results">
+                                        {selectedCenter ? (
+                                            <>
+                                                <FaSearch style={{ marginRight: '10px' }} />
+                                                Aucun équipement trouvé dans le centre {formatVilleCentre(selectedCenter)}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <FaSearch style={{ marginRight: '10px' }} />
+                                                Aucun équipement trouvé avec ces critères
+                                            </>
+                                        )}
                                     </td>
                                 </tr>
                             )}
                         </tbody>
                     </table>
                 </div>
+
+                {filteredEquipments.length > itemsPerPage && (
+                    <div className="pagination-container">
+                        <Pagination
+                            current={currentPage}
+                            total={filteredEquipments.length}
+                            pageSize={itemsPerPage}
+                            onChange={(page) => setCurrentPage(page)}
+                            showSizeChanger={false}
+                            showQuickJumper
+                        />
+                    </div>
+                )}
             </main>
+
+            {showDetailsModal && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <button className="modal-close" onClick={handleCloseDetailsModal}>
+                            &times;
+                        </button>
+                        <h3>Détails de l'équipement</h3>
+                        {selectedEquipment && (
+                            <div className="details-content">
+                                <div className="detail-row">
+                                    <span className="detail-label">Image:</span>
+                                    <span className="detail-value">
+                                        {selectedEquipment.imageUrl ? (
+                                            <img 
+                                                src={selectedEquipment.imageUrl} 
+                                                alt={selectedEquipment.name}
+                                                className="equipment-image-modal"
+                                            />
+                                        ) : (
+                                            <div className="image-placeholder-modal">
+                                                <FaCogs />
+                                            </div>
+                                        )}
+                                    </span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Nom:</span>
+                                    <span className="detail-value">{selectedEquipment.name || "-"}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Catégorie:</span>
+                                    <span className="detail-value">{selectedEquipment.category || "-"}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Centre:</span>
+                                    <span className="detail-value">{formatVilleCentre(selectedEquipment.villeCentre)}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Description:</span>
+                                    <span className="detail-value">{selectedEquipment.description || "-"}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Statut:</span>
+                                    <span className={`detail-value status-badge ${selectedEquipment.status.toLowerCase().replace(' ', '-')}`}>
+                                        {selectedEquipment.status}
+                                    </span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Validé:</span>
+                                    <span className={`detail-value status-badge ${selectedEquipment.validated ? 'validated' : 'not-validated'}`}>
+                                        {selectedEquipment.validated ? "Oui" : "Non"}
+                                    </span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">En maintenance:</span>
+                                    <span className={`detail-value status-badge ${selectedEquipment.enMaintenance ? 'maintenance' : 'no-maintenance'}`}>
+                                        {selectedEquipment.enMaintenance ? "Oui" : "Non"}
+                                    </span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Date d'ajout:</span>
+                                    <span className="detail-value">
+                                        {selectedEquipment.dateAdded ? new Date(selectedEquipment.dateAdded).toLocaleString() : "-"}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

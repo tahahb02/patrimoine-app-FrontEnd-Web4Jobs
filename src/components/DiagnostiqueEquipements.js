@@ -6,13 +6,15 @@ import {
   FaHistory, FaBell, FaUser, FaSignOutAlt, FaBars, FaTimes, 
   FaSortDown, FaRobot, FaEye, FaInfoCircle
 } from 'react-icons/fa';
-import { Pagination, Tag, Tooltip, Modal, message } from 'antd';
+import { Pagination, Tag, Tooltip, Modal, message, Spin } from 'antd';
+import axios from 'axios';
 import "../styles/responsable.css";
 
 const DiagnostiqueEquipements = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [diagnostics, setDiagnostics] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedDiagnostic, setSelectedDiagnostic] = useState(null);
     const [formData, setFormData] = useState({
@@ -32,39 +34,34 @@ const DiagnostiqueEquipements = () => {
     const userVilleCentre = localStorage.getItem("userVilleCentre") || "";
     const token = localStorage.getItem("token");
 
+    const api = axios.create({
+        baseURL: 'http://localhost:8080',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'X-User-Role': 'TECHNICIEN',
+            'X-User-Center': userVilleCentre
+        }
+    });
+
     useEffect(() => {
         const fetchDiagnostics = async () => {
             try {
                 setLoading(true);
+                setError(null);
                 
                 if (!token || !userVilleCentre) {
-                    throw new Error("Authentification ou ville centre manquante");
+                    throw new Error("Authentification requise");
                 }
 
-                const normalizedVille = userVilleCentre.toUpperCase().replace(" ", "_");
+                const response = await api.get(`/api/diagnostics/ville/${userVilleCentre}`);
                 
-                const response = await fetch(`http://localhost:8080/api/diagnostics/ville/${normalizedVille}`, {
-                    method: "GET",
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-User-Role': 'TECHNICIEN',
-                        'X-User-Center': normalizedVille,
-                        'Authorization': `Bearer ${token}`
-                    },
-                    credentials: 'include'
-                });
-
-                if (response.status === 403) {
-                    navigate('/login');
+                if (response.status === 204) {
+                    setDiagnostics([]);
                     return;
                 }
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);
-                }
-
-                const data = await response.json();
+                const data = response.data;
                 
                 if (!Array.isArray(data)) {
                     throw new Error("Format de données invalide");
@@ -90,10 +87,14 @@ const DiagnostiqueEquipements = () => {
                 setDiagnostics(formattedData);
             } catch (error) {
                 console.error("Erreur fetch diagnostics:", error);
-                message.error(error.message || 'Erreur de chargement');
+                setError(error.message);
                 
-                if (error.message.includes("Authentification") || error.message.includes("403")) {
+                if (error.response?.status === 401 || error.response?.status === 403) {
+                    message.error("Session expirée ou accès refusé");
+                    localStorage.clear();
                     navigate('/login');
+                } else {
+                    message.error(error.message || 'Erreur de chargement des diagnostics');
                 }
             } finally {
                 setLoading(false);
@@ -101,7 +102,7 @@ const DiagnostiqueEquipements = () => {
         };
 
         fetchDiagnostics();
-    }, [userVilleCentre, navigate, token]);
+    }, [userVilleCentre, token]);
 
     const handleLogout = () => {
         localStorage.removeItem("token");
@@ -126,29 +127,18 @@ const DiagnostiqueEquipements = () => {
         try {
             if (!selectedDiagnostic) return;
 
-            const response = await fetch(`http://localhost:8080/api/diagnostics/${selectedDiagnostic.id}/evaluation`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                    'X-User-Role': 'TECHNICIEN'
-                },
-                body: JSON.stringify({
+            const response = await api.put(
+                `/api/diagnostics/${selectedDiagnostic.id}/evaluation`,
+                {
                     besoinMaintenance: formData.besoinMaintenance,
                     typeProbleme: formData.typeProbleme,
                     degreUrgence: formData.degreUrgence,
                     description: formData.description,
                     dureeEstimee: parseInt(formData.dureeEstimee)
-                }),
-                credentials: 'include'
-            });
+                }
+            );
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Erreur de mise à jour');
-            }
-
-            const updatedDiagnostic = await response.json();
+            const updatedDiagnostic = response.data;
             
             setDiagnostics(diagnostics.map(d => 
                 d.id === updatedDiagnostic.id ? {
@@ -161,11 +151,26 @@ const DiagnostiqueEquipements = () => {
                 } : d
             ));
             
-            message.success('Diagnostic mis à jour');
+            message.success('Diagnostic mis à jour avec succès');
             setSelectedDiagnostic(null);
         } catch (error) {
             console.error("Erreur update diagnostic:", error);
-            message.error(error.message || "Erreur de mise à jour");
+            message.error(error.response?.data?.message || "Erreur lors de la mise à jour");
+        }
+    };
+
+    const handleMaintenanceDone = async (diagnosticId) => {
+        try {
+            await api.post(`/api/diagnostics/${diagnosticId}/maintenance-effectuee`);
+            
+            setDiagnostics(diagnostics.map(d => 
+                d.id === diagnosticId ? { ...d, maintenanceEffectuee: true } : d
+            ));
+            
+            message.success('Maintenance marquée comme effectuée');
+        } catch (error) {
+            console.error("Erreur marquer maintenance:", error);
+            message.error(error.response?.data?.message || "Erreur lors de la mise à jour");
         }
     };
 
@@ -293,120 +298,138 @@ const DiagnostiqueEquipements = () => {
                     </div>
                 </div>
 
-                <div className="table-container">
-                    <table className="demandes-table">
-                        <thead>
-                            <tr>
-                                <th onClick={() => requestSort('nomEquipement')}>
-                                    <div className="sortable-header">
-                                        Équipement
-                                        <span className="sort-icon">
-                                            {getSortIcon('nomEquipement')}
-                                        </span>
-                                    </div>
-                                </th>
-                                <th onClick={() => requestSort('categorie')}>
-                                    <div className="sortable-header">
-                                        Catégorie
-                                        <span className="sort-icon">
-                                            {getSortIcon('categorie')}
-                                        </span>
-                                    </div>
-                                </th>
-                                <th onClick={() => requestSort('idEquipement')}>
-                                    <div className="sortable-header">
-                                        ID Équipement
-                                        <span className="sort-icon">
-                                            {getSortIcon('idEquipement')}
-                                        </span>
-                                    </div>
-                                </th>
-                                <th>
-                                    <div className="sortable-header">
-                                        Type de Diagnostic
-                                    </div>
-                                </th>
-                                <th>
-                                    <div className="sortable-header">
-                                        Urgence
-                                    </div>
-                                </th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {loading ? (
-                                <tr>
-                                    <td colSpan="6" className="loading">Chargement en cours...</td>
-                                </tr>
-                            ) : currentDiagnostics.length === 0 ? (
-                                <tr>
-                                    <td colSpan="6" className="no-data-message">
-                                        {diagnostics.length === 0 ? 
-                                            "Aucun diagnostic disponible pour le moment" : 
-                                            "Aucun résultat trouvé pour votre recherche"}
-                                    </td>
-                                </tr>
-                            ) : (
-                                currentDiagnostics.map(diagnostic => (
-                                    <tr key={diagnostic.id}>
-                                        <td>{diagnostic.nomEquipement}</td>
-                                        <td>{diagnostic.categorie}</td>
-                                        <td>{diagnostic.idEquipement}</td>
-                                        <td>
-                                            {diagnostic.automaticDiagnostic ? (
-                                                <Tag icon={<FaRobot />} color="blue">
-                                                    Automatique
-                                                </Tag>
-                                            ) : (
-                                                <Tag color="geekblue">Manuel</Tag>
-                                            )}
-                                        </td>
-                                        <td>
-                                            {diagnostic.degreUrgence && diagnostic.degreUrgence !== 'Non spécifié' ? (
-                                                <Tag color={getUrgencyColor(diagnostic.degreUrgence)}>
-                                                    {diagnostic.degreUrgence}
-                                                </Tag>
-                                            ) : (
-                                                <Tag color="gray">Non évalué</Tag>
-                                            )}
-                                        </td>
-                                        <td>
-                                            <div className="action-buttons">
-                                                <Tooltip title="Voir les détails">
-                                                    <button 
-                                                        className="btn btn-view"
-                                                        onClick={() => showDetails(diagnostic)}
-                                                    >
-                                                        <FaEye /> Détails
-                                                    </button>
-                                                </Tooltip>
-                                                <button 
-                                                    className="btn btn-primary"
-                                                    onClick={() => handleEvaluate(diagnostic)}
-                                                >
-                                                    Évaluer
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-
-                {filteredDiagnostics.length > itemsPerPage && (
-                    <div className="pagination-container">
-                        <Pagination
-                            current={currentPage}
-                            total={filteredDiagnostics.length}
-                            pageSize={itemsPerPage}
-                            onChange={(page) => setCurrentPage(page)}
-                            showSizeChanger={false}
-                        />
+                {error && (
+                    <div className="error-message">
+                        <FaExclamationTriangle /> {error}
                     </div>
                 )}
+
+                <div className="table-container">
+                    {loading ? (
+                        <div className="loading-container">
+                            <Spin size="large" />
+                        </div>
+                    ) : (
+                        <>
+                            <table className="demandes-table">
+                                <thead>
+                                    <tr>
+                                        <th onClick={() => requestSort('nomEquipement')}>
+                                            <div className="sortable-header">
+                                                Équipement
+                                                <span className="sort-icon">
+                                                    {getSortIcon('nomEquipement')}
+                                                </span>
+                                            </div>
+                                        </th>
+                                        <th onClick={() => requestSort('categorie')}>
+                                            <div className="sortable-header">
+                                                Catégorie
+                                                <span className="sort-icon">
+                                                    {getSortIcon('categorie')}
+                                                </span>
+                                            </div>
+                                        </th>
+                                        <th onClick={() => requestSort('idEquipement')}>
+                                            <div className="sortable-header">
+                                                ID Équipement
+                                                <span className="sort-icon">
+                                                    {getSortIcon('idEquipement')}
+                                                </span>
+                                            </div>
+                                        </th>
+                                        <th>
+                                            <div className="sortable-header">
+                                                Type de Diagnostic
+                                            </div>
+                                        </th>
+                                        <th>
+                                            <div className="sortable-header">
+                                                Urgence
+                                            </div>
+                                        </th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {currentDiagnostics.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="6" className="no-data-message">
+                                                {diagnostics.length === 0 ? 
+                                                    "Aucun diagnostic disponible pour le moment" : 
+                                                    "Aucun résultat trouvé pour votre recherche"}
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        currentDiagnostics.map(diagnostic => (
+                                            <tr key={diagnostic.id}>
+                                                <td>{diagnostic.nomEquipement}</td>
+                                                <td>{diagnostic.categorie}</td>
+                                                <td>{diagnostic.idEquipement}</td>
+                                                <td>
+                                                    {diagnostic.automaticDiagnostic ? (
+                                                        <Tag icon={<FaRobot />} color="blue">
+                                                            Automatique
+                                                        </Tag>
+                                                    ) : (
+                                                        <Tag color="geekblue">Manuel</Tag>
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    {diagnostic.degreUrgence && diagnostic.degreUrgence !== 'Non spécifié' ? (
+                                                        <Tag color={getUrgencyColor(diagnostic.degreUrgence)}>
+                                                            {diagnostic.degreUrgence}
+                                                        </Tag>
+                                                    ) : (
+                                                        <Tag color="gray">Non évalué</Tag>
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    <div className="action-buttons">
+                                                        <Tooltip title="Voir les détails">
+                                                            <button 
+                                                                className="btn btn-view"
+                                                                onClick={() => showDetails(diagnostic)}
+                                                            >
+                                                                <FaEye /> Détails
+                                                            </button>
+                                                        </Tooltip>
+                                                        <button 
+                                                            className="btn btn-primary"
+                                                            onClick={() => handleEvaluate(diagnostic)}
+                                                        >
+                                                            Évaluer
+                                                        </button>
+                                                        {diagnostic.besoinMaintenance && !diagnostic.maintenanceEffectuee && (
+                                                            <button 
+                                                                className="btn btn-success"
+                                                                onClick={() => handleMaintenanceDone(diagnostic.id)}
+                                                            >
+                                                                <FaCheckCircle /> Terminé
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+
+                            {filteredDiagnostics.length > itemsPerPage && (
+                                <div className="pagination-container">
+                                    <Pagination
+                                        current={currentPage}
+                                        total={filteredDiagnostics.length}
+                                        pageSize={itemsPerPage}
+                                        onChange={(page) => setCurrentPage(page)}
+                                        showSizeChanger={false}
+                                    />
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
 
                 <Modal
                     title={`Détails du diagnostic - ${detailDiagnostic?.nomEquipement || 'Non spécifié'}`}
@@ -486,6 +509,16 @@ const DiagnostiqueEquipements = () => {
                                         <div className="detail-value description-box">
                                             {detailDiagnostic.descriptionProbleme}
                                         </div>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="detail-label">Statut maintenance:</span>
+                                        <span className="detail-value">
+                                            {detailDiagnostic.maintenanceEffectuee ? (
+                                                <Tag color="green">Effectuée</Tag>
+                                            ) : (
+                                                <Tag color="orange">En attente</Tag>
+                                            )}
+                                        </span>
                                     </div>
                                 </>
                             )}

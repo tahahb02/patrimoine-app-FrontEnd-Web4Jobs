@@ -44,18 +44,36 @@ const ValidationEquipementRP = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(`${API_URL}/equipments/pending`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
       
       if (!response.ok) {
-        throw new Error(`Erreur HTTP: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);
       }
       
       const data = await response.json();
-      setPendingEquipments(data);
+      const normalizedData = data.map(equipment => ({
+        ...equipment,
+        name: equipment.name || "Nom non spécifié",
+        category: equipment.category || "Catégorie non spécifiée",
+        villeCentre: equipment.villeCentre || "Centre non spécifié",
+        addedByName: equipment.addedByName || equipment.addedBy || "Utilisateur inconnu",
+        dateAdded: equipment.dateAdded || new Date().toISOString(),
+        description: equipment.description || "Aucune description fournie",
+        imageUrl: equipment.imageUrl || "/images/pc.jpg"
+      }));
+      setPendingEquipments(normalizedData);
     } catch (error) {
       console.error("Erreur:", error);
-      Swal.fire('Erreur', 'Impossible de charger les équipements', 'error');
+      Swal.fire({
+        title: 'Erreur',
+        text: error.message || 'Impossible de charger les équipements',
+        icon: 'error'
+      });
     } finally {
       setLoading(false);
     }
@@ -66,18 +84,22 @@ const ValidationEquipementRP = () => {
       const token = localStorage.getItem("token");
       const response = await fetch(`${API_URL}/equipments/validate/${id}`, {
         method: "PUT",
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       if (response.ok) {
         Swal.fire('Succès', 'Équipement validé', 'success');
         fetchPendingEquipments();
       } else {
-        throw new Error(`Erreur HTTP: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);
       }
     } catch (error) {
       console.error("Error:", error);
-      Swal.fire('Erreur', 'Échec de la validation', 'error');
+      Swal.fire('Erreur', error.message || 'Échec de la validation', 'error');
     }
   };
 
@@ -86,18 +108,22 @@ const ValidationEquipementRP = () => {
       const token = localStorage.getItem("token");
       const response = await fetch(`${API_URL}/equipments/reject/${id}`, {
         method: "PUT",
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       if (response.ok) {
         Swal.fire('Succès', 'Équipement rejeté', 'success');
         fetchPendingEquipments();
       } else {
-        throw new Error(`Erreur HTTP: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);
       }
     } catch (error) {
       console.error("Error:", error);
-      Swal.fire('Erreur', 'Échec du rejet', 'error');
+      Swal.fire('Erreur', error.message || 'Échec du rejet', 'error');
     }
   };
 
@@ -134,7 +160,7 @@ const ValidationEquipementRP = () => {
   const formatVilleCentre = (ville) => {
     if (!ville) return "";
     const formatted = ville.replace(/_/g, " ");
-    return formatted.charAt(0) + formatted.slice(1).toLowerCase();
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1).toLowerCase();
   };
 
   return (
@@ -229,43 +255,42 @@ const ValidationEquipementRP = () => {
             <div className="equipment-grid">
               {currentItems.length > 0 ? (
                 currentItems.map(equipment => (
-                  
-            <div className="equipment-card">
-              <img src={equipment.imageUrl || "/images/pc.jpg"} alt="Équipement" className="card-image" />
-              <div className="card-content">
-                <h3>{equipment.name}</h3>
-                <p><strong>Catégorie:</strong> {equipment.category}</p>
-                <p><strong>Centre:</strong> {formatVilleCentre(equipment.villeCentre)}</p>
-                <p><strong>Ajouté par:</strong> {equipment.addedByName || equipment.addedBy}</p>
-                <p><strong>Date ajout:</strong> {new Date(equipment.dateAdded).toLocaleDateString()}</p>
-                
-                <div className="validation-actions">
-                  <div className="approval-buttons">
-                    <button 
-                      className="validate-button"
-                      onClick={() => handleValidate(equipment.id)}
-                    >
-                      <FaCheckCircle /> Valider
-                    </button>
-                    <button 
-                      className="reject-button"
-                      onClick={() => handleReject(equipment.id)}
-                    >
-                      <FaTimesCircle /> Rejeter
-                    </button>
+                  <div key={equipment.id} className="equipment-card">
+                    <img src={equipment.imageUrl} alt="Équipement" className="card-image" />
+                    <div className="card-content">
+                      <h3>{equipment.name}</h3>
+                      <p><strong>Catégorie:</strong> {equipment.category}</p>
+                      <p><strong>Centre:</strong> {formatVilleCentre(equipment.villeCentre)}</p>
+                      <p><strong>Ajouté par:</strong> {equipment.addedByName}</p>
+                      <p><strong>Date ajout:</strong> {new Date(equipment.dateAdded).toLocaleDateString()}</p>
+                      
+                      <div className="validation-actions">
+                        <div className="approval-buttons">
+                          <button 
+                            className="validate-button"
+                            onClick={() => handleValidate(equipment.id)}
+                          >
+                            <FaCheckCircle /> Valider
+                          </button>
+                          <button 
+                            className="reject-button"
+                            onClick={() => handleReject(equipment.id)}
+                          >
+                            <FaTimesCircle /> Rejeter
+                          </button>
+                        </div>
+                        <button 
+                          className="details-button"
+                          onClick={() => {
+                            setSelectedEquipment(equipment);
+                            setIsDetailModalVisible(true);
+                          }}
+                        >
+                          <FaInfoCircle /> Détails
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <button 
-                    className="details-button"
-                    onClick={() => {
-                      setSelectedEquipment(equipment);
-                      setIsDetailModalVisible(true);
-                    }}
-                  >
-                    <FaInfoCircle /> Détails
-                  </button>
-                </div>
-              </div>
-            </div>
                 ))
               ) : (
                 <div className="no-data">
@@ -299,7 +324,7 @@ const ValidationEquipementRP = () => {
         {selectedEquipment && (
           <div className="details-container">
             <img 
-              src={selectedEquipment.imageUrl || "/images/pc.jpg"} 
+              src={selectedEquipment.imageUrl} 
               alt={selectedEquipment.name} 
               className="detail-image"
             />
@@ -318,7 +343,7 @@ const ValidationEquipementRP = () => {
               </div>
               <div className="detail-row">
                 <span className="detail-label">Ajouté par:</span>
-                <span className="detail-value">{selectedEquipment.addedByName || selectedEquipment.addedBy}</span>
+                <span className="detail-value">{selectedEquipment.addedByName}</span>
               </div>
               <div className="detail-row">
                 <span className="detail-label">Date ajout:</span>
@@ -326,7 +351,7 @@ const ValidationEquipementRP = () => {
               </div>
               <div className="detail-row">
                 <span className="detail-label">Description:</span>
-                <span className="detail-value">{selectedEquipment.description || "Aucune description"}</span>
+                <span className="detail-value">{selectedEquipment.description}</span>
               </div>
             </div>
           </div>
