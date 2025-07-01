@@ -182,12 +182,18 @@ const DirecteurHome = () => {
                     <li className={location.pathname === '/EquipementsDirecteur' ? 'active' : ''}>
                         <Link to="/EquipementsDirecteur"><FaCogs /><span>Équipements</span></Link>
                     </li>
-                    <li className={location.pathname === '/DirecteurHistoriqueDemandes' ? 'active' : ''}>
-                        <Link to="/DirecteurHistoriqueDemandes"><FaClipboardList /><span>Historique Demandes</span></Link>
+                    <li className={location.pathname === '/HistoriqueDemandesDirecteur' ? 'active' : ''}>
+                        <Link to="/HistoriqueDemandesDirecteur"><FaClipboardList /><span>Historique Demandes</span></Link>
                     </li>
-                    <li className={location.pathname === '/DirecteurHistoriqueUtilisations' ? 'active' : ''}>
-                        <Link to="/DirecteurHistoriqueUtilisations"><FaHistory /><span>Historique Utilisations</span></Link>
+                    <li className={location.pathname === '/HistoriqueEquipementsDirecteur' ? 'active' : ''}>
+                        <Link to="/HistoriqueEquipementsDirecteur"><FaHistory /><span>Historique Utilisations</span></Link>
                     </li>
+                     <li className={location.pathname === '/DiagnosticsDirecteur' ? 'active' : ''}>
+                                            <Link to="/DiagnosticsDirecteur">
+                                                <FaWrench className="icon" />
+                                                <span>Diagnostics</span>
+                                            </Link>
+                                        </li>
                     <li className={location.pathname === '/DirecteurHistoriqueMaintenances' ? 'active' : ''}>
                         <Link to="/DirecteurHistoriqueMaintenances"><FaWrench /><span>Historique Maintenances</span></Link>
                     </li>

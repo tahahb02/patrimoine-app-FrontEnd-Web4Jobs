@@ -2392,3 +2392,61 @@ margin-bottom: 15px;
     background-color: #fff3e0;
     color: #ff8f00;
 }
+
+/* Styles spécifiques pour la page Diagnostics */
+.diagnostic-type {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.auto-icon {
+    color: #4a148c;
+}
+
+.manual-icon {
+    color: #2e7d32;
+}
+
+.equipment-name {
+    font-weight: 500;
+    margin-bottom: 3px;
+}
+
+.equipment-details {
+    font-size: 12px;
+    color: #666;
+}
+
+.status-badge.faible {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+.status-badge.moyen {
+    background-color: #fff3e0;
+    color: #ff8f00;
+}
+
+.status-badge.eleve {
+    background-color: #ffebee;
+    color: #c62828;
+}
+
+/* Styles pour le tableau des diagnostics */
+.equipments-table th, 
+.equipments-table td {
+    vertical-align: middle;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .equipments-table th:nth-child(3),
+    .equipments-table td:nth-child(3),
+    .equipments-table th:nth-child(5),
+    .equipments-table td:nth-child(5),
+    .equipments-table th:nth-child(7),
+    .equipments-table td:nth-child(7) {
+        display: none;
+    }
+}

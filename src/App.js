@@ -30,6 +30,10 @@ import MesDemandes from './components/MesDemandes;';
 import DirecteurHome from './components/DirecteurHome';  
 import EquipementsDirecteur  from './components/EquipementsDirecteur';
 import DirecteurUtilisateurs from './components/DirecteurUtilisateurs';           
+import DiagnosticsDirecteur from './components/DiagnosticsDirecteur';
+import HistoriqueDemandesDirecteur from './components/HistoriqueDemandesDirecteur';
+import  HistoriqueEquipementsDirecteur from './components/HistoriqueEquipementsDirecteur';
+
 
 function App() {
     return (
@@ -65,6 +69,9 @@ function App() {
                 <Route path="/DirecteurHome" element={<DirecteurHome />} />
                 <Route path="/EquipementsDirecteur" element={<EquipementsDirecteur />} />
                 <Route path="/DirecteurUtilisateurs" element={<DirecteurUtilisateurs />} />
+                <Route path="/DiagnosticsDirecteur" element={<DiagnosticsDirecteur />} />
+                <Route path="/HistoriqueDemandesDirecteur" element={<HistoriqueDemandesDirecteur />} />
+                <Route path="/HistoriqueEquipementsDirecteur" element={<HistoriqueEquipementsDirecteur />} />
             </Routes>
         </Router>
     );
