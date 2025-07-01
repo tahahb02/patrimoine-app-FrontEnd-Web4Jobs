@@ -1,10 +1,29 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
-  FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList,
-  FaBell, FaUser, FaSignOutAlt, FaSearch, FaHistory,
-  FaPhone, FaEnvelope, FaClock, FaSort, FaSortUp, FaSortDown, 
-  FaFilter, FaChartLine, FaBuilding, FaCheckCircle, FaBoxOpen,
+  FaBars,
+  FaTimes,
+  FaTachometerAlt,
+  FaCogs,
+  FaHistory,
+  FaUser,
+  FaSignOutAlt,
+  FaSearch,
+  FaEye,
+  FaClock,
+  FaSort,
+  FaSortUp,
+  FaSortDown,
+  FaFilter,
+  FaCheckCircle,
+  FaTimesCircle,
+  FaWrench,
+  FaClipboardList,
+  FaUsers,
+  FaEnvelope,
+  FaPhone,
+  FaBuilding,
+  FaChartLine,
   FaCalendarAlt
 } from 'react-icons/fa';
 import { Pagination, Select, DatePicker } from 'antd';
@@ -242,26 +261,33 @@ const HistoriqueEquipementsDirecteur = () => {
       </nav>
 
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
-        <ul className="sidebar-menu">
-          <li className={location.pathname === '/DirecteurHome' ? 'active' : ''}>
-            <Link to="/DirecteurHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
-          </li>
-          <li className={location.pathname === '/EquipmentsDirecteur' ? 'active' : ''}>
-            <Link to="/EquipmentsDirecteur"><FaCogs /><span>Gestion des Équipements</span></Link>
-          </li>
-          <li className={location.pathname === '/HistoriqueDemandesDirecteur' ? 'active' : ''}>
-            <Link to="/HistoriqueDemandesDirecteur"><FaHistory /><span>Historique des Demandes</span></Link>
-          </li>
-          <li className={location.pathname === '/HistoriqueEquipementsDirecteur' ? 'active' : ''}>
-            <Link to="/HistoriqueEquipementsDirecteur"><FaHistory /><span>Historique des Équipements</span></Link>
-          </li>
-          <li className={location.pathname === '/CentresDirecteur' ? 'active' : ''}>
-            <Link to="/CentresDirecteur"><FaBuilding /><span>Gestion des Centres</span></Link>
-          </li>
-          <li className={location.pathname === '/AnalyticsDirecteur' ? 'active' : ''}>
-            <Link to="/AnalyticsDirecteur"><FaChartLine /><span>Analytics</span></Link>
-          </li>
-        </ul>
+       <ul className="sidebar-menu">
+                           <li className={location.pathname === '/DirecteurHome' ? 'active' : ''}>
+                               <Link to="/DirecteurHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
+                           </li>
+                           <li className={location.pathname.includes('/DirecteurUtilisateurs') ? 'active' : ''}>
+                               <Link to="/DirecteurUtilisateurs"><FaUsers /><span>Utilisateurs</span></Link>
+                           </li>
+                           <li className={location.pathname === '/EquipementsDirecteur' ? 'active' : ''}>
+                               <Link to="/EquipementsDirecteur"><FaCogs /><span>Équipements</span></Link>
+                           </li>
+                           <li className={location.pathname === '/HistoriqueDemandesDirecteur' ? 'active' : ''}>
+                               <Link to="/HistoriqueDemandesDirecteur"><FaClipboardList /><span>Historique Demandes</span></Link>
+                           </li>
+                           <li className={location.pathname === '/HistoriqueEquipementsDirecteur' ? 'active' : ''}>
+                               <Link to="/HistoriqueEquipementsDirecteur"><FaHistory /><span>Historique Utilisations</span></Link>
+                           </li>
+                            <li className={location.pathname === '/DiagnosticsDirecteur' ? 'active' : ''}>
+                                                   <Link to="/DiagnosticsDirecteur">
+                                                       <FaWrench className="icon" />
+                                                       <span>Diagnostics</span>
+                                                   </Link>
+                                               </li>
+                           <li className={location.pathname === '/DirecteurHistoriqueMaintenances' ? 'active' : ''}>
+                               <Link to="/DirecteurHistoriqueMaintenances"><FaWrench /><span>Historique Maintenances</span></Link>
+                           </li>
+                           
+                       </ul>
 
         <div className="sidebar-bottom">
           <ul>

@@ -197,9 +197,7 @@ const DirecteurHome = () => {
                     <li className={location.pathname === '/DirecteurHistoriqueMaintenances' ? 'active' : ''}>
                         <Link to="/DirecteurHistoriqueMaintenances"><FaWrench /><span>Historique Maintenances</span></Link>
                     </li>
-                    <li className={location.pathname === '/DirecteurAnalytics' ? 'active' : ''}>
-                        <Link to="/DirecteurAnalytics"><FaChartLine /><span>Analytics</span></Link>
-                    </li>
+                    
                 </ul>
 
                 <div className="sidebar-bottom">

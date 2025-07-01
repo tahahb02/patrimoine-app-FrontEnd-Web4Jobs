@@ -158,36 +158,32 @@ const DirecteurUtilisateurs = () => {
 
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <ul className="sidebar-menu">
-          <li className={location.pathname === '/DirecteurHome' ? 'active' : ''}>
-            <Link to="/DirecteurHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
-          </li>
-
-          <li className={location.pathname.includes('/DirecteurUtilisateurs') ? 'active' : ''}>
-            <Link to="/DirecteurUtilisateurs"><FaUsers /><span>Utilisateurs</span></Link>
-          </li>
-          
-          <li className={location.pathname === '/EquipementsDirecteur' ? 'active' : ''}>
-            <Link to="/EquipementsDirecteur"><FaCogs /><span>Équipements</span></Link>
-          </li>
-          
-          <li className={location.pathname === '/HistoriqueDemandesDirecteur' ? 'active' : ''}>
-            <Link to="/HistoriqueDemandesDirecteur"><FaClipboardList /><span>Historique Demandes</span></Link>
-          </li>
-          
-          <li className={location.pathname === '/HistoriqueEquipementsDirecteur' ? 'active' : ''}>
-            <Link to="/HistoriqueEquipementsDirecteur"><FaHistory /><span>Historique Utilisations Des Équipements</span></Link>
-          </li>
-           <li className={location.pathname === '/DiagnosticsDirecteur' ? 'active' : ''}>
-                                  <Link to="/DiagnosticsDirecteur">
-                                      <FaWrench className="icon" />
-                                      <span>Diagnostics</span>
-                                  </Link>
-                              </li>
-          
-          <li className={location.pathname === '/DirecteurHistoriqueMaintenances' ? 'active' : ''}>
-            <Link to="/DirecteurHistoriqueMaintenances"><FaWrench /><span>Historique Maintenances</span></Link>
-          </li>
-        </ul>
+                            <li className={location.pathname === '/DirecteurHome' ? 'active' : ''}>
+                                <Link to="/DirecteurHome"><FaTachometerAlt /><span>Tableau de Bord</span></Link>
+                            </li>
+                            <li className={location.pathname.includes('/DirecteurUtilisateurs') ? 'active' : ''}>
+                                <Link to="/DirecteurUtilisateurs"><FaUsers /><span>Utilisateurs</span></Link>
+                            </li>
+                            <li className={location.pathname === '/EquipementsDirecteur' ? 'active' : ''}>
+                                <Link to="/EquipementsDirecteur"><FaCogs /><span>Équipements</span></Link>
+                            </li>
+                            <li className={location.pathname === '/HistoriqueDemandesDirecteur' ? 'active' : ''}>
+                                <Link to="/HistoriqueDemandesDirecteur"><FaClipboardList /><span>Historique Demandes</span></Link>
+                            </li>
+                            <li className={location.pathname === '/HistoriqueEquipementsDirecteur' ? 'active' : ''}>
+                                <Link to="/HistoriqueEquipementsDirecteur"><FaHistory /><span>Historique Utilisations</span></Link>
+                            </li>
+                             <li className={location.pathname === '/DiagnosticsDirecteur' ? 'active' : ''}>
+                                                    <Link to="/DiagnosticsDirecteur">
+                                                        <FaWrench className="icon" />
+                                                        <span>Diagnostics</span>
+                                                    </Link>
+                                                </li>
+                            <li className={location.pathname === '/DirecteurHistoriqueMaintenances' ? 'active' : ''}>
+                                <Link to="/DirecteurHistoriqueMaintenances"><FaWrench /><span>Historique Maintenances</span></Link>
+                            </li>
+                            
+                        </ul>
 
         <div className="sidebar-bottom">
           <ul>
