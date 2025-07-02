@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
-  FaBars, FaTimes, FaTachometerAlt, FaCogs, FaClipboardList, 
-  FaBell, FaUser, FaSignOutAlt, FaHistory,FaWrench, FaBoxOpen, 
+  FaBars, FaTimes, FaTachometerAlt, FaCogs, 
+  FaUser, FaSignOutAlt, FaHistory, FaWrench, 
   FaCheckCircle, FaBuilding, FaChartLine, FaUsers 
 } from "react-icons/fa";
 import axios from "axios";
-import { Bar, Line, Pie } from "react-chartjs-2";
+import { Bar, Pie } from "react-chartjs-2";
 import { Chart, registerables } from 'chart.js';
 import "../styles/responsable.css";
 
@@ -17,101 +17,123 @@ const ResponsablePatrimoineHome = () => {
     const [userData, setUserData] = useState(null);
     const [stats, setStats] = useState({
         totalEquipments: 0,
-        pendingValidations: 0,
+        pendingValidation: 0,
         centersCount: 0,
-        maintenanceStats: {},
-        equipmentStatus: {}
+        totalRP: 0,
+        maintenanceStats: { inProgress: 0, completed: 0, planned: 0 },
+        equipmentStatus: { available: 0, onLoan: 0, maintenance: 0 }
     });
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const navigate = useNavigate();
     const location = useLocation();
 
     useEffect(() => {
         const userNom = localStorage.getItem("userNom");
         const userPrenom = localStorage.getItem("userPrenom");
+        const userRole = localStorage.getItem("userRole");
         
-        if (userNom && userPrenom) {
+        if (userNom && userPrenom && userRole) {
             setUserData({
                 nom: userNom,
-                prenom: userPrenom
+                prenom: userPrenom,
+                role: userRole
             });
-            fetchStatistics();
+            fetchStatistics(userRole);
         }
     }, []);
 
-    const fetchStatistics = async () => {
+    const fetchStatistics = async (userRole) => {
+        setLoading(true);
+        setError(null);
         try {
-            const response = await axios.get("/api/statistics/patrimoine");
-            setStats(response.data);
-            setLoading(false);
+            const token = localStorage.getItem("token");
+            if (!token) {
+                throw new Error("Token d'authentification manquant");
+            }
+
+            const response = await axios.get("http://localhost:8080/api/statistics/patrimoine", {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'X-User-Role': userRole
+                }
+            });
+            
+            if (response.data) {
+                setStats({
+                    totalEquipments: response.data.totalEquipments || 0,
+                    pendingValidation: response.data.pendingValidation || 0,
+                    centersCount: response.data.centersCount || 0,
+                    totalRP: response.data.totalRP || 0,
+                    maintenanceStats: {
+                        inProgress: response.data.maintenanceStats?.inProgress || 0,
+                        completed: response.data.maintenanceStats?.completed || 0,
+                        planned: response.data.maintenanceStats?.planned || 0
+                    },
+                    equipmentStatus: {
+                        available: response.data.equipmentStatus?.available || 0,
+                        onLoan: response.data.equipmentStatus?.onLoan || 0,
+                        maintenance: response.data.equipmentStatus?.maintenance || 0
+                    }
+                });
+            }
         } catch (error) {
-            console.error("Error fetching statistics:", error);
+            console.error("Erreur lors du chargement des statistiques:", error);
+            setError(error.response?.data?.message || error.message || "Erreur lors du chargement des statistiques");
+        } finally {
             setLoading(false);
         }
     };
 
     const handleLogout = () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("userId");
-        localStorage.removeItem("userRole");
-        localStorage.removeItem("userEmail");
-        localStorage.removeItem("userNom");
-        localStorage.removeItem("userPrenom");
-        localStorage.removeItem("userVilleCentre");
+        localStorage.clear();
         navigate("/login");
     };
 
     const equipmentStatusData = {
-        labels: ['Disponibles', 'En maintenance', 'En prêt', 'À valider'],
-        datasets: [
-            {
-                label: 'Statut des équipements',
-                data: [
-                    stats.equipmentStatus.available || 0,
-                    stats.equipmentStatus.maintenance || 0,
-                    stats.equipmentStatus.onLoan || 0,
-                    stats.pendingValidations
-                ],
-                backgroundColor: [
-                    'rgba(75, 192, 192, 0.7)',
-                    'rgba(255, 159, 64, 0.7)',
-                    'rgba(54, 162, 235, 0.7)',
-                    'rgba(255, 206, 86, 0.7)'
-                ],
-                borderColor: [
-                    'rgba(75, 192, 192, 1)',
-                    'rgba(255, 159, 64, 1)',
-                    'rgba(54, 162, 235, 1)',
-                    'rgba(255, 206, 86, 1)'
-                ],
-                borderWidth: 1
-            }
-        ]
+        labels: ['Disponibles', 'En prêt', 'En maintenance'],
+        datasets: [{
+            label: 'Statut des équipements',
+            data: [
+                stats.equipmentStatus.available,
+                stats.equipmentStatus.onLoan,
+                stats.equipmentStatus.maintenance
+            ],
+            backgroundColor: [
+                'rgba(75, 192, 192, 0.7)',
+                'rgba(54, 162, 235, 0.7)',
+                'rgba(255, 99, 132, 0.7)'
+            ],
+            borderColor: [
+                'rgba(75, 192, 192, 1)',
+                'rgba(54, 162, 235, 1)',
+                'rgba(255, 99, 132, 1)'
+            ],
+            borderWidth: 1
+        }]
     };
 
     const maintenanceData = {
         labels: ['En cours', 'Terminées', 'Planifiées'],
-        datasets: [
-            {
-                label: 'Maintenances',
-                data: [
-                    stats.maintenanceStats.inProgress || 0,
-                    stats.maintenanceStats.completed || 0,
-                    stats.maintenanceStats.planned || 0
-                ],
-                backgroundColor: [
-                    'rgba(255, 99, 132, 0.7)',
-                    'rgba(75, 192, 192, 0.7)',
-                    'rgba(255, 206, 86, 0.7)'
-                ],
-                borderColor: [
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(75, 192, 192, 1)',
-                    'rgba(255, 206, 86, 1)'
-                ],
-                borderWidth: 1
-            }
-        ]
+        datasets: [{
+            label: 'Maintenances',
+            data: [
+                stats.maintenanceStats.inProgress,
+                stats.maintenanceStats.completed,
+                stats.maintenanceStats.planned
+            ],
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.7)',
+                'rgba(75, 192, 192, 0.7)',
+                'rgba(255, 206, 86, 0.7)'
+            ],
+            borderColor: [
+                'rgba(255, 99, 132, 1)',
+                'rgba(75, 192, 192, 1)',
+                'rgba(255, 206, 86, 1)'
+            ],
+            borderWidth: 1
+        }]
     };
 
     return (
@@ -150,11 +172,11 @@ const ResponsablePatrimoineHome = () => {
 
                 <div className="sidebar-bottom">
                     <ul>
-                        <li className={location.pathname === '/accountRP' ? 'active' : ''}>
+                        <li>
                             <Link to="/Account"><FaUser /><span>Compte</span></Link>
                         </li>
                         <li className="logout">
-                            <button onClick={handleLogout} style={{ background: 'none', border: 'none', padding: '10px', width: '100%', textAlign: 'left' }}>
+                            <button onClick={handleLogout}>
                                 <FaSignOutAlt /><span>Déconnexion</span>
                             </button>
                         </li>
@@ -163,11 +185,22 @@ const ResponsablePatrimoineHome = () => {
             </aside>
 
             <main className="content">
-                <h2>
-                    Bienvenue, {userData?.prenom} {userData?.nom}<br />
-                    <span className="welcome-subtitle">Responsable Patrimoine</span>
-                </h2>
                 
+                    <h2 >
+                        Bienvenue, {userData?.prenom} {userData?.nom}
+                    </h2>
+                    <span className="welcome-subtitle">Responsable Patrimoine</span>
+                
+                
+                {error && (
+                    <div className="error-message">
+                        <p>{error}</p>
+                        <button onClick={() => fetchStatistics(userData?.role)} className="retry-button">
+                            Réessayer
+                        </button>
+                    </div>
+                )}
+
                 {loading ? (
                     <div className="loading">Chargement des statistiques...</div>
                 ) : (
@@ -180,7 +213,7 @@ const ResponsablePatrimoineHome = () => {
                                 <div className="stat-info">
                                     <h3>Équipements</h3>
                                     <p>{stats.totalEquipments}</p>
-                                    <span>À valider: {stats.pendingValidations}</span>
+                                    <span>À valider: {stats.pendingValidation}</span>
                                 </div>
                             </div>
 
@@ -201,7 +234,7 @@ const ResponsablePatrimoineHome = () => {
                                 </div>
                                 <div className="stat-info">
                                     <h3>Maintenances</h3>
-                                    <p>{stats.maintenanceStats.inProgress || 0}</p>
+                                    <p>{stats.maintenanceStats.inProgress}</p>
                                     <span>En cours</span>
                                 </div>
                             </div>
@@ -211,8 +244,8 @@ const ResponsablePatrimoineHome = () => {
                                     <FaUsers />
                                 </div>
                                 <div className="stat-info">
-                                    <h3>Utilisateurs</h3>
-                                    <p>{stats.totalUsers || 0}</p>
+                                    <h3>Responsables</h3>
+                                    <p>{stats.totalRP}</p>
                                     <span>Actifs</span>
                                 </div>
                             </div>
@@ -248,6 +281,11 @@ const ResponsablePatrimoineHome = () => {
                                                     display: false,
                                                 },
                                             },
+                                            scales: {
+                                                y: {
+                                                    beginAtZero: true
+                                                }
+                                            }
                                         }}
                                     />
                                 </div>
